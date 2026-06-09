@@ -1,0 +1,149 @@
+---
+source: Practical_Guides.txt
+topic: Practical Guides
+importance: high
+last_updated: 2026-04-04
+author: Technical Team
+---
+
+Practical Implementation Guides for SkillNova Interns
+
+## Weekly Report Submission - Step by Step
+
+1. **Access the Reports Section**
+   - Log into your SkillNova dashboard
+   - Click "My Reports" in the left sidebar menu
+   - Look for the "New Report" button (top right corner)
+
+2. **Fill Your Weekly Report**
+   - **Summary**: Write 2-3 sentences about your week's accomplishments
+   - **Tasks Completed**: List each task with a brief description of what you delivered
+   - **Tasks In Progress**: Mention ongoing work and expected completion dates
+   - **Challenges Faced**: Be honest about blockers and how you tried to solve them
+   - **Learnings**: Include both technical skills and soft skills you developed
+   - **Next Week Plan**: List specific tasks you'll work on
+
+3. **Submit Before Deadline**
+   - Deadline: Every Friday before 6:00 PM IST
+   - If you'll be absent on Friday, submit on Thursday
+   - Double-check all required fields are filled before clicking "Submit"
+
+## Attendance Management - Daily Actions
+
+### Daily Login Process
+1. **Morning Login (9:00 AM your time)**
+   - Log into SkillNova platform
+   - Update your status to "Available"
+   - Check for any urgent messages from your mentor
+
+2. **Status Updates During Day**
+   - Change status to "In a Meeting" when attending calls
+   - Set to "Offline" only when your workday is complete
+   - Keep status accurate so your team knows availability
+
+### When You Need to Be Absent
+1. **Planned Leave**
+   - Submit request at least 1 week in advance
+   - Include reason and dates in your request
+   - Get approval from both mentor and HR
+
+2. **Emergency Absence**
+   - Notify mentor BEFORE start of workday
+   - Send message via platform and email
+   - Log absence in attendance module the same day
+
+3. **Medical Leave**
+   - Notify mentor immediately
+   - Submit doctor's note within 3 days
+   - Use medical leave option in attendance system
+
+## DSA Practice - How to Use the Platform
+
+1. **Navigate to DSA Section**
+   - Go to "Projects" from sidebar
+   - Select "DSA Practice" module
+   - Choose your difficulty level: Easy, Medium, or Hard
+
+2. **Problem Solving Workflow**
+   - Read the problem description carefully
+   - Check input/output format examples
+   - Write your solution in the provided editor
+   - Test with sample cases before submitting
+   - Submit and check your results
+
+3. **Learning Resources**
+   - Each problem includes related topics
+   - Use the "Hint" feature if stuck (reduces points)
+   - Review solutions after 3 attempts
+   - Track your progress in the analytics section
+
+## Meeting Scheduling - Best Practices
+
+1. **Requesting Meetings with Mentor**
+   - Use the "Schedule Meeting" button in mentor's profile
+   - Propose 2-3 time slots that work for you
+   - Include meeting agenda and required preparation
+   - Send request at least 24 hours in advance
+
+2. **Meeting Preparation**
+   - Review your weekly progress before the meeting
+   - Prepare specific questions about blockers
+   - Have your task list ready for discussion
+   - Test your video/audio setup 10 minutes before
+
+3. **During the Meeting**
+   - Share your screen when discussing code
+   - Take notes on action items and deadlines
+   - Ask clarifying questions if unsure
+   - Confirm next steps before ending
+
+## Task Validation - Getting Your Work Approved
+
+1. **Before Submitting Tasks**
+   - Review all requirements in the task description
+   - Test your implementation thoroughly
+   - Document any assumptions or limitations
+   - Prepare a brief summary of your approach
+
+2. **Submission Process**
+   - Click "Submit Task" in your dashboard
+   - Upload all required files and documentation
+   - Include links to live demos if applicable
+   - Add comments explaining your solution
+
+3. **After Submission**
+   - Monitor feedback in your task history
+   - Address reviewer comments promptly
+   - Resubmit with requested changes
+   - Mark task as complete only after approval
+
+## Common Issues and Quick Solutions
+
+### Can't Submit Weekly Report
+- **Issue**: Submit button is disabled
+- **Solution**: Check if all required fields are filled
+- **Backup**: Contact mentor if deadline is approaching
+
+### Attendance Not Marked
+- **Issue**: Daily attendance not showing
+- **Solution**: Ensure you clicked "Log Attendance" button
+- **Backup**: Email mentor with your login time
+
+### DSA Problems Not Loading
+- **Issue**: Practice problems show blank screen
+- **Solution**: Clear browser cache and refresh
+- **Backup**: Try different browser or contact support
+
+### Meeting Request Not Accepted
+- **Issue**: Mentor hasn't responded to meeting request
+- **Solution**: Send polite follow-up message after 24 hours
+- **Backup**: Try alternative time slots
+
+## Emergency Contacts
+
+- **Technical Support**: support@skillnova.com
+- **HR Department**: hr@skillnova.com  
+- **Urgent Mentor Issues**: Use emergency contact in mentor profile
+- **Platform Issues**: Use the "Report Issue" button in help section
+
+Remember: When in doubt, ask your mentor or use the help section. It's better to ask than to make assumptions!

@@ -1,0 +1,161 @@
+PS C:\Users\rajat\Downloads\Skillnova-Fullstack\backend> # ===============================
+>> # AUTO BACKEND FULL TEST (RAJATKANU)
+>> # ===============================
+>> 
+>> # 0. CREATE TEST FILE (NO PATH ERROR)
+>> $FILE_PATH = "$env:TEMP\test.txt"
+>> "SkillNova Test File" | Out-File -FilePath $FILE_PATH
+>> 
+>> # ===============================
+>> # 1. REGISTER (IGNORE IF EXISTS)
+>> # ===============================
+>> try {
+>>     irm http://localhost:5000/api/auth/register `
+>>     -Method POST `
+>>     -ContentType "application/json" `
+>>     -Body '{"name":"Rajatkanu","email":"rajatkanu@test.com","password":"123456"}'
+>> } catch {}
+>>
+>> # ===============================
+>> # 2. LOGIN + TOKEN
+>> # ===============================
+>> $response = irm http://localhost:5000/api/auth/login `
+>> -Method POST `
+>> -ContentType "application/json" `
+>> -Body '{"email":"rajatkanu@test.com","password":"123456"}'
+>>
+>> $TOKEN = $response.data.token
+>>
+>> Write-Host "`nTOKEN:"
+>> Write-Host $TOKEN
+>>
+>> # ===============================
+>> # 3. USER CHECK
+>> # ===============================
+>> Write-Host "`nUSER:"
+>> irm http://localhost:5000/api/users/me `
+>> -Headers @{ Authorization = "Bearer $TOKEN" }
+>>
+>> # ===============================
+>> # 4. AI TEST
+>> # ===============================
+>> Write-Host "`nAI:"
+>> irm http://localhost:5000/api/ai/chat `
+>> -Method POST `
+>> -Headers @{ Authorization = "Bearer $TOKEN" } `
+>> -ContentType "application/json" `
+>> -Body '{"message":"Explain AI in one line"}'
+>>
+>> # ===============================
+>> # 5. QA SAVE
+>> # ===============================
+>> Write-Host "`nQA SAVE:"
+>> irm http://localhost:5000/api/qa `
+>> -Method POST `
+>> -Headers @{ Authorization = "Bearer $TOKEN" } `
+>> -ContentType "application/json" `
+>> -Body '{"question":"What is AI?","answer":"Artificial Intelligence","confidence":0.95}'
+>>
+>> # ===============================
+>> # 6. QA FETCH
+>> # ===============================
+>> Write-Host "`nQA FETCH:"
+>> irm http://localhost:5000/api/qa `
+>> -Headers @{ Authorization = "Bearer $TOKEN" }
+>>
+>> # ===============================
+>> # 7. REPORT UPLOAD (NO ERROR)
+>> # ===============================
+>> Write-Host "`nUPLOAD REPORT:"
+>>
+>> Add-Type -AssemblyName System.Net.Http
+>>
+>> $client = New-Object System.Net.Http.HttpClient
+>> $client.DefaultRequestHeaders.Add("Authorization", "Bearer $TOKEN")  
+>>
+>> $content = New-Object System.Net.Http.MultipartFormDataContent       
+>>
+>> $fileStream = [System.IO.File]::OpenRead($FILE_PATH)
+>> $fileContent = New-Object System.Net.Http.StreamContent($fileStream) 
+>> $fileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("text/plain")
+>>
+>> $content.Add($fileContent, "file", "test.txt")
+>> $content.Add((New-Object System.Net.Http.StringContent("Rajatkanu Report")), "title")
+>>
+>> $response = $client.PostAsync("http://localhost:5000/api/reports/upload", $content).Result
+>> $response.Content.ReadAsStringAsync().Result
+>>
+>> # ===============================
+>> # 8. GET REPORTS
+>> # ===============================
+>> Write-Host "`nGET REPORTS:"
+>> $reports = irm http://localhost:5000/api/reports `
+>> -Headers @{ Authorization = "Bearer $TOKEN" }
+>>
+>> $reports
+>>
+>> # ===============================
+>> # 9. DELETE REPORT (AUTO)
+>> # ===============================
+>> if ($reports.data.Count -gt 0) {
+>>     $id = $reports.data[0].id
+>>     Write-Host "`nDELETE REPORT:"
+>>     irm http://localhost:5000/api/reports/$id `
+>>     -Method DELETE `
+>>     -Headers @{ Authorization = "Bearer $TOKEN" }
+>> }
+>>
+>> # ===============================
+>> # 10. ANNOUNCEMENTS
+>> # ===============================
+>> Write-Host "`nANNOUNCEMENTS:"
+>> irm http://localhost:5000/api/announcements `
+>> -Headers @{ Authorization = "Bearer $TOKEN" }
+>>
+>> # ===============================
+>> # 11. ARTICLES
+>> # ===============================
+>> Write-Host "`nARTICLES:"
+>> irm http://localhost:5000/api/articles `
+>> -Headers @{ Authorization = "Bearer $TOKEN" }
+>>
+>> Write-Host "`nALL TESTS COMPLETED SUCCESSFULLY"
+
+
+TOKEN:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVjZjdhM2QzLTUxMDYtNDI1NS1iZTUxLTdkYjZiYTI3OTBkMyIsImVtYWlsIjoicmFqYXRrYW51QHRlc3QuY29tIiwicm9sZSI6ImludGVybiIsImlhdCI6MTc3NTc2NDI2MSwiZXhwIjoxNzc2MzY5MDYxfQ.RxhtnyLUKS5QCstLCr3FjaGp7Vb7bxI_tqKMzTrPpig
+
+USER:
+success message                      data
+------- -------                      ----
+   True User registered successfully @{token=eyJhbGciOiJIUzI1NiIsInR... 
+   True User fetched successfully    @{id=5cf7a3d3-5106-4255-be51-7d... 
+
+AI:
+
+
+QA SAVE:
+   True QA entry created             @{id=cmnrw724b0003bir7lv2agf6o;...
+
+QA FETCH:
+   True QA history fetched           {@{id=cmnrw724b0003bir7lv2agf6o...
+
+UPLOAD REPORT:
+{"success":true,"message":"Report uploaded","data":{"id":"cmnrw72bs0005bir7j02rhjxq","title":"Rajatkanu Report","fileUrl":"src\\uploads\\reports\\1775764267907-410727642.txt","userId":"5cf7a3d3-5106-4255-be51-7db6ba2790d3","createdAt":"2026-04-09T19:51:07.912Z"}}
+
+GET REPORTS:
+   True Reports fetched              {@{id=cmnrw72bs0005bir7j02rhjxq...
+
+DELETE REPORT:
+   True Report deleted
+
+ANNOUNCEMENTS:
+   True Announcements fetched        {}
+
+ARTICLES:
+   True Articles fetched             {}
+
+ALL TESTS COMPLETED SUCCESSFULLY
+
+
+PS C:\Users\rajat\Downloads\Skillnova-Fullstack\backend>

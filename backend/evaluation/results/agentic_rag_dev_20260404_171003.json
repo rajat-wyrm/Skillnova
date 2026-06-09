@@ -1,0 +1,88 @@
+{
+  "label": "agentic_rag_dev",
+  "timestamp": "20260404_171003",
+  "scores": {
+    "answer_rate": 1.0,
+    "escalation_rate": 0.6,
+    "avg_confidence": 0.19,
+    "avg_latency_s": 2.29,
+    "avg_llm_calls": 3.2,
+    "total_questions": 5,
+    "evaluation_method": "custom"
+  },
+  "details": [
+    {
+      "question": "What is the attendance policy?",
+      "answer": "I couldn't verify my answer against the sources. Escalating to the Admin team for accuracy!",
+      "contexts": [
+        "Attendance Policy\n\nConsistent attendance and active participation are essential for maximizing the value of your internship at UptoSkills.\n\n1. Working Hours\n- Standard Hours: Interns are expected to adhere to the agreed-upon standard working hours for their specific role and time zone.\n- Flexibility: If your internship offers flexible hours, ensure you overlap with your mentor's schedule for core collaboration periods.",
+        "Q: What happens if I miss a day of attendance?\nA: Inform your mentor before the start of the working day. Log your absence in the attendance module. Medical leave requires supporting documentation submitted within 3 days. Unexcused absences affect your performance rating."
+      ],
+      "ground_truth": "Interns are expected to adhere to standard working hours. They must log in daily and keep their status updated. Planned leave requires one week advance notice. Sick leave needs immediate notification.",
+      "expected_topic": "Attendance",
+      "confidence": 0.0,
+      "route": "knowledge_base",
+      "llm_calls": 3,
+      "latency_s": 1.38
+    },
+    {
+      "question": "How do I request leave?",
+      "answer": "I couldn't verify my answer against the sources. Escalating to the Admin team for accuracy!",
+      "contexts": [
+        "3. Leave Requests\n- Planned Leave: Submit requests for planned leave (e.g., exams, personal commitments) to your mentor and HR at least one week in advance.\n- Sick Leave: In case of illness or unforeseen emergencies, notify your mentor and HR as soon as possible before the start of your workday.\n- Unplanned Absences: Frequent unplanned absences may negatively impact your internship evaluation.",
+        "Q: What happens if I miss a day of attendance?\nA: Inform your mentor before the start of the working day. Log your absence in the attendance module. Medical leave requires supporting documentation submitted within 3 days. Unexcused absences affect your performance rating."
+      ],
+      "ground_truth": "Submit requests for planned leave to your mentor and HR at least one week in advance. For sick leave, notify your mentor and HR before the start of your workday.",
+      "expected_topic": "Attendance",
+      "confidence": 0.0,
+      "route": "knowledge_base",
+      "llm_calls": 3,
+      "latency_s": 1.16
+    },
+    {
+      "question": "What are the working hours?",
+      "answer": "I couldn't verify my answer against the sources. Escalating to the Admin team for accuracy!",
+      "contexts": [
+        "Q: How do I access the AI chatbot?\nA: Click the orange chat icon in the bottom-right corner of any page. The chatbot supports English and Hindi. You can type or use voice input. If the bot cannot answer, your query is automatically escalated to the admin team.\n\nQ: What is the expected working hours?\nA: Standard working hours are 9:00 AM to 5:00 PM IST, Monday to Friday. Flexible timings may be allowed with mentor approval. Weekend work is not expected unless specified for project deadlines.",
+        "Attendance Policy\n\nConsistent attendance and active participation are essential for maximizing the value of your internship at UptoSkills.\n\n1. Working Hours\n- Standard Hours: Interns are expected to adhere to the agreed-upon standard working hours for their specific role and time zone.\n- Flexibility: If your internship offers flexible hours, ensure you overlap with your mentor's schedule for core collaboration periods."
+      ],
+      "ground_truth": "Standard working hours are 9:00 AM to 5:00 PM IST, Monday to Friday. Flexible timings may be allowed with mentor approval.",
+      "expected_topic": "Attendance",
+      "confidence": 0.0,
+      "route": "knowledge_base",
+      "llm_calls": 4,
+      "latency_s": 1.34
+    },
+    {
+      "question": "How do I submit my weekly report?",
+      "answer": "To submit your weekly report, follow these steps:\n\n* Go to \"My Reports\" from the sidebar menu.\n* Click \"New Report\" and fill in your weekly progress details including tasks completed, challenges faced, and learnings.\n* Submit before Friday 6 PM each week. \n\nRefer to the Weekly Report Submission Guidelines, Section 3: How to Submit.",
+      "contexts": [
+        "Frequently Asked Questions (FAQ) — SkillNova Internship\n\nQ: How do I submit my weekly report?\nA: Go to \"My Reports\" from the sidebar menu. Click \"New Report\" and fill in your weekly progress details including tasks completed, challenges faced, and learnings. Submit before Friday 6 PM each week. Late submissions will be flagged.",
+        "2. Report Structure\nYour weekly report should include the following sections:\n- Summary: Brief overview of what you accomplished this week (2-3 sentences).\n- Tasks Completed: List of specific tasks you finished, with descriptions.\n- Tasks In Progress: Work that is ongoing and expected completion date.\n- Challenges Faced: Any blockers or difficulties encountered.\n- Learnings: Key technical or soft skills you developed this week.",
+        "Weekly Report Submission Guidelines\n\nAll interns are required to submit a weekly progress report documenting their work, learnings, and challenges.\n\n1. Submission Schedule\n- Reports must be submitted every Friday before 6:00 PM IST.\n- Late submissions will be flagged and may affect your performance rating.\n- If you will be absent on Friday, submit your report on Thursday.",
+        "3. How to Submit\n- Navigate to \"My Reports\" from the sidebar.\n- Click the \"New Report\" button.\n- Fill in all required fields.\n- Click \"Submit\" — you will receive a confirmation notification.\n- You can view past reports and their review status in the same section."
+      ],
+      "ground_truth": "Navigate to My Reports from the sidebar, click New Report, fill in all required fields, and click Submit. Reports must be submitted every Friday before 6:00 PM IST.",
+      "expected_topic": "Reports",
+      "confidence": 0.6,
+      "route": "knowledge_base",
+      "llm_calls": 3,
+      "latency_s": 0.97
+    },
+    {
+      "question": "What should my weekly report include?",
+      "answer": "Based on the provided context, your weekly report should include the following sections:\n\n* Summary: Brief overview of what you accomplished this week (2-3 sentences).\n* Tasks Completed: List of specific tasks you finished, with descriptions.\n* Tasks In Progress: Work that is ongoing and expected completion date.\n* Challenges Faced: Any blockers or difficulties encountered.\n* Learnings: Key technical or soft skills you developed this week.\n\n(Refer to \"2. Report Structure\" and \"Weekly Report Submission Guidelines\")",
+      "contexts": [
+        "2. Report Structure\nYour weekly report should include the following sections:\n- Summary: Brief overview of what you accomplished this week (2-3 sentences).\n- Tasks Completed: List of specific tasks you finished, with descriptions.\n- Tasks In Progress: Work that is ongoing and expected completion date.\n- Challenges Faced: Any blockers or difficulties encountered.\n- Learnings: Key technical or soft skills you developed this week.",
+        "Frequently Asked Questions (FAQ) — SkillNova Internship\n\nQ: How do I submit my weekly report?\nA: Go to \"My Reports\" from the sidebar menu. Click \"New Report\" and fill in your weekly progress details including tasks completed, challenges faced, and learnings. Submit before Friday 6 PM each week. Late submissions will be flagged.",
+        "Weekly Report Submission Guidelines\n\nAll interns are required to submit a weekly progress report documenting their work, learnings, and challenges.\n\n1. Submission Schedule\n- Reports must be submitted every Friday before 6:00 PM IST.\n- Late submissions will be flagged and may affect your performance rating.\n- If you will be absent on Friday, submit your report on Thursday."
+      ],
+      "ground_truth": "Weekly reports should include: Summary, Tasks Completed, Tasks In Progress, Challenges Faced, Learnings, and Plan for Next Week.",
+      "expected_topic": "Reports",
+      "confidence": 0.35,
+      "route": "knowledge_base",
+      "llm_calls": 3,
+      "latency_s": 6.58
+    }
+  ]
+}
