@@ -1,0 +1,39 @@
+---
+source: FAQ.txt
+topic: General
+importance: high
+last_updated: 2026-03-25
+author: Admin Team
+---
+
+Frequently Asked Questions (FAQ) — SkillNova Internship
+
+Q: How do I submit my weekly report?
+A: Go to "My Reports" from the sidebar menu. Click "New Report" and fill in your weekly progress details including tasks completed, challenges faced, and learnings. Submit before Friday 6 PM each week. Late submissions will be flagged.
+
+Q: What happens if I miss a day of attendance?
+A: Inform your mentor before the start of the working day. Log your absence in the attendance module. Medical leave requires supporting documentation submitted within 3 days. Unexcused absences affect your performance rating.
+
+Q: How is my performance rating calculated?
+A: Your rating (out of 10) is based on: Quality of Work (30%), Timeliness (20%), Technical Skills (20%), Soft Skills (15%), and Initiative (15%). Ratings are updated biweekly by your assigned mentor.
+
+Q: Can I change my department during the internship?
+A: Department transfers are possible after the midterm review (week 4). Discuss with your mentor and submit a transfer request through the admin portal. Approval depends on availability and your performance.
+
+Q: How do I access the AI chatbot?
+A: Click the orange chat icon in the bottom-right corner of any page. The chatbot supports English and Hindi. You can type or use voice input. If the bot cannot answer, your query is automatically escalated to the admin team.
+
+Q: What is the expected working hours?
+A: Standard working hours are 9:00 AM to 5:00 PM IST, Monday to Friday. Flexible timings may be allowed with mentor approval. Weekend work is not expected unless specified for project deadlines.
+
+Q: How do I prepare for the final evaluation?
+A: Maintain consistent attendance (minimum 90%). Complete all assigned tasks on time. Actively participate in meetings and the Q&A forum. Prepare a final presentation summarizing your internship contributions and learnings.
+
+Q: Who do I contact for technical issues with the platform?
+A: Use the AI chatbot first — it can resolve most common issues. If unresolved, the query is escalated to admin automatically. For urgent issues, email support@skillnova.com directly.
+
+Q: Is there a certificate for completing the internship?
+A: Yes. Successful completion (based on satisfactory performance across all evaluation criteria) earns you a completion certificate. Exceptional performers may also receive a recommendation letter or a certificate of excellence.
+
+Q: Can I contribute to the knowledge base?
+A: Yes! Go to "Knowledge Base" and click "Submit Article." Your article will be reviewed by an admin before publication. Contributing to the knowledge base is considered a positive initiative in your evaluation.

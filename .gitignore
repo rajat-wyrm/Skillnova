@@ -1,81 +1,31 @@
-﻿# Environment variables and secrets
+﻿# Environment & secrets
 .env
 .env.*
 *.pem
 *.key
-*.crt
-*.p12
-secrets.json
-secrets.yml
-.secrets
-
-# Credentials and tokens
+*secret*
 *password*
-*credential*
-*.token
-*.secret
+*token*
 
-# Logs
+# Logs & cache
 *.log
-logs/
-*.pid
+*.tmp
 
 # Dependencies
 node_modules/
 __pycache__/
 *.pyc
-*.pyo
-*.so
 
-# Build outputs
+# Build
 dist/
-build/
-out/
 *.exe
-*.dll
 
-# IDE and OS files
+# IDE & OS
 .vscode/
 .idea/
-*.swp
-*.swo
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Temporary files
-*.tmp
-*.temp
-*.cache
-
-# Backup files
+# Backups
 *.bak
-*.backup
-*.old
-
-# Sensitive data exports
-*.sql
-*.dump
-backup/
-
-# User-specific files
-*.user
-*.suo
-
-# Any file containing "secret" or "private" in name (by pattern)
-*secret*
-*private*
-
-# Local config overrides
-*.local.*
-*.local
-
-# Certificate files
-*.cert
-*.csr
-
-# SSH keys (just in case)
-id_rsa*
-id_ecdsa*
-id_ed25519*
-*.pub
