@@ -29,5 +29,5 @@ redis>=5.0,<6.0
 
 # Test suite
 pytest>=7.4,<9.0
-pytest-asyncio>=0.23,<1.0
+pytest-asyncio>=1.4.0,<2.0
 httpx>=0.26,<1.0
