@@ -15,7 +15,7 @@ SQLAlchemy>=2.0,<3.0
 # LLM providers
 requests>=2.31,<3.0
 langchain-core>=0.1,<1.0
-langchain-groq>=0.1,<1.0
+langchain-groq>=1.1.3,<2.0
 
 # LangGraph agent
 langgraph>=0.0.20,<1.0
