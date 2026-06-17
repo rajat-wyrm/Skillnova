@@ -1,0 +1,38 @@
+# Auto-detect text files, ensure LF line endings everywhere.
+*               text=auto eol=lf
+
+# Force LF for scripts and source
+*.sh            text eol=lf
+*.py            text eol=lf
+*.js            text eol=lf
+*.cjs           text eol=lf
+*.mjs           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.md            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+*.toml          text eol=lf
+Dockerfile*     text eol=lf
+
+# Binary — do not touch
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.pdf           binary
+*.woff          binary
+*.woff2         binary
+*.ttf           binary
+*.eot           binary
+*.mp4           binary
+*.mp3           binary
+*.zip           binary
+*.tar.gz        binary
+
+# Export linguist overrides so GitHub picks the right language for stats
+internbackend/*.py   linguist-language=Python
+internbackend/src/** linguist-language=JavaScript
+sdk/js/**            linguist-language=JavaScript
