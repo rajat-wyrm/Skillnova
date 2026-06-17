@@ -18,7 +18,7 @@ langchain-core>=0.1,<1.0
 langchain-groq>=0.1,<1.0
 
 # LangGraph agent
-langgraph>=0.0.20,<1.0
+langgraph>=1.2.5,<2.0
 
 # Optional web search (only needed if you set TAVILY_API_KEY)
 tavily-python>=0.3,<1.0
