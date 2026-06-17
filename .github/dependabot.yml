@@ -1,0 +1,79 @@
+# Dependabot — weekly updates for both ecosystems
+version: 2
+
+updates:
+  # Node.js / npm
+  - package-ecosystem: "npm"
+    directory: "/internbackend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    groups:
+      production-fastify:
+        patterns:
+          - "fastify*"
+          - "@fastify/*"
+      production-jwt:
+        patterns:
+          - "jsonwebtoken"
+          - "bcryptjs"
+          - "csrf-csrf"
+      dev:
+        patterns:
+          - "jest*"
+          - "eslint*"
+          - "prettier*"
+          - "nodemon"
+    labels:
+      - "dependencies"
+      - "node"
+    commit-message:
+      prefix: "build(deps)"
+    ignore:
+      # Keep Fastify major pinned manually
+      - dependency-name: "fastify"
+        update-types: ["version-update:semver-major"]
+
+  # Python / pip
+  - package-ecosystem: "pip"
+    directory: "/internbackend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    groups:
+      llm:
+        patterns:
+          - "google-generativeai"
+          - "groq"
+          - "openai"
+      web:
+        patterns:
+          - "fastapi"
+          - "uvicorn"
+          - "pydantic*"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "build(deps-py)"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"
