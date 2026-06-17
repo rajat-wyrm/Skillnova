@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "💬 Discussions"
+    url: https://github.com/rajat-wyrm/Skillnova/discussions
+    about: "Long-form Q&A and design proposals."
+  - name: "🔒 Security report"
+    url: https://github.com/rajat-wyrm/Skillnova/security/advisories/new
+    about: "Privately disclose a vulnerability — see SECURITY.md."
+  - name: "📖 Docs"
+    url: https://github.com/rajat-wyrm/Skillnova#readme
+    about: "Architecture, troubleshooting, and examples."
