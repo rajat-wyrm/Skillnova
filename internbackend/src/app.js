@@ -1,6 +1,8 @@
 require('dotenv').config(); const Fastify = require('fastify'); const config = require('./config');  const app = Fastify({   logger: config.nodeEnv === 'development' ? { transport: { target: 'pino-pretty' } } : true,   genReqId: () => require('uuid').v4(), });  app.register(require('@fastify/cors'), {   origin: config.nodeEnv === 'production' ? config.corsOrigin : true,   credentials: true,   methods: ['GET','POST','PUT','PATCH','DELETE'],   allowedHeaders: ['Content-Type','Authorization','X-CSRF-Token'], }); app.register(require('@fastify/helmet')); app.register(async function sanitize(instance) {   instance.addHook('onRequest', async (req) => {     const s = (obj) => { if (typeof obj !== 'object' || !obj) return; for (let k in obj) { if (typeof obj[k] === 'string') obj[k]=obj[k].replace(/<[^>]*>/g,'').replace(/['"]/g,''); else s(obj[k]); } };     s(req.body); s(req.query); s(req.params);   }); }); app.register(require('@fastify/rate-limit'), { max: 1000, timeWindow: '1 minute' }); app.register(require('@fastify/cookie'));
 app.register(require('@fastify/websocket'));
 const { csrfProtection } = require('./middleware/csrf');
+const { signingMiddleware } = require('./middleware/signing');
+app.addHook('onRequest', signingMiddleware);
 app.addHook('onRequest', csrfProtection);
 app.register(require('@fastify/multipart'), { limits: { fileSize: config.maxFileSize } });
 app.register(require('@fastify/static'), { root: require('path').join(__dirname, '..', config.uploadDir), prefix: '/uploads/' }); app.register(require('@fastify/swagger'), { openapi: { info: { title: 'InternOps API', version: '1.0.0' } } });
