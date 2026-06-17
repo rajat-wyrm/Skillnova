@@ -54,6 +54,11 @@ from agent.graph import build_graph
 from agent.nodes import set_dependencies
 
 
+# Wire the frontend-facing /api/ai/* aliases. The router module imports
+# _process from this module, so the import is deferred to after _process
+# is defined below.
+
+
 load_dotenv()
 setup_logging()
 logger = get_logger("main")
@@ -382,6 +387,16 @@ async def integrate_chat(req: ChatRequest, request: Request):
 @app.post("/api/integrate/stream")
 async def integrate_stream(req: ChatRequest, request: Request):
     return await chat_stream(req, request)
+
+
+# Frontend-facing /api/ai/* aliases. Imported lazily because ai_router
+# depends on _process which is defined above.
+try:
+    from ai_router import router as ai_router
+
+    app.include_router(ai_router)
+except Exception as exc:  # pragma: no cover - defensive
+    logger.warning("ai_router not loaded: %s", exc)
 
 
 @app.get("/api/ws/chat")
