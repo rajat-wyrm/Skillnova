@@ -91,3 +91,7 @@ jobs:
           "
       - name: Run tests
         run: npm test --if-present || true
+      - name: Build Docker image
+        run: docker build -f Dockerfile.node -t skillnova-api:ci .
+      - name: Image size check
+        run: docker images skillnova-api:ci --format '{{.Size}}'
