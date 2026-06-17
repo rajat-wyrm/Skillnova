@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: skillnova-pre-commit
+        name: Skillnova pre-commit (lint + tests)
+        entry: bash scripts/pre-commit.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
