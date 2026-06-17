@@ -1,5 +1,13 @@
 # SkillNova
 
+[![CI](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml/badge.svg)](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Node 20+](https://img.shields.io/badge/node-20%2B-339933.svg)](https://nodejs.org)
+
 Two backends in one repo, plus the chatbot frontend in `frontend/`.
 
 - **Python AI chatbot** — `internbackend/main.py` (FastAPI + LangGraph,
@@ -9,6 +17,9 @@ Two backends in one repo, plus the chatbot frontend in `frontend/`.
   PostgreSQL, RBAC, audit, file uploads, real-time chat WebSocket,
   Prometheus `/metrics`)
 - **Chatbot UI** — `frontend/src/user/pages/AIAssistant.jsx`
+
+> **New here?** Read [`CONTRIBUTING.md`](CONTRIBUTING.md) — `./scripts/setup.sh` gets
+> you from zero to green tests in under five minutes.
 
 ## Quick start (local)
 
