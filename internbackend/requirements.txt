@@ -22,7 +22,7 @@ langgraph>=0.0.20,<1.0
 
 # Optional web search (only needed if you set TAVILY_API_KEY)
 tavily-python>=0.3,<1.0
-duckduckgo-search>=4.0,<7.0
+duckduckgo-search>=8.1.1,<9.0
 
 # Optional Redis cache backend
 redis>=5.0,<6.0
