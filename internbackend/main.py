@@ -581,13 +581,21 @@ def admin_recent(request: Request, limit: int = 50):
 
 # ----------------------------------------------------------------------
 # Frontend-facing /api/ai/* aliases.
-# ----------------------------------------------------------------------
 try:
     from ai_router import router as ai_router
 
     app.include_router(ai_router)
 except Exception as exc:  # pragma: no cover - defensive
     logger.warning("ai_router not loaded: %s", exc)
+
+
+# Versioned /api/v1/* aliases.
+try:
+    from v1_router import router as v1_router
+
+    app.include_router(v1_router)
+except Exception as exc:  # pragma: no cover - defensive
+    logger.warning("v1_router not loaded: %s", exc)
 
 
 app.state.render_fallback = render_fallback  # type: ignore[attr-defined]
