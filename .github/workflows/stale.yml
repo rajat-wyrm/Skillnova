@@ -1,0 +1,35 @@
+name: Stale
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 30
+          days-before-close: 7
+          stale-issue-message: |
+            👋 This issue has been quiet for 30 days. Please update with new context,
+            re-test against `main`, or close it if no longer relevant.
+          stale-pr-message: |
+            👋 This PR has been quiet for 30 days. Please push an update or close it
+            if you're no longer working on it.
+          close-issue-message: |
+            Closing after 37 days of inactivity. Feel free to reopen if it becomes
+            relevant again — thanks!
+          close-pr-message: |
+            Closing after 37 days of inactivity. Reopen anytime if you resume work.
+          exempt-issue-labels: "pinned,security,good first issue,help wanted"
+          exempt-pr-labels: "pinned,security,wip"
+          operations-per-run: 30
