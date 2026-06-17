@@ -1,0 +1,15 @@
+{
+  "name": "@skillnova/sdk-js",
+  "version": "1.0.0",
+  "description": "Zero-dependency JavaScript client for the SkillNova AI chatbot",
+  "type": "module",
+  "main": "skillnova.js",
+  "exports": {
+    ".": "./skillnova.js"
+  },
+  "files": ["skillnova.js", "README.md"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
