@@ -1,11 +1,11 @@
 ﻿# Environment & secrets
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *secret*
 *password*
-*token*
 
 # Logs & cache
 *.log
@@ -29,3 +29,15 @@ desktop.ini
 
 # Backups
 *.bak
+
+# Runtime artefacts
+uploads/*
+!uploads/.gitkeep
+*.sqlite
+*.db
+.vercel
+.pytest_cache/
+.mypy_cache/
+.coverage
+.next/
+coverage/
