@@ -1,0 +1,13 @@
+# Default reviewers for the most security-sensitive paths.
+# Anything under internbackend/src/middleware and internbackend/src/utils/auth
+# needs a second pair of eyes.
+
+*                       @rajat-wyrm
+
+/internbackend/src/middleware/  @rajat-wyrm
+/internbackend/src/utils/auth/   @rajat-wyrm
+/internbackend/main.py          @rajat-wyrm
+/internbackend/src/app.js       @rajat-wyrm
+/internbackend/agent/           @rajat-wyrm
+/render.yaml                    @rajat-wyrm
+/Dockerfile*                    @rajat-wyrm
