@@ -1,0 +1,24 @@
+# Node-only image used when the Python chatbot runs as a separate
+# Render / Fly.io service and this image just serves the Fastify API.
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+COPY internbackend/package.json internbackend/package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
+
+FROM node:20-alpine AS runtime
+
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY internbackend/ ./
+RUN mkdir -p uploads \
+ && addgroup -S skillnova && adduser -S skillnova -G skillnova \
+ && chown -R skillnova:skillnova /app
+USER skillnova
+
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:5000/health || exit 1
+
+CMD ["node", "src/app.js"]

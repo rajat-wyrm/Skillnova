@@ -1,0 +1,69 @@
+# Render Blueprint — single click deploy on the free tier.
+# Two services:
+#   - skillnova-chatbot : Python FastAPI + LangGraph
+#   - skillnova-api     : Node.js Fastify InternOps platform
+# Plus a managed Postgres (free 90-day trial).
+
+services:
+  - type: web
+    name: skillnova-chatbot
+    runtime: python
+    plan: free
+    rootDir: internbackend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillnova-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.10
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ADMIN_TOKEN
+        generateValue: true
+
+  - type: web
+    name: skillnova-api
+    runtime: node
+    plan: free
+    rootDir: internbackend
+    buildCommand: "npm ci --omit=dev"
+    startCommand: "npm start"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: skillnova-db
+          property: connectionString
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+      - key: PYTHON_CHAT_URL
+        fromService:
+          type: web
+          name: skillnova-chatbot
+          property: hostUrl
+      - key: CORS_ORIGIN
+        value: "*"
+
+  - type: pserv
+    name: skillnova-db
+    plan: free
+    ipAllowList: []  # only allow connections from the two web services
+    postgresMajorVersion: 16
