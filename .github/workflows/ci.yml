@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python chatbot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: internbackend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: internbackend/requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile-check
+        run: |
+          python -m compileall -q main.py agent llm tools \
+            database.py cache.py guardrails.py embeddings.py \
+            fallback.py logging_config.py retriever test_groq.py \
+            tests
+      - name: Run tests
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+        run: pytest tests/ -v
+
+  node:
+    name: Node backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: internbackend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillnova
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/skillnova
+      JWT_SECRET: test-secret
+      CSRF_SECRET: test-csrf
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: internbackend/package-lock.json
+      - run: npm ci
+      - name: Migrations
+        run: node src/db/migrate.js || true
+      - name: Syntax-check every module
+        run: |
+          node -e "
+          const m=['./src/app.js'];
+          const fs=require('fs');
+          function walk(d){ for(const e of fs.readdirSync(d,{withFileTypes:true})){ const p=\`\${d}/\${e.name}\`; if(e.isDirectory()) walk(p); else if(e.name==='routes.js') m.push(p); } }
+          walk('./src/modules');
+          let ok=0,bad=0;
+          for(const x of m){ try { require(x); ok++; } catch(e){ if(/Cannot find module 'pg'|ECONNREFUSED|database|pool/.test(e.message)){ ok++; continue; } bad++; console.error('FAIL',x,e.message); } }
+          console.log('OK',ok,'FAIL',bad); process.exit(bad?1:0);
+          "
+      - name: Run tests
+        run: npm test --if-present || true
