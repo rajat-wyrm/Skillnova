@@ -1,0 +1,40 @@
+# Python-only chatbot image.
+# Use when the Node backend runs as a separate service and this image
+# just serves the FastAPI / LangGraph chatbot.
+
+FROM python:3.11-slim AS deps
+
+WORKDIR /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential gcc curl \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY internbackend/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.11-slim AS runtime
+
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=deps /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=deps /usr/local/bin /usr/local/bin
+
+COPY internbackend/ ./
+RUN mkdir -p data \
+ && useradd --create-home --shell /usr/sbin/nologin skillnova \
+ && chown -R skillnova:skillnova /app
+USER skillnova
+
+ENV PORT=5000 HOST=0.0.0.0
+
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:5000/api/health || exit 1
+
+CMD ["python", "main.py"]
