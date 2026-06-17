@@ -1,0 +1,33 @@
+# SkillNova Python AI chatbot — runtime dependencies.
+# Tested with Python 3.11 / 3.12.
+
+# Web framework
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.27,<1.0
+pydantic>=2.5,<3.0
+
+# Configuration / observability
+python-dotenv>=1.0,<2.0
+
+# Database
+SQLAlchemy>=2.0,<3.0
+
+# LLM providers
+requests>=2.31,<3.0
+langchain-core>=0.1,<1.0
+langchain-groq>=0.1,<1.0
+
+# LangGraph agent
+langgraph>=0.0.20,<1.0
+
+# Optional web search (only needed if you set TAVILY_API_KEY)
+tavily-python>=0.3,<1.0
+duckduckgo-search>=4.0,<7.0
+
+# Optional Redis cache backend
+redis>=5.0,<6.0
+
+# Test suite
+pytest>=7.4,<9.0
+pytest-asyncio>=0.23,<1.0
+httpx>=0.26,<1.0

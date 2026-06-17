@@ -1,18 +1,23 @@
-.import os
+"""Smoke-test the Groq provider. Run with: python test_groq.py"""
+
+import os
+
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
 
-load_dotenv()
 
-api_key = os.getenv("GROQ_API_KEY")
+def main() -> None:
+    load_dotenv()
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        print("GROQ_API_KEY missing — set it in .env to run this test.")
+        return
 
-print("KEY:", api_key)
+    from langchain_groq import ChatGroq
 
-llm = ChatGroq(
-    api_key=api_key,
-    model="llama-3.1-8b-instant",  # ✅ FIXED
-)
+    llm = ChatGroq(api_key=api_key, model="llama-3.1-8b-instant")
+    response = llm.invoke("Say hello in one sentence.")
+    print("RESPONSE:", getattr(response, "content", response))
 
-response = llm.invoke("Say hello")
 
-print("RESPONSE:", response.content)
+if __name__ == "__main__":
+    main()
