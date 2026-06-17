@@ -29,14 +29,20 @@ jobs:
         run: pip install -r requirements.txt
       - name: Compile-check
         run: |
-          python -m compileall -q main.py agent llm tools \
+          python -m compileall -q main.py ai_router.py agent llm tools \
             database.py cache.py guardrails.py embeddings.py \
-            fallback.py logging_config.py retriever test_groq.py \
-            tests
-      - name: Run tests
+            fallback.py logging_config.py metrics.py retriever \
+            test_groq.py tests
+      - name: Run unit tests
         env:
           DATABASE_URL: "sqlite:///:memory:"
-        run: pytest tests/ -v
+          ADMIN_TOKEN: "ci-token"
+        run: pytest tests/test_units.py -v
+      - name: Run app integration tests
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+          ADMIN_TOKEN: "ci-token"
+        run: pytest tests/test_app.py -v
 
   node:
     name: Node backend
