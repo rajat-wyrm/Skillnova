@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { lru } from '../utils/lru.js';
 import {
   verifyPassword,
   signAccessToken,
@@ -304,13 +305,15 @@ export const logoutAll = asyncHandler(async (req, res) => {
 // ── GET /auth/me ─────────────────────────────────────────
 export const me = asyncHandler(async (req, res) => {
   if (!req.user) throw ApiError.unauthorized();
-  const full = await prisma.user.findUnique({
-    where: { id: req.user.id },
-    include: {
-      internProfile: { include: { mentor: { select: { id: true, name: true, email: true } } } },
-      mentorProfile: true,
-    },
-  });
+  const full = await lru.wrap(`user:full:${req.user.id}`, 30, () =>
+    prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        internProfile: { include: { mentor: { select: { id: true, name: true, email: true } } } },
+        mentorProfile: true,
+      },
+    })
+  );
   res.json({ user: sanitize(full), permissions: derivePermissions(full.role) });
 });
 
