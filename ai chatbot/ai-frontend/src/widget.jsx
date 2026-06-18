@@ -14,6 +14,7 @@ import { createRoot } from 'react-dom/client';
 
 const API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:8000';
 const APP_NAME = import.meta.env.VITE_APP_NAME || 'SkillNova AI';
+const MAX_MESSAGE_LENGTH = 2000;
 
 function uuid() {
   if (crypto?.randomUUID) return crypto.randomUUID();
@@ -50,6 +51,13 @@ function ChatbotWidget() {
     e?.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
+    if (text.length > MAX_MESSAGE_LENGTH) {
+      setMessages((m) => [
+        ...m,
+        { role: 'bot', content: `Message is too long (max ${MAX_MESSAGE_LENGTH} chars).` },
+      ]);
+      return;
+    }
 
     setMessages((m) => [...m, { role: 'user', content: text }]);
     setInput('');
@@ -61,6 +69,9 @@ function ChatbotWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, session_id: sessionRef.current }),
       });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
       const data = await res.json();
       setMessages((m) => [
         ...m,
@@ -131,6 +142,7 @@ function ChatbotWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about SkillNova…"
               disabled={busy}
+              maxLength={MAX_MESSAGE_LENGTH}
               aria-label="Message"
               style={styles.input}
             />
