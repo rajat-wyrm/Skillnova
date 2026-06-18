@@ -11,6 +11,8 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 import { ApiError } from './utils/ApiError.js';
+import prisma from './utils/prisma.js';
+import { redis } from './utils/redis.js';
 import { authenticate, csrfProtection } from './middleware/auth.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/users.routes.js';
@@ -85,6 +87,29 @@ app.get('/healthz', (_req, res) => {
     env: config.env,
     time: new Date().toISOString(),
   });
+});
+
+// Liveness — process is up and the event loop is responsive.
+// Does not check downstream dependencies; suitable as a kubelet livenessProbe.
+app.get('/healthz/live', (_req, res) => {
+  res.status(200).json({ ok: true, check: 'live' });
+});
+
+// Readiness — every required dependency (DB, Redis) responds to a ping.
+// Suitable as a kubelet readinessProbe; returns 503 when degraded so the
+// load balancer drains traffic until the dependency recovers.
+app.get('/healthz/ready', async (_req, res) => {
+  const checks = { db: false, redis: false };
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.db = true;
+  } catch { /* leave false */ }
+  try {
+    const pong = await redis.ping();
+    if (pong) checks.redis = true;
+  } catch { /* leave false */ }
+  const ok = checks.db && checks.redis;
+  res.status(ok ? 200 : 503).json({ ok, checks });
 });
 
 app.get('/api/v1/meta', (_req, res) => {
