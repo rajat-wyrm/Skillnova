@@ -38,6 +38,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
     "nanoid": "^5.0.9",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",

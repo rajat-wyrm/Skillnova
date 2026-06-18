@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════
 //  AI Assistant — Groq-powered chat with retrieval grounding
-//  on the UptoSkills KB + live data (reports, articles, etc.).
+//  + structured outputs (action chips) + tool-use
 // ════════════════════════════════════════════════════════════
 import Groq from 'groq-sdk';
 import { config } from '../config/index.js';
@@ -10,37 +10,35 @@ import { logger } from '../utils/logger.js';
 
 let client = null;
 function getClient() {
-  if (!config.groq.apiKey) {
-    throw new Error('GROQ_API_KEY not configured');
-  }
+  if (!config.groq.apiKey) throw new Error('GROQ_API_KEY not configured');
   if (!client) client = new Groq({ apiKey: config.groq.apiKey });
   return client;
 }
 
-const SYSTEM_PROMPT = `You are SkillNova AI, a friendly and highly accurate assistant for the UptoSkills intern platform.
+const BASE_SYSTEM_PROMPT = `You are SkillNova AI — a friendly, sharp assistant for the UptoSkills intern platform.
 
-You have THREE sources of information, in this priority order:
-1. The **UPTOSKILLS KNOWLEDGE BASE** below — treat this as canonical for company, program, report, attendance, mentorship and code-of-conduct questions.
-2. The **LIVE PLATFORM DATA** below — recent KB articles, announcements and the user's own reports.
-3. Your general knowledge — only when 1 & 2 don't cover the topic.
+You have THREE information sources, in priority order:
+1. The UPTOSKILLS KNOWLEDGE BASE (below) — authoritative for company, program, report, attendance, mentorship and code-of-conduct questions.
+2. LIVE PLATFORM DATA (below) — recent KB articles, announcements, the user's own reports.
+3. General knowledge — only when 1 & 2 don't apply.
 
-Behaviour rules:
+CRITICAL BEHAVIOUR RULES:
 - Be concise (3-6 sentences). Use markdown only when helpful.
-- Always reference the specific knowledge-base section or live data field you used.
-- If the user asks for something outside your scope (e.g. legal or medical advice), politely decline and route them to support@uptoskills.com.
+- Always reference the specific knowledge-base section or live-data field you used.
+- If the user asks for something outside your scope (legal, medical), politely decline and route to support@uptoskills.com.
 - Never invent facts about UptoSkills programs, policies or numbers. If unsure, say "I don't have that information, but I'll route it to your mentor."
-- Use the user's name when you know it.
+- Use the user's name when known.
 - Answer in the user's language if they wrote in a non-English language.
+- When you suggest an action the user can take in the app, include a "suggested_actions" JSON block at the END of your reply using this exact schema:
+  <actions>[{"label":"...","action":"navigate","path":"/path"}]</actions>
 
+=== UPTOSKILLS KNOWLEDGE BASE ===
 ${kbToPrompt()}
-${liveDataToPrompt()}
 `;
 
-// ── KB serialisation ─────────────────────────────────────
 function kbToPrompt() {
   const kb = UPTOSKILLS_KB;
   return `
-=== UPTOSKILLS KNOWLEDGE BASE ===
 Company: ${kb.company.name} (founded ${kb.company.founded})
 Mission: ${kb.company.mission}
 Programs: ${kb.company.programs.join(', ')}
@@ -73,7 +71,6 @@ ${Object.entries(kb.glossary).map(([k, v]) => `${k}: ${v}`).join('\n')}
 `;
 }
 
-// ── Lightweight live-data injection (per-user) ─────────────
 async function fetchLiveData(user) {
   const [recentArticles, recentAnnouncements, myReports] = await Promise.all([
     prisma.knowledgeArticle.findMany({
@@ -96,99 +93,86 @@ async function fetchLiveData(user) {
         })
       : Promise.resolve([]),
   ]);
-
   return { recentArticles, recentAnnouncements, myReports };
 }
 
-async function liveDataToPrompt(user) {
-  try {
-    const data = await fetchLiveData(user);
-    return `
+async function buildMessages({ user, history, userMessage }) {
+  const live = await fetchLiveData(user);
+  const livePrompt = `
 === LIVE PLATFORM DATA ===
 Recent Knowledge Base articles:
-${data.recentArticles.map((a) => `- "${a.title}" — ${a.excerpt ?? 'No excerpt'}`).join('\n')}
+${live.recentArticles.map((a) => `- "${a.title}" — ${a.excerpt ?? 'No excerpt'}`).join('\n')}
 
 Recent announcements:
-${data.recentAnnouncements.map((a) => `- [${a.priority}] ${a.title}: ${a.body.slice(0, 240)}`).join('\n')}
+${live.recentAnnouncements.map((a) => `- [${a.priority}] ${a.title}: ${a.body.slice(0, 240)}`).join('\n')}
 
 User's recent reports:
-${data.myReports.map((r) => `- "${r.title}" — status=${r.status}, score=${r.score ?? 'n/a'}`).join('\n')}
+${live.myReports.map((r) => `- "${r.title}" — status=${r.status}, score=${r.score ?? 'n/a'}`).join('\n')}
 `;
-  } catch (err) {
-    logger.warn({ err }, 'ai:live-data-failed');
-    return '';
-  }
-}
-
-async function buildMessages({ user, history, userMessage }) {
-  const system = SYSTEM_PROMPT.replace(kbToPrompt(), kbToPrompt());
-  const live = await liveDataToPrompt(user);
-  const finalSystem = system + live;
-
-  const messages = [
-    { role: 'system', content: finalSystem },
+  return [
+    { role: 'system', content: BASE_SYSTEM_PROMPT + livePrompt },
     ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
     { role: 'user', content: userMessage },
   ];
-  return messages;
+}
+
+// ── Local KB fallback (when Groq unavailable) ─────────────
+function localFallback(question) {
+  const kb = UPTOSKILLS_KB;
+  const q = (question || '').toLowerCase();
+  const reply = (() => {
+    if (q.includes('report')) return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]}`;
+    if (q.includes('attend')) return kb.attendance.policy;
+    if (q.includes('mentor') || q.includes('meeting')) return `${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(', ')}.`;
+    if (q.includes('code of conduct') || q.includes('conduct')) return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n');
+    if (q.includes('contact') || q.includes('email') || q.includes('phone')) return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
+    if (q.includes('project') || q.includes('task')) return 'Open the **Project Flow** page to see your roadmap and current sprint. Tasks are managed in the **Tasks** section of your dashboard.';
+    if (q.includes('task') || q.includes('todo')) return 'You can view and update your tasks in the **Tasks** page. Mark them as DONE once completed.';
+    const faq = kb.faqs.find((f) => q.includes(f.q.toLowerCase().slice(0, 12)));
+    if (faq) return faq.a;
+    return `I'm currently running in fallback mode (the Groq API key is invalid). However, I can still help from the UptoSkills knowledge base — try asking about reports, attendance, mentorship, tasks, projects or the code of conduct.`;
+  })();
+  return `${reply}\n\n<actions>[{"label":"Open Dashboard","action":"navigate","path":"/dashboard"},{"label":"View Knowledge Base","action":"navigate","path":"/knowledge"}]</actions>`;
+}
+
+function extractActions(text) {
+  const m = text?.match(/<actions>(.*?)<\/actions>/s);
+  if (!m) return { reply: text || '', actions: [] };
+  try {
+    const actions = JSON.parse(m[1]);
+    return { reply: text.replace(m[0], '').trim(), actions: Array.isArray(actions) ? actions : [] };
+  } catch {
+    return { reply: text.replace(m[0], '').trim(), actions: [] };
+  }
 }
 
 // ── Public API ───────────────────────────────────────────
 export async function chatCompletion({ user, history, userMessage }) {
-  const groq = getClient();
-  const messages = await buildMessages({ user, history, userMessage });
-
   try {
+    const groq = getClient();
+    const messages = await buildMessages({ user, history, userMessage });
     const completion = await groq.chat.completions.create({
       model: config.groq.model,
       messages,
       temperature: 0.4,
       max_tokens: 800,
       top_p: 0.95,
-      stream: false,
     });
-
-    const choice = completion.choices?.[0];
-    return {
-      reply: choice?.message?.content?.trim() ?? "I'm sorry, I couldn't generate a response.",
-      usage: completion.usage ?? null,
-      model: completion.model,
-    };
+    const text = completion.choices?.[0]?.message?.content?.trim() ?? "I'm sorry, I couldn't generate a response.";
+    const { reply, actions } = extractActions(text);
+    return { reply, actions, model: completion.model, tokens: completion.usage?.total_tokens };
   } catch (err) {
     logger.warn({ err: err?.message }, 'ai:groq-failed — using local fallback');
-    return { reply: localFallback(userMessage), usage: null, model: 'fallback' };
+    const text = localFallback(userMessage);
+    const { reply, actions } = extractActions(text);
+    return { reply, actions, model: 'fallback', tokens: null };
   }
 }
 
-function localFallback(question) {
-  const kb = UPTOSKILLS_KB;
-  const q = question.toLowerCase();
-  if (q.includes('report')) {
-    return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]}`;
-  }
-  if (q.includes('attend')) {
-    return kb.attendance.policy;
-  }
-  if (q.includes('mentor') || q.includes('meeting')) {
-    return `${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(', ')}.`;
-  }
-  if (q.includes('code of conduct') || q.includes('conduct')) {
-    return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n');
-  }
-  if (q.includes('contact') || q.includes('email') || q.includes('phone')) {
-    return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
-  }
-  const faq = kb.faqs.find((f) => q.includes(f.q.toLowerCase().slice(0, 12)));
-  if (faq) return faq.a;
-  return `I'm currently running in fallback mode (the Groq API key is invalid). However, I can still help from the UptoSkills knowledge base — try asking about reports, attendance, mentorship or the code of conduct.`;
-}
-
-// Streaming generator for SSE
 export async function* chatCompletionStream({ user, history, userMessage }) {
-  const groq = getClient();
-  const messages = await buildMessages({ user, history, userMessage });
-
   try {
+    const groq = getClient();
+    const messages = await buildMessages({ user, history, userMessage });
     const stream = await groq.chat.completions.create({
       model: config.groq.model,
       messages,
@@ -197,7 +181,6 @@ export async function* chatCompletionStream({ user, history, userMessage }) {
       top_p: 0.95,
       stream: true,
     });
-
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta?.content;
       if (delta) yield delta;
@@ -207,12 +190,11 @@ export async function* chatCompletionStream({ user, history, userMessage }) {
     const text = localFallback(userMessage);
     for (const word of text.split(/(\s+)/)) {
       yield word;
-      await new Promise((r) => setTimeout(r, 12));
+      await new Promise((r) => setTimeout(r, 8));
     }
   }
 }
 
-// Suggest follow-up prompts based on the last user message
 export async function suggestFollowUps(lastUserMessage) {
   try {
     const groq = getClient();
@@ -221,8 +203,7 @@ export async function suggestFollowUps(lastUserMessage) {
       messages: [
         {
           role: 'system',
-          content:
-            'You suggest 3 concise follow-up questions (max 8 words each) based on the user\'s last message. Return JSON: {"suggestions": ["...", "...", "..."]}',
+          content: 'Suggest 3 concise follow-up questions (max 8 words each). Return JSON: {"suggestions":["...","...","..."]}',
         },
         { role: 'user', content: lastUserMessage },
       ],
@@ -233,17 +214,8 @@ export async function suggestFollowUps(lastUserMessage) {
     const parsed = JSON.parse(completion.choices[0].message.content);
     return parsed.suggestions ?? [];
   } catch {
-    return [
-      'How do I submit a report?',
-      'What is the attendance policy?',
-      'Tell me about mentorship',
-    ];
+    return ['How do I submit a report?', 'What is the attendance policy?', 'Tell me about mentorship'];
   }
 }
 
-export default {
-  chatCompletion,
-  chatCompletionStream,
-  suggestFollowUps,
-  UPTOSKILLS_KB,
-};
+export default { chatCompletion, chatCompletionStream, suggestFollowUps, UPTOSKILLS_KB, extractActions };

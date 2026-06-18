@@ -7,19 +7,25 @@ import {
   LayoutDashboard, Users, BookOpen, FileText,
   BarChart2, Megaphone, Settings, Shield,
   ChevronRight, ChevronLeft, LogOut, ScrollText,
+  LayoutGrid, Calendar, Folder, Bell, Webhook,
 } from "lucide-react";
 import { useAuthStore } from '../../lib/auth';
 
 const ADMIN_MENU = [
-  { id: "admin-dashboard",      label: "Overview",          icon: LayoutDashboard },
-  { id: "admin-users",          label: "User Management",   icon: Users           },
-  { id: "admin-management",     label: "Intern Management", icon: Shield          },
-  { id: "admin-knowledge",      label: "Knowledge Base",    icon: BookOpen        },
-  { id: "admin-reports",        label: "Reports",           icon: FileText        },
-  { id: "admin-analytics",      label: "Analytics",         icon: BarChart2       },
-  { id: "admin-announcements",  label: "Announcements",     icon: Megaphone       },
-  { id: "admin-audit",          label: "Audit Log",         icon: ScrollText      },
-  { id: "admin-settings",       label: "Settings",          icon: Settings        },
+  { id: "admin-dashboard",     label: "Overview",          icon: LayoutDashboard },
+  { id: "admin-users",         label: "User Management",   icon: Users           },
+  { id: "admin-management",    label: "Intern Management", icon: Shield          },
+  { id: "admin-knowledge",     label: "Knowledge Base",    icon: BookOpen        },
+  { id: "admin-kanban",        label: "Task Board",        icon: LayoutGrid      },
+  { id: "admin-reports",       label: "Reports",           icon: FileText        },
+  { id: "admin-analytics",     label: "Analytics",         icon: BarChart2       },
+  { id: "admin-calendar",      label: "Calendar",          icon: Calendar        },
+  { id: "admin-announcements", label: "Announcements",     icon: Megaphone       },
+  { id: "admin-files",         label: "Files",             icon: Folder          },
+  { id: "admin-webhooks",      label: "Webhooks",          icon: Webhook         },
+  { id: "admin-audit",         label: "Audit Log",         icon: ScrollText      },
+  { id: "admin-notifications", label: "Notification Prefs", icon: Bell            },
+  { id: "admin-settings",      label: "Settings",          icon: Settings        },
 ];
 
 const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {

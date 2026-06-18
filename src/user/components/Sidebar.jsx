@@ -5,22 +5,27 @@ import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
-  ChevronRight, ChevronLeft, LogOut,
+  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
 const MENU = [
-  { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
-  { id: 'knowledge',     label: 'Knowledge Base', icon: BookOpen        },
-  { id: 'project_flow',  label: 'Project Flow',   icon: Activity        },
-  { id: 'reports',       label: 'My Reports',     icon: FileText        },
-  { id: 'attendance',    label: 'Attendance',     icon: CalendarCheck   },
-  { id: 'ai',            label: 'AI Assistant',   icon: Bot             },
-  { id: 'qa',            label: 'Q&A Forum',      icon: MessageSquare   },
-  { id: 'announcements', label: 'Announcements',  icon: Megaphone       },
-  { id: 'analytics',     label: 'Analytics',      icon: BarChart2       },
-  { id: 'profile',       label: 'Profile',        icon: User            },
-  { id: 'settings',      label: 'Settings',       icon: Settings        },
+  { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },
+  { id: 'project_flow',   label: 'Project Flow',   icon: Activity        },
+  { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },
+  { id: 'reports',        label: 'My Reports',     icon: FileText        },
+  { id: 'attendance',     label: 'Attendance',     icon: CalendarCheck   },
+  { id: 'calendar',       label: 'Calendar',       icon: Calendar        },
+  { id: 'files',          label: 'Files',          icon: Folder          },
+  { id: 'ai',             label: 'AI Assistant',   icon: Bot             },
+  { id: 'qa',             label: 'Q&A Forum',      icon: MessageSquare   },
+  { id: 'notifications',  label: 'Notifications',  icon: Bell            },
+  { id: 'announcements',  label: 'Announcements',  icon: Megaphone       },
+  { id: 'analytics',      label: 'Analytics',      icon: BarChart2       },
+  { id: 'exports',        label: 'Data Export',    icon: Download        },
+  { id: 'profile',        label: 'Profile',        icon: User            },
+  { id: 'settings',       label: 'Settings',       icon: Settings        },
 ];
 
 const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {

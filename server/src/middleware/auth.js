@@ -67,8 +67,8 @@ export function requireAuth(req, _res, next) {
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 export function csrfProtection(req, res, next) {
   if (SAFE_METHODS.has(req.method)) return next();
-  if (!req.sessionId) return next(); // requireAuth handles this
-  
+  if (!req.sessionId) return next();
+
   const headerToken =
     req.headers['x-csrf-token'] ||
     req.headers['x-xsrf-token'] ||
@@ -82,6 +82,13 @@ export function csrfProtection(req, res, next) {
     return next(ApiError.forbidden('CSRF token mismatch'));
   }
   return next();
+}
+
+// Allow CSRF for a few special routes that lack cookies (e.g. login)
+export function csrfOptional(req, res, next) {
+  if (SAFE_METHODS.has(req.method)) return next();
+  if (!req.sessionId) return next();
+  return csrfProtection(req, res, next);
 }
 
 // ── IP / device extraction helpers ────────────────────────

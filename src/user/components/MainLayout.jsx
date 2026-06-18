@@ -6,17 +6,22 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 
 const PAGE_TITLES = {
-  dashboard:     'Dashboard',
-  knowledge:     'Knowledge Base',
-  qa:            'Q&A Forum',
-  project_flow:  'Project Flow',
-  reports:       'My Reports',
-  attendance:    'Attendance',
-  ai:            'AI Assistant',
-  announcements: 'Announcements',
-  analytics:     'Analytics',
-  profile:       'My Profile',
-  settings:      'Settings',
+  dashboard:      'Dashboard',
+  knowledge:      'Knowledge Base',
+  qa:             'Q&A Forum',
+  project_flow:   'Project Flow',
+  kanban:         'Task Board',
+  calendar:       'Calendar',
+  files:          'Files',
+  reports:        'My Reports',
+  attendance:     'Attendance',
+  ai:             'AI Assistant',
+  notifications:  'Notifications',
+  announcements:  'Announcements',
+  exports:        'Data Export',
+  analytics:      'Analytics',
+  profile:        'My Profile',
+  settings:       'Settings',
 };
 
 const MainLayout = ({ page, onNavigate, children }) => {
@@ -31,11 +36,6 @@ const MainLayout = ({ page, onNavigate, children }) => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>

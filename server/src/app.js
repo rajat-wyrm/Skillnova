@@ -16,6 +16,8 @@ import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/users.routes.js';
 import apiRoutes from './routes/api.routes.js';
 import kbRoutes from './routes/kb.routes.js';
+import featuresRoutes, { publicApi as publicFeaturesRoutes } from './routes/features.routes.js';
+import { etagMiddleware } from './utils/cache.js';
 
 const app = express();
 
@@ -68,6 +70,9 @@ app.use(
 // Auth middleware (populates req.user)
 app.use(authenticate);
 
+// ETag middleware for all GETs (automatic 304s)
+app.use(etagMiddleware());
+
 // ── Health & version ──────────────────────────────────────
 app.get('/healthz', (_req, res) => {
   res.json({
@@ -90,7 +95,11 @@ app.get('/api/v1/meta', (_req, res) => {
 // ── Auth routes (no CSRF — uses OTP second factor) ───────
 app.use('/api/v1/auth', authRoutes);
 
-// ── Authenticated routes (CSRF enforced for state-changing) ──
+// ── Authenticated routes ─────────────────────────────────────
+// Public file downloads (via signed token) — no auth required
+app.use('/api/v1', publicFeaturesRoutes);
+// Authenticated features (uploads, webhooks, exports, meetings)
+app.use('/api/v1', featuresRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/kb', kbRoutes);
 app.use('/api/v1', csrfProtection, apiRoutes);

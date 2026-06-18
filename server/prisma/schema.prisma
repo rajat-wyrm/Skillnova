@@ -70,6 +70,8 @@ model User {
   internProfile     InternProfile?
   mentorProfile     MentorProfile?
   mentorOf          InternProfile[] @relation("MentorRelation")
+  organizedMeetings Meeting[]      @relation("OrganizedMeetings")
+  meetingAttendees  MeetingAttendee[]
 
   @@index([role])
   @@index([status])
@@ -505,4 +507,115 @@ model SystemSetting {
   updatedById String?
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+// ── Files / attachments ─────────────────────────────────────
+model FileAsset {
+  id            String   @id @default(cuid())
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  storage       String   // 'local' | 's3'
+  path          String   // relative path or s3 key
+  bucket        String?
+  uploaderId    String
+  visibility    String   @default("private")
+  checksum      String
+  createdAt     DateTime @default(now())
+
+  @@index([uploaderId])
+  @@index([mimeType])
+}
+
+// ── Webhooks ─────────────────────────────────────────────────
+model Webhook {
+  id          String   @id @default(cuid())
+  ownerId     String
+  url         String
+  events      String[] // e.g. ['report.reviewed', 'announcement.created']
+  secret      String   // HMAC secret for signing
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  lastFiredAt DateTime?
+  lastStatus  Int?
+  failureCount Int     @default(0)
+
+  deliveries  WebhookDelivery[]
+
+  @@index([ownerId])
+  @@index([enabled])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  webhookId   String
+  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event       String
+  payload     Json
+  status      Int
+  response    String?
+  durationMs  Int?
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([event])
+}
+
+// ── Notification preferences ────────────────────────────────
+model NotificationPref {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  // Channels
+  emailEnabled    Boolean  @default(true)
+  pushEnabled     Boolean  @default(true)
+  inAppEnabled    Boolean  @default(true)
+  // Per-type
+  typePrefs       Json     @default("{}")
+  // Quiet hours (24h)
+  quietFrom       String?  // "22:00"
+  quietTo         String?  // "08:00"
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+}
+
+// ── Meetings ────────────────────────────────────────────────
+enum MeetingType {
+  STANDUP
+  ONE_ON_ONE
+  REVIEW
+  TRAINING
+  OTHER
+}
+
+model Meeting {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  type         MeetingType @default(ONE_ON_ONE)
+  startsAt     DateTime
+  endsAt       DateTime?
+  location     String?
+  organizerId  String
+  organizer    User        @relation("OrganizedMeetings", fields: [organizerId], references: [id])
+  attendees    MeetingAttendee[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([organizerId])
+  @@index([startsAt])
+}
+
+model MeetingAttendee {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  response  String   @default("PENDING") // PENDING/ACCEPTED/DECLINED
+  createdAt DateTime @default(now())
+
+  @@unique([meetingId, userId])
+  @@index([userId])
 }

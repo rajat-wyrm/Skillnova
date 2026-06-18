@@ -35,7 +35,6 @@ export const chat = asyncHandler(async (req, res) => {
     select: { role: true, content: true },
   });
 
-  // Persist user message
   await prisma.chatMessage.create({
     data: { sessionId: session.id, role: 'user', content: message },
   });
@@ -46,8 +45,8 @@ export const chat = asyncHandler(async (req, res) => {
       sessionId: session.id,
       role: 'assistant',
       content: result.reply,
-      tokens: result.usage?.total_tokens,
-      meta: { model: result.model },
+      tokens: result.tokens,
+      meta: { model: result.model, actions: result.actions },
     },
   });
 
@@ -57,7 +56,7 @@ export const chat = asyncHandler(async (req, res) => {
   });
 
   await audit({ userId: req.user.id, action: 'ai.chat', resource: 'chat', resourceId: session.id, req });
-  res.json({ sessionId: session.id, message: assistantMsg, reply: result.reply });
+  res.json({ sessionId: session.id, message: assistantMsg, reply: result.reply, actions: result.actions });
 });
 
 export const streamChat = asyncHandler(async (req, res) => {

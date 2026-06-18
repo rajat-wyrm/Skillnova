@@ -303,16 +303,21 @@ async function main() {
   });
 
   const tasksData = [
-    { title: 'Set up Postgres schema',           status: 'DONE',       priority: 'HIGH' },
-    { title: 'Build authentication endpoints',   status: 'DONE',       priority: 'HIGH' },
-    { title: 'Implement RBAC middleware',        status: 'DONE',       priority: 'HIGH' },
-    { title: 'Build AI assistant chat UI',       status: 'IN_PROGRESS', priority: 'MEDIUM' },
-    { title: 'Wire up realtime notifications',   status: 'IN_PROGRESS', priority: 'HIGH' },
-    { title: 'Write API documentation',          status: 'TODO',       priority: 'MEDIUM' },
-    { title: 'Set up CI/CD pipeline',            status: 'TODO',       priority: 'MEDIUM' },
+    { title: 'Set up Postgres schema',           status: 'DONE',       priority: 'HIGH', assignee: interns[0] },
+    { title: 'Build authentication endpoints',   status: 'DONE',       priority: 'HIGH', assignee: interns[1] },
+    { title: 'Implement RBAC middleware',        status: 'DONE',       priority: 'HIGH', assignee: interns[2] },
+    { title: 'Build AI assistant chat UI',       status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: interns[0] },
+    { title: 'Wire up realtime notifications',   status: 'IN_PROGRESS', priority: 'HIGH', assignee: interns[1] },
+    { title: 'Train ML model on attendance data', status: 'TODO',     priority: 'MEDIUM', assignee: interns[0] },
+    { title: 'Write API documentation',          status: 'TODO',       priority: 'MEDIUM', assignee: interns[0] },
+    { title: 'Set up CI/CD pipeline',            status: 'REVIEW',     priority: 'MEDIUM', assignee: interns[1] },
+    { title: 'Build user analytics dashboard',   status: 'TODO',       priority: 'LOW',    assignee: interns[0] },
+    { title: 'Write integration tests',          status: 'DONE',       priority: 'HIGH',   assignee: interns[2] },
+    { title: 'Deploy to staging',                status: 'TODO',       priority: 'URGENT', assignee: interns[3] },
+    { title: 'Refactor auth middleware',         status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: interns[1] },
   ];
   for (const t of tasksData) {
-    const assignee = interns[Math.floor(Math.random() * interns.length)];
+    const assignee = t.assignee ?? interns[Math.floor(Math.random() * interns.length)];
     await prisma.projectTask.create({
       data: {
         projectId: project.id,

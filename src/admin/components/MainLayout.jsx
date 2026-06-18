@@ -7,15 +7,20 @@ import Sidebar from "./Sidebar";
 import Header  from "./Header";
 
 const PAGE_TITLES = {
-  "admin-dashboard":      "Admin Overview",
-  "admin-users":          "User Management",
-  "admin-management":     "Intern Management",
-  "admin-knowledge":      "Knowledge Base",
-  "admin-reports":        "Reports",
-  "admin-analytics":      "Analytics",
-  "admin-announcements":  "Announcements",
-  "admin-audit":          "Audit Log",
-  "admin-settings":       "Admin Settings",
+  "admin-dashboard":     "Admin Overview",
+  "admin-users":         "User Management",
+  "admin-management":    "Intern Management",
+  "admin-knowledge":     "Knowledge Base",
+  "admin-kanban":        "Task Board",
+  "admin-reports":       "Reports",
+  "admin-analytics":     "Analytics",
+  "admin-calendar":      "Calendar",
+  "admin-announcements": "Announcements",
+  "admin-files":         "Files",
+  "admin-webhooks":      "Webhooks",
+  "admin-audit":         "Audit Log",
+  "admin-notifications": "Notification Preferences",
+  "admin-settings":      "Admin Settings",
 };
 
 const MainLayout = ({ page, onNavigate, children }) => {

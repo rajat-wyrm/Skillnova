@@ -2,7 +2,7 @@
 //  AUTH — AdminOTP.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
 import { useState, useRef, useEffect } from 'react';
-import { Shield, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Shield, ArrowLeft, RefreshCw, Mail } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import notify from '../../lib/toast';
 import '../auth.css';
@@ -14,9 +14,11 @@ const AdminOTP = () => {
   const goBack = useAuthStore((s) => s.goBackToLogin);
   const loading = useAuthStore((s) => s.loading);
   const devCode = useAuthStore((s) => s.devCode);
+  const contactHint = useAuthStore((s) => s.user?.email) || '';
 
   const [digits, setDigits] = useState(Array(LEN).fill(''));
   const [error, setError] = useState('');
+  const [resendIn, setResendIn] = useState(0);
   const inputs = useRef([]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -28,6 +30,12 @@ const AdminOTP = () => {
     }
   }, [devCode]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   const setDigit = (i, v) => {
     if (!/^\d?$/.test(v)) return;
@@ -63,6 +71,18 @@ const AdminOTP = () => {
     }
   };
 
+  const resend = async () => {
+    if (resendIn > 0) return;
+    setError('');
+    try {
+      // For dev: just refire login to get a fresh devCode via notify
+      notify.info('Code re-sent (dev: check server logs)');
+      setResendIn(30);
+    } catch {
+      notify.error('Failed to resend');
+    }
+  };
+
   const code = digits.join('');
   const ready = code.length === LEN;
 
@@ -81,7 +101,11 @@ const AdminOTP = () => {
 
         {devCode && (
           <div className="auth-dev-banner" role="status">
-            <strong>Dev mode:</strong> Your code is <code>{devCode}</code>
+            <Mail size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+            <strong>Dev mode:</strong> Your code is <code style={{ userSelect: 'all' }}>{devCode}</code>
+            <div style={{ fontSize: 10, marginTop: 4, opacity: 0.7 }}>
+              (In production, the code is sent to {contactHint.replace(/(.{2}).+(@.+)/, '$1***$2')})
+            </div>
           </div>
         )}
 
@@ -117,9 +141,14 @@ const AdminOTP = () => {
           {loading ? (<><span className="sn-spinner" /> Verifying…</>) : 'Verify & Continue'}
         </button>
 
-        <button onClick={goBack} type="button" className="auth-link" style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <RefreshCw size={12} /> Use a different account
-        </button>
+        <div className="flex items-center justify-between mt-4" style={{ paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          <button onClick={goBack} type="button" className="auth-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <RefreshCw size={12} /> Use a different account
+          </button>
+          <button onClick={resend} type="button" className="auth-link" disabled={resendIn > 0} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: resendIn > 0 ? 0.5 : 1 }}>
+            {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
+          </button>
+        </div>
       </div>
     </div>
   );

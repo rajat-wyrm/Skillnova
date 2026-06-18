@@ -57,6 +57,23 @@ export const PERMISSIONS = {
   // AI Assistant
   'ai:use':          ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
 
+  // Files
+  'files:read':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'files:write':      ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'files:delete':     ['SUPER_ADMIN', 'ADMIN'],
+
+  // Webhooks
+  'webhooks:read':    ['SUPER_ADMIN', 'ADMIN'],
+  'webhooks:write':   ['SUPER_ADMIN', 'ADMIN'],
+
+  // Meetings
+  'meetings:read':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'meetings:write':   ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'meetings:delete':  ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+
+  // Exports
+  'exports:use':      ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+
   // Settings & Audit
   'settings:read':   ['SUPER_ADMIN', 'ADMIN'],
   'settings:update': ['SUPER_ADMIN'],

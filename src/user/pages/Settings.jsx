@@ -1,15 +1,15 @@
 // ════════════════════════════════════════════════════════════
-//  USER — pages/Settings.jsx (UI-only, uses Zustand)
+//  USER — pages/Settings.jsx (UI-only, uses Zustand + NotificationPreferences)
 // ════════════════════════════════════════════════════════════
 import { useState, useCallback } from 'react';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { Card, Toggle, SectionHeader } from '../../shared/components/UI';
 import { useAuthStore } from '../../lib/auth';
+import NotificationPreferences from '../../shared/components/NotificationPreferences';
 
 const Settings = () => {
   const logout = useAuthStore((s) => s.logout);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
-  const [notifications, setNotifications] = useState(true);
   const [privateAcct, setPrivateAcct] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
 
@@ -38,19 +38,6 @@ const Settings = () => {
       </Card>
 
       <Card className="p-5">
-        <h3 className="text-sm font-semibold mb-4">Notifications</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Push notifications</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Realtime alerts for new reports, announcements and tasks</p>
-            </div>
-            <Toggle checked={notifications} onChange={() => setNotifications(!notifications)} />
-          </div>
-        </div>
-      </Card>
-
-      <Card className="p-5">
         <h3 className="text-sm font-semibold mb-4">Privacy & Security</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -69,6 +56,8 @@ const Settings = () => {
           </div>
         </div>
       </Card>
+
+      <NotificationPreferences />
 
       <Card className="p-5" style={{ borderColor: '#fecaca', background: 'rgba(254,242,242,0.4)' }}>
         <h3 className="text-sm font-semibold text-red-600 mb-1 flex items-center gap-2"><AlertTriangle size={14} /> Account actions</h3>

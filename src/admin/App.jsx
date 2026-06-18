@@ -12,6 +12,11 @@ import Analytics from './pages/Analytics';
 import Announcements from './pages/Announcements';
 import Settings from './pages/Settings';
 import AuditLog from './pages/AuditLog';
+import Kanban from './pages/Kanban';
+import CalendarView from './pages/Calendar';
+import FilesPage from './pages/Files';
+import NotificationPreferences from './pages/NotificationPreferences';
+import WebhooksPage from './pages/Webhooks';
 
 const PAGES = {
   'admin-dashboard':     <Dashboard />,
@@ -21,8 +26,13 @@ const PAGES = {
   'admin-reports':       <Reports />,
   'admin-analytics':     <Analytics />,
   'admin-announcements': <Announcements />,
-  'admin-settings':      <Settings />,
+  'admin-kanban':        <Kanban />,
+  'admin-calendar':      <CalendarView />,
+  'admin-files':         <FilesPage />,
+  'admin-webhooks':      <WebhooksPage />,
   'admin-audit':         <AuditLog />,
+  'admin-notifications': <NotificationPreferences />,
+  'admin-settings':      <Settings />,
 };
 
 const AdminApp = () => {

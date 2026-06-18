@@ -14,16 +14,26 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import ProjectFlow from './pages/ProjectFlow';
 import Attendance from './pages/Attendance';
+import KanbanPage from './pages/Kanban';
+import Calendar from './pages/Calendar';
+import Files from './pages/Files';
+import Notifications from './pages/Notifications';
+import Exports from './pages/Exports';
 
 const PAGES = {
   dashboard:      <Dashboard />,
   knowledge:      <KnowledgeBase />,
   qa:             <QA />,
   project_flow:   <ProjectFlow />,
+  kanban:         <KanbanPage />,
+  calendar:       <Calendar />,
+  files:          <Files />,
   reports:        <Reports />,
   attendance:     <Attendance />,
   ai:             <AIAssistant />,
+  notifications:  <Notifications />,
   announcements:  <Announcements />,
+  exports:        <Exports />,
   analytics:      <Analytics />,
   profile:        <Profile />,
   settings:       <Settings />,
