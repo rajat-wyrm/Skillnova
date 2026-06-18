@@ -1,0 +1,508 @@
+// ════════════════════════════════════════════════════════════
+//  SkillNova — Prisma Schema (PostgreSQL)
+//  Strong RBAC, audit logs, AI chat history, KB versioning
+// ════════════════════════════════════════════════════════════
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users & RBAC ────────────────────────────────────────────
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MENTOR
+  INTERN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String
+  name            String
+  role            UserRole      @default(INTERN)
+  status          UserStatus    @default(PENDING)
+  department      String?
+  college         String?
+  yearOfStudy     String?
+  dateOfBirth     DateTime?
+  linkedinUrl     String?
+  skills          String?       // comma-separated for simplicity, can migrate to table later
+  avatarUrl       String?
+  rating          Float         @default(0)
+  twoFactorSecret String?
+  twoFactorEnabled Boolean      @default(false)
+  emailVerified   Boolean       @default(false)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  failedAttempts  Int           @default(0)
+  lockedUntil     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  refreshTokens     RefreshToken[]
+  reports           Report[]
+  attendances       Attendance[]
+  projectTasks      ProjectTask[]
+  announcements     Announcement[]    @relation("AnnouncementAuthor")
+  announcementsReads AnnouncementRead[]
+  kbArticles        KnowledgeArticle[] @relation("ArticleAuthor")
+  kbVersions        KnowledgeArticleVersion[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  questions         Question[]
+  answers           Answer[]
+  chatSessions      ChatSession[]
+  qaUpvotes         Upvote[]
+  sessions          UserSession[]
+  internProfile     InternProfile?
+  mentorProfile     MentorProfile?
+  mentorOf          InternProfile[] @relation("MentorRelation")
+
+  @@index([role])
+  @@index([status])
+  @@index([department])
+}
+
+model InternProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorId      String?
+  mentor        User?    @relation("MentorRelation", fields: [mentorId], references: [id])
+  startDate     DateTime
+  endDate       DateTime?
+  stipend       Float?
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  totalTasks    Int      @default(0)
+  completedTasks Int    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MentorProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  expertise   String?
+  maxInterns  Int      @default(10)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Auth & Sessions ────────────────────────────────────────
+model RefreshToken {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String   @unique
+  device      String?
+  ip          String?
+  userAgent   String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserSession {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socketId    String?
+  ip          String?
+  userAgent   String?
+  lastActive  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ── OTP & 2FA ───────────────────────────────────────────────
+model OtpChallenge {
+  id          String   @id @default(cuid())
+  email       String
+  purpose     String   // 'login_admin', 'login_intern', 'reset'
+  codeHash    String
+  attempts    Int      @default(0)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+}
+
+// ── Reports ─────────────────────────────────────────────────
+enum ReportStatus {
+  DRAFT
+  PENDING
+  REVIEWED
+  REJECTED
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  content     String?      // rich text/markdown
+  fileUrl     String?
+  weekNumber  Int?
+  status      ReportStatus @default(PENDING)
+  score       Float?
+  feedback    String?
+  reviewedById String?
+  reviewedAt  DateTime?
+  submittedAt DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// ── Attendance ──────────────────────────────────────────────
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  HALF_DAY
+  LATE
+}
+
+model Attendance {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime        @db.Date
+  status    AttendanceStatus @default(PRESENT)
+  checkIn   DateTime?
+  checkOut  DateTime?
+  notes     String?
+  markedById String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+  @@index([status])
+}
+
+// ── Projects & Tasks ───────────────────────────────────────
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  tasks       ProjectTask[]
+  interns     InternProfile[]
+
+  @@index([status])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model ProjectTask {
+  id          String       @id @default(cuid())
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?        @relation(fields: [assigneeId], references: [id])
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+// ── Knowledge Base ──────────────────────────────────────────
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model KnowledgeCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  articles    KnowledgeArticle[]
+}
+
+model KnowledgeArticle {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  content     String      // markdown / rich text json
+  excerpt     String?
+  categoryId  String
+  category    KnowledgeCategory @relation(fields: [categoryId], references: [id])
+  authorId    String
+  author      User        @relation("ArticleAuthor", fields: [authorId], references: [id])
+  status      ArticleStatus @default(DRAFT)
+  verified    Boolean     @default(false)
+  verifiedById String?
+  verifiedAt  DateTime?
+  views       Int         @default(0)
+  helpful     Int         @default(0)
+  tags        String[]
+  embedding   Json?       // for future vector search
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  versions    KnowledgeArticleVersion[]
+  feedbacks   ArticleFeedback[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([verified])
+  @@index([publishedAt])
+}
+
+model KnowledgeArticleVersion {
+  id        String   @id @default(cuid())
+  articleId String
+  article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  version   Int
+  title     String
+  content   String
+  editorId  String
+  editor    User     @relation(fields: [editorId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([articleId, version])
+}
+
+model ArticleFeedback {
+  id        String   @id @default(cuid())
+  articleId String
+  article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  userId    String?
+  helpful   Boolean
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@index([articleId])
+}
+
+// ── Announcements ───────────────────────────────────────────
+enum AnnouncementPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Announcement {
+  id          String              @id @default(cuid())
+  title       String
+  body        String
+  priority    AnnouncementPriority @default(MEDIUM)
+  pinned      Boolean             @default(false)
+  authorId    String
+  author      User                @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  publishedAt DateTime            @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  reads       AnnouncementRead[]
+
+  @@index([pinned])
+  @@index([publishedAt])
+}
+
+model AnnouncementRead {
+  id             String       @id @default(cuid())
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([announcementId, userId])
+}
+
+// ── Q&A ─────────────────────────────────────────────────────
+model Question {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  category  String?
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views     Int      @default(0)
+  acceptedAnswerId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  answers   Answer[]
+  upvotes   Upvote[]
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body       String
+  isAccepted Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  upvotes    Upvote[]
+
+  @@index([questionId])
+  @@index([authorId])
+}
+
+model Upvote {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerId   String?
+  answer     Answer? @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@unique([userId, answerId])
+}
+
+// ── AI Chat Sessions ───────────────────────────────────────
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("New Chat")
+  model     String   @default("llama-3.1-70b-versatile")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages  ChatMessage[]
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String   // 'system' | 'user' | 'assistant'
+  content   String
+  tokens    Int?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+// ── Notifications ───────────────────────────────────────────
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // 'announcement' | 'report' | 'task' | 'mention' | ...
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+// ── Audit Log ───────────────────────────────────────────────
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // e.g. 'user.create', 'role.change'
+  resource  String?  // 'user', 'article', ...
+  resourceId String?
+  meta      Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+}
+
+// ── System Settings ─────────────────────────────────────────
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedById String?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}

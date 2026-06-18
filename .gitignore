@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+server/dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env files — secrets NEVER get committed
+.env
+.env.local
+.env.*.local
+server/.env
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Prisma generated
+server/node_modules/.prisma/
+server/node_modules/@prisma/client/
+
+# Coverage
+coverage/

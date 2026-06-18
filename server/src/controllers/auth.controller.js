@@ -1,0 +1,335 @@
+// ════════════════════════════════════════════════════════════
+//  Auth Controller — login (password + OTP/2FA), refresh, logout
+// ════════════════════════════════════════════════════════════
+import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
+import prisma from '../utils/prisma.js';
+import { ApiError } from '../utils/ApiError.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import {
+  verifyPassword,
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+  hashToken,
+  generateOtp,
+  verifyTotp,
+  signCsrf,
+  COOKIE_NAMES,
+} from '../utils/auth.js';
+import { config } from '../config/index.js';
+import { memoryStore } from '../utils/redis.js';
+import { getClientIp, getUserAgent } from '../middleware/auth.js';
+import { audit } from '../services/audit.service.js';
+import { logger } from '../utils/logger.js';
+import { notify } from '../services/notification.service.js';
+
+// ── Cookie options ───────────────────────────────────────
+const REFRESH_COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: config.isProd,
+  path: '/api/v1/auth',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const ACCESS_COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax',
+  secure: config.isProd,
+  path: '/',
+  maxAge: 15 * 60 * 1000,
+};
+
+const CSRF_COOKIE_OPTS = {
+  httpOnly: false, // JS-readable so SPA can echo back in header
+  sameSite: 'lax',
+  secure: config.isProd,
+  path: '/',
+  maxAge: 24 * 60 * 60 * 1000,
+};
+
+// ── Validity checks ──────────────────────────────────────
+const MAX_FAILED = 5;
+const LOCK_MS = 15 * 60 * 1000;
+
+// ── Helpers ──────────────────────────────────────────────
+function issueTokens(res, user, req, { rememberMe = true } = {}) {
+  const sessionId = crypto.randomBytes(24).toString('hex');
+  const tokenPayload = { sub: user.id, role: user.role, sid: sessionId };
+  const accessToken = signAccessToken(tokenPayload);
+  const refreshToken = signRefreshToken({ sub: user.id, sid: sessionId });
+
+  // Save refresh token hash to DB for revocation
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  prisma.refreshToken
+    .create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(refreshToken),
+        device: req.headers?.['x-device-id'] ?? null,
+        ip: getClientIp(req),
+        userAgent: getUserAgent(req).slice(0, 250),
+        expiresAt,
+      },
+    })
+    .catch((err) => logger.warn({ err }, 'auth:refreshToken-save-failed'));
+
+  // Set cookies
+  res.cookie(COOKIE_NAMES.session, accessToken, ACCESS_COOKIE_OPTS);
+  res.cookie(COOKIE_NAMES.refresh, refreshToken, rememberMe ? REFRESH_COOKIE_OPTS : { ...REFRESH_COOKIE_OPTS, maxAge: undefined });
+  res.cookie(COOKIE_NAMES.session + '_sid', sessionId, { ...ACCESS_COOKIE_OPTS, httpOnly: true });
+  res.cookie(COOKIE_NAMES.csrf, signCsrf(sessionId), CSRF_COOKIE_OPTS);
+
+  // Track active session
+  memoryStore.set(
+    `session:${sessionId}`,
+    { uid: user.id, role: user.role },
+    7 * 24 * 60 * 60
+  );
+
+  return { accessToken, refreshToken, sessionId };
+}
+
+// ── POST /auth/login ─────────────────────────────────────
+export const login = asyncHandler(async (req, res) => {
+  const { email, password, rememberMe } = req.body;
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  if (!user) throw ApiError.unauthorized('Invalid credentials');
+
+  // Account lockout
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    throw ApiError.forbidden(`Account locked until ${user.lockedUntil.toISOString()}`);
+  }
+
+  if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
+  if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
+
+  const ok = verifyPassword(password, user.passwordHash);
+  if (!ok) {
+    const failed = user.failedAttempts + 1;
+    const lockedUntil = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MS) : null;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedAttempts: failed, lockedUntil },
+    });
+    await audit({ userId: user.id, action: 'auth.login.failed', ip: getClientIp(req), userAgent: getUserAgent(req), req });
+    throw ApiError.unauthorized('Invalid credentials');
+  }
+
+  // Reset failures
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { failedAttempts: 0, lockedUntil: null, lastLoginAt: new Date(), lastLoginIp: getClientIp(req) },
+  });
+
+  // 2FA / OTP flow for privileged roles
+  const requireSecondFactor =
+    user.role === 'SUPER_ADMIN' ||
+    user.role === 'ADMIN' ||
+    user.twoFactorEnabled;
+
+  if (requireSecondFactor) {
+    const code = generateOtp(6);
+    await prisma.otpChallenge.create({
+      data: {
+        email: user.email,
+        purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
+        codeHash: await bcrypt.hash(code, 8),
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+    });
+
+    // In dev, expose the code in the response (never in prod)
+    const responsePayload = {
+      step: 'otp_required',
+      challengeToken: signAccessToken({ sub: user.id, purpose: 'otp', role: user.role, sid: 'pending' }),
+      contactHint: user.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
+    };
+    if (!config.isProd) responsePayload.devCode = code;
+
+    await audit({ userId: user.id, action: 'auth.otp.sent', req });
+    return res.json(responsePayload);
+  }
+
+  // Intern (no 2FA) — straight login
+  const { accessToken, refreshToken } = issueTokens(res, user, req, { rememberMe });
+  await audit({ userId: user.id, action: 'auth.login.success', req });
+  await notify(user.id, { type: 'security', title: 'New login', body: `From ${getClientIp(req)}` });
+
+  res.json({
+    user: sanitize(user),
+    accessToken,
+    refreshToken,
+  });
+});
+
+// ── POST /auth/verify-otp ────────────────────────────────
+export const verifyOtp = asyncHandler(async (req, res) => {
+  const { challengeToken, code, useTotp } = req.body;
+  if (!challengeToken) throw ApiError.badRequest('challengeToken required');
+
+  let payload;
+  try {
+    payload = verifyRefreshToken(challengeToken);
+    if (payload.purpose !== 'otp') throw new Error('bad purpose');
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired challenge');
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user) throw ApiError.unauthorized('Invalid user');
+
+  let ok = false;
+  const challenges = await prisma.otpChallenge.findMany({
+    where: { email: user.email, consumedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+  });
+
+  if (useTotp && user.twoFactorSecret) {
+    ok = verifyTotp(code, user.twoFactorSecret);
+  } else {
+    for (const c of challenges) {
+      if (await bcrypt.compare(code, c.codeHash)) {
+        ok = true;
+        await prisma.otpChallenge.update({
+          where: { id: c.id },
+          data: { consumedAt: new Date() },
+        });
+        break;
+      } else {
+        await prisma.otpChallenge.update({
+          where: { id: c.id },
+          data: { attempts: { increment: 1 } },
+        });
+      }
+    }
+  }
+
+  if (!ok) throw ApiError.unauthorized('Incorrect or expired code');
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLoginAt: new Date(), lastLoginIp: getClientIp(req) },
+  });
+
+  const { accessToken, refreshToken } = issueTokens(res, user, req);
+  await audit({ userId: user.id, action: 'auth.otp.verified', req });
+
+  res.json({
+    user: sanitize(user),
+    accessToken,
+    refreshToken,
+  });
+});
+
+// ── POST /auth/refresh ───────────────────────────────────
+export const refresh = asyncHandler(async (req, res) => {
+  const token = req.cookies?.[COOKIE_NAMES.refresh] ?? req.body.refreshToken;
+  if (!token) throw ApiError.unauthorized('No refresh token');
+
+  let payload;
+  try {
+    payload = verifyRefreshToken(token);
+  } catch {
+    throw ApiError.unauthorized('Invalid refresh token');
+  }
+
+  const tokenHash = hashToken(token);
+  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+  if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+    throw ApiError.unauthorized('Refresh token revoked or expired');
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
+    throw ApiError.unauthorized('User no longer active');
+  }
+
+  // Rotate refresh token (revoke old, issue new)
+  await prisma.refreshToken.update({
+    where: { id: stored.id },
+    data: { revokedAt: new Date() },
+  });
+
+  const { accessToken, refreshToken: newRefresh } = issueTokens(res, user, req);
+  await audit({ userId: user.id, action: 'auth.refresh', req });
+
+  res.json({ user: sanitize(user), accessToken, refreshToken: newRefresh });
+});
+
+// ── POST /auth/logout ────────────────────────────────────
+export const logout = asyncHandler(async (req, res) => {
+  const token = req.cookies?.[COOKIE_NAMES.refresh];
+  if (token) {
+    const tokenHash = hashToken(token);
+    await prisma.refreshToken
+      .updateMany({ where: { tokenHash, revokedAt: null }, data: { revokedAt: new Date() } })
+      .catch(() => {});
+  }
+  if (req.sessionId) memoryStore.del(`session:${req.sessionId}`);
+
+  res.clearCookie(COOKIE_NAMES.session, { path: '/' });
+  res.clearCookie(COOKIE_NAMES.refresh, { path: '/api/v1/auth' });
+  res.clearCookie(COOKIE_NAMES.session + '_sid', { path: '/' });
+  res.clearCookie(COOKIE_NAMES.csrf, { path: '/' });
+
+  if (req.user) await audit({ userId: req.user.id, action: 'auth.logout', req });
+
+  res.json({ ok: true });
+});
+
+// ── GET /auth/me ─────────────────────────────────────────
+export const me = asyncHandler(async (req, res) => {
+  if (!req.user) throw ApiError.unauthorized();
+  const full = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    include: {
+      internProfile: { include: { mentor: { select: { id: true, name: true, email: true } } } },
+      mentorProfile: true,
+    },
+  });
+  res.json({ user: sanitize(full), permissions: derivePermissions(full.role) });
+});
+
+// ── Helpers ──────────────────────────────────────────────
+function sanitize(u) {
+  if (!u) return null;
+  const { passwordHash: _ph, twoFactorSecret: _tfs, ...rest } = u;
+  return rest;
+}
+
+import { PERMISSIONS } from '../middleware/rbac.js';
+function derivePermissions(role) {
+  return Object.entries(PERMISSIONS)
+    .filter(([, allowed]) => allowed.includes(role))
+    .map(([p]) => p);
+}
+
+export const setupTotp = asyncHandler(async (req, res) => {
+  const { generateSecret } = await import('../utils/auth.js');
+  const secret = generateSecret();
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: { twoFactorSecret: secret.base32, twoFactorEnabled: false },
+  });
+  res.json({
+    secret: secret.base32,
+    otpauthUrl: secret.otpauth_url,
+    message: 'Scan the QR code, then verify a code to enable 2FA.',
+  });
+});
+
+export const enableTotp = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (!user?.twoFactorSecret) throw ApiError.badRequest('Start TOTP setup first');
+  if (!verifyTotp(code, user.twoFactorSecret)) throw ApiError.badRequest('Invalid code');
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { twoFactorEnabled: true },
+  });
+  await audit({ userId: req.user.id, action: 'auth.2fa.enabled', req });
+  res.json({ ok: true });
+});
