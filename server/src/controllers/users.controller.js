@@ -9,7 +9,10 @@ import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { lru } from '../utils/lru.js';
 
-const invalidateUser = (id) => lru.del(`user:${id}`);
+const invalidateUser = (id) => {
+  lru.del(`user:${id}`);
+  lru.del(`user:full:${id}`);
+};
 
 const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'];
 const STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
