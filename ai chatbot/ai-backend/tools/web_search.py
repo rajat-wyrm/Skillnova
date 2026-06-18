@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import logging
 import threading
-import time
-from typing import Optional
 
 from llm import CircuitBreaker
 
@@ -19,7 +17,7 @@ tavily_circuit = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
 ddg_circuit = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
 
 
-def _run_with_timeout(func, args, timeout_sec: float) -> Optional[object]:
+def _run_with_timeout(func, args, timeout_sec: float) -> object | None:
     """Run ``func(*args)`` in a daemon thread with a hard timeout."""
     result: list = [None]
     exception: list = [None]

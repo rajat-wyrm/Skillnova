@@ -20,6 +20,7 @@ from agent.prompts import (
 from agent.state import AgentState
 from llm import get_llm_response
 from tools.web_search import web_search as web_search_tool
+
 # Note: do NOT use `from tools import web_search` — that would import the
 # submodule, and the node would end up *calling the module object* and
 # crashing with 'module is not callable' inside the LangGraph runtime.

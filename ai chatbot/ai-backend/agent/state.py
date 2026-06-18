@@ -1,7 +1,7 @@
 """SkillNova AI Chatbot — agentic RAG state."""
 from __future__ import annotations
 
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from langchain_core.documents import Document
 
@@ -21,7 +21,7 @@ class AgentState(TypedDict, total=False):
     session_id: str
 
     # ── Retrieval Context ────────────────────────────────────────────
-    documents: List[Document]
+    documents: list[Document]
     web_results: str
 
     # ── Routing & Control ────────────────────────────────────────────
@@ -30,10 +30,10 @@ class AgentState(TypedDict, total=False):
     doc_relevance: str
 
     # ── Tooling & Observability ──────────────────────────────────────
-    tools_used: List[str]
+    tools_used: list[str]
     llm_calls_count: int
 
     # ── Output ───────────────────────────────────────────────────────
-    generation: Optional[str]
+    generation: str | None
     confidence: float
     is_escalated: bool

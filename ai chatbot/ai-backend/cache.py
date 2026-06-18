@@ -20,7 +20,6 @@ import json
 import logging
 import os
 import time
-from typing import Optional
 
 import numpy as np
 
@@ -58,7 +57,7 @@ class InMemorySemanticCache:
         self.ttl = ttl_seconds
         self.cache: list = []
 
-    def get(self, query: str, route: str = "") -> Optional[dict]:
+    def get(self, query: str, route: str = "") -> dict | None:
         if not self.cache:
             return None
 
@@ -107,7 +106,7 @@ class RedisSemanticCache:
         self.ttl = ttl_seconds
         self.prefix = "skillnova:cache:"
 
-    def get(self, query: str, route: str = "") -> Optional[dict]:
+    def get(self, query: str, route: str = "") -> dict | None:
         try:
             emb = get_embeddings()
             query_vec = np.array(emb.embed_query(query), dtype=np.float32)
@@ -172,7 +171,7 @@ class ToolResultCache:
         self.memory: dict = {}
         self.prefix = "skillnova:tool:"
 
-    def get(self, query: str) -> Optional[dict]:
+    def get(self, query: str) -> dict | None:
         key = hashlib.sha256(query.encode()).hexdigest()[:16]
         if self.redis:
             try:

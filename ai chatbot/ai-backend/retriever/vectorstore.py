@@ -5,10 +5,8 @@ import glob
 import logging
 import os
 import re
-from typing import List, Optional
 
 import yaml
-from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -51,16 +49,16 @@ def _extract_metadata(text: str, file_path: str) -> tuple[dict, str]:
 # ─────────────────────────────────────────────────────────────────────
 # Public API — used by ``main.init_pipeline``
 # ─────────────────────────────────────────────────────────────────────
-def load_documents(folder_path: str = _KB_DEFAULT) -> List[Document]:
+def load_documents(folder_path: str = _KB_DEFAULT) -> list[Document]:
     """Load every ``*.txt`` in ``folder_path`` as LangChain ``Document``."""
-    docs: List[Document] = []
+    docs: list[Document] = []
     if not os.path.exists(folder_path):
         logger.warning("[DOCS] Folder not found: %s", folder_path)
         return docs
 
     for path in sorted(glob.glob(os.path.join(folder_path, "*.txt"))):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 raw = fh.read().strip()
             if not raw:
                 continue
@@ -73,7 +71,7 @@ def load_documents(folder_path: str = _KB_DEFAULT) -> List[Document]:
     return docs
 
 
-def split_documents(docs: List[Document]) -> List[Document]:
+def split_documents(docs: list[Document]) -> list[Document]:
     """Split documents into retrieval-friendly chunks."""
     if not docs:
         return []
@@ -89,7 +87,7 @@ def split_documents(docs: List[Document]) -> List[Document]:
     return chunks
 
 
-def build_vectorstore(kb_dir: str = _KB_DEFAULT) -> Optional[FAISS]:
+def build_vectorstore(kb_dir: str = _KB_DEFAULT) -> FAISS | None:
     """Build (or rebuild) the FAISS index for the knowledge base."""
     try:
         docs = load_documents(kb_dir)
@@ -115,12 +113,12 @@ def build_vectorstore(kb_dir: str = _KB_DEFAULT) -> Optional[FAISS]:
         return None
 
 
-def get_available_topics(kb_dir: str = _KB_DEFAULT) -> List[dict]:
+def get_available_topics(kb_dir: str = _KB_DEFAULT) -> list[dict]:
     """Return metadata for every KB document (useful for tooling)."""
-    topics: List[dict] = []
+    topics: list[dict] = []
     for path in sorted(glob.glob(os.path.join(kb_dir, "*.txt"))):
         try:
-            with open(path, "r", encoding="utf-8") as fh:
+            with open(path, encoding="utf-8") as fh:
                 raw = fh.read()
             metadata, _ = _extract_metadata(raw, path)
             topics.append(metadata)

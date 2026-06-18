@@ -21,7 +21,6 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from typing import List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -156,7 +155,7 @@ app.add_middleware(
 # ─────────────────────────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
-    session_id: Optional[str] = None
+    session_id: str | None = None
     role: str = "Intern"
 
 
@@ -164,7 +163,7 @@ class ChatResponse(BaseModel):
     reply: str
     session_id: str
     confidence: float = 0.0
-    sources: List[str] = []
+    sources: list[str] = []
     error: bool = False
 
 
@@ -246,7 +245,7 @@ async def chat(req: ChatRequest):
                 raw_result = await loop.run_in_executor(
                     _executor, agent_graph.invoke, state
                 )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return ChatResponse(
             reply="Request timed out.", session_id=session_id, error=True
         )
