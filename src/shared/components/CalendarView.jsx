@@ -7,6 +7,7 @@ import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, format,
   isSameMonth, isSameDay, parseISO,
 } from 'date-fns';
+import { Card } from './UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { useAuthStore } from '../../lib/auth';
