@@ -1,0 +1,170 @@
+# ════════════════════════════════════════════════════════════════════
+#  AI Chatbot — CI
+#
+#  Lints, tests, and builds ONLY the chatbot module under
+#  `ai chatbot/`. Does not touch the existing SkillNova frontend or
+#  server jobs in `.github/workflows/ci.yml`.
+# ════════════════════════════════════════════════════════════════════
+name: AI Chatbot CI
+
+on:
+  push:
+    branches: [main, feat/**, fix/**]
+    paths:
+      - 'ai chatbot/**'
+      - '.github/workflows/ai-chatbot.yml'
+  pull_request:
+    branches: [main, feat/**, fix/**]
+    paths:
+      - 'ai chatbot/**'
+      - '.github/workflows/ai-chatbot.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-backend-lint:
+    name: Backend lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot/ai-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: ai chatbot/ai-backend/requirements.txt
+      - run: pip install ruff
+      - run: ruff check .
+
+  ai-backend-test:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot/ai-backend
+    env:
+      # Stub out env vars so tests don't accidentally call real providers.
+      GROQ_API_KEY: ''
+      GEMINI_API_KEY: ''
+      DEEPSEEK_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: ai chatbot/ai-backend/requirements.txt
+      - name: Install CPU-only torch (needed by sentence-transformers)
+        run: pip install --extra-index-url https://download.pytorch.org/whl/cpu torch
+      - run: pip install -r requirements.txt
+      - run: pytest --maxfail=1 --tb=short
+
+  ai-backend-import-check:
+    name: Backend smoke import
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot/ai-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal deps
+        run: |
+          pip install fastapi pydantic python-dotenv SQLAlchemy \
+                      langchain-core langchain langgraph pyyaml httpx requests
+      - name: Import every public module
+        run: |
+          python -c "
+          import importlib
+          for m in [
+              'database', 'cache', 'guardrails', 'logging_config',
+              'agent.state', 'agent.prompts', 'agent.nodes', 'agent.graph',
+              'retriever.vectorstore', 'tools.web_search',
+          ]:
+              importlib.import_module(m)
+              print('OK', m)
+          "
+
+  ai-frontend-lint:
+    name: Frontend lint (eslint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot/ai-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ai chatbot/ai-frontend/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run lint
+
+  ai-frontend-build:
+    name: Frontend build (vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot/ai-frontend
+    env:
+      VITE_AI_API_URL: http://localhost:8000
+      VITE_APP_NAME: SkillNova AI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ai chatbot/ai-frontend/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run build
+
+  ai-backend-docker:
+    name: Backend docker build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ai chatbot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./ai-backend
+          file: ./ai-backend/Dockerfile
+          push: false
+          tags: skillnova-ai-chatbot:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  all-checks:
+    name: All AI chatbot checks
+    needs:
+      - ai-backend-lint
+      - ai-backend-test
+      - ai-backend-import-check
+      - ai-frontend-lint
+      - ai-frontend-build
+      - ai-backend-docker
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          if [ "${{ needs.ai-backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.ai-backend-test.result }}" != "success" ] || \
+             [ "${{ needs.ai-backend-import-check.result }}" != "success" ] || \
+             [ "${{ needs.ai-frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.ai-frontend-build.result }}" != "success" ] || \
+             [ "${{ needs.ai-backend-docker.result }}" != "success" ]; then
+            echo "One or more AI chatbot jobs failed."
+            exit 1
+          fi
+          echo "All AI chatbot jobs passed."
