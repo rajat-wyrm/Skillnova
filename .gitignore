@@ -1,30 +1,17 @@
-# Dependencies
-node_modules/
-*/node_modules/
-
-# Build outputs
 dist/
-server/dist/
-build/
-
-# Logs
-*.log
-npm-debug.log*
-
-# Env files — secrets NEVER get committed
+node_modules/
+*.local
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 server/.env
-
-# IDE / OS
+server/dist/
+coverage/
+.DS_Store
 .vscode/
 .idea/
-.DS_Store
-
-# Prisma generated
-server/node_modules/.prisma/
-server/node_modules/@prisma/client/
-
-# Coverage
-coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

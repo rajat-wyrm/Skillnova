@@ -1,62 +1,88 @@
 // ════════════════════════════════════════════════════════════
-//  Cache layer — Redis with in-memory fallback
-//  • JSON get/set
+//  Cache layer — two-tier: in-memory LRU (L1) + Redis (L2)
+//  • JSON get/set/del
 //  • Atomic counter
 //  • Sliding-window rate limit
 //  • Wrap any async fetcher with stale-while-revalidate
 // ════════════════════════════════════════════════════════════
 import { redis } from './redis.js';
+import { lru } from './lru.js';
 
-const memFallback = new Map();
+// L2 (distributed) fallback for when LRU is cold — short TTL only,
+// used to backfill LRU without blocking on Redis on the hot path.
+const l2Fallback = new Map();
 
-function memGet(k) {
-  const e = memFallback.get(k);
+function l2Get(k) {
+  const e = l2Fallback.get(k);
   if (!e) return null;
   if (e.exp && Date.now() > e.exp) {
-    memFallback.delete(k);
+    l2Fallback.delete(k);
     return null;
   }
   return e.v;
 }
 
-function memSet(k, v, ttl) {
-  memFallback.set(k, { v, exp: ttl ? Date.now() + ttl * 1000 : null });
+function l2Set(k, v, ttl) {
+  l2Fallback.set(k, { v, exp: ttl ? Date.now() + ttl * 1000 : null });
 }
 
-function memDel(k) { memFallback.delete(k); }
+function l2Del(k) { l2Fallback.delete(k); }
 
 // ── Public API ───────────────────────────────────────────
 export const cache = {
   async get(key) {
+    // L1: in-memory LRU (sub-ms)
+    const fast = lru.get(key);
+    if (fast !== null && fast !== undefined) return fast;
+
+    // L2: Redis (distributed)
     try {
       const raw = await redis.get(key);
-      if (raw == null) return memGet(key);
-      return typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } catch { return memGet(key); }
+      if (raw == null) return l2Get(key);
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      lru.set(key, parsed, 60); // backfill L1
+      return parsed;
+    } catch { return l2Get(key); }
   },
   async set(key, value, ttl = 60) {
-    const v = JSON.stringify(value);
-    memSet(key, value, ttl);
-    return redis.set(key, v, { ex: ttl });
+    lru.set(key, value, ttl);
+    l2Set(key, value, ttl);
+    try {
+      const v = JSON.stringify(value);
+      return redis.set(key, v, { ex: ttl });
+    } catch { return null; }
   },
   async del(key) {
-    memDel(key);
-    return redis.del(key);
+    lru.del(key);
+    l2Del(key);
+    try { return redis.del(key); } catch { return null; }
   },
   async incr(key, ttl) {
+    // Mirror the get/set pattern: treat redis.incr returning null the same
+    // as it throwing, so the in-memory L2 fallback always wins when Redis
+    // is unreachable. Otherwise a fresh key would stay at 0 forever and
+    // rate-limit / counter logic would silently break in dev/CI.
+    let v;
     try {
-      const v = await redis.incr(key);
-      if (v === 1 && ttl) await redis.expire(key, ttl);
-      return Number(v) || 0;
+      v = await redis.incr(key);
     } catch {
-      const cur = (memGet(key) || 0) + 1;
-      memSet(key, cur, ttl);
+      v = null;
+    }
+    if (v == null) {
+      const cur = (l2Get(key) || 0) + 1;
+      l2Set(key, cur, ttl);
       return cur;
     }
+    if (v === 1 && ttl) {
+      try { await redis.expire(key, ttl); } catch { /* ignore */ }
+    }
+    return Number(v) || 0;
   },
   async wrap(key, ttl, fetcher) {
+    const fast = lru.get(key);
+    if (fast !== null && fast !== undefined) return { hit: true, value: fast };
     const hit = await this.get(key);
-    if (hit !== null) return { hit: true, value: hit };
+    if (hit !== null && hit !== undefined) return { hit: true, value: hit };
     const fresh = await fetcher();
     await this.set(key, fresh, ttl);
     return { hit: false, value: fresh };
@@ -78,13 +104,13 @@ export async function rateLimit({ key, windowSec, max, blockSec = 0 }) {
       return { allowed: false, remaining: 0, resetMs: windowMs };
     }
     return { allowed: true, remaining: Math.max(0, max - Number(count)), resetMs: windowMs };
-  } catch {
-    // In-memory fallback: simple counter with TTL
-    const cur = (memGet(key) || 0) + 1;
-    memSet(key, cur, windowSec);
-    if (cur > max) return { allowed: false, remaining: 0, resetMs: windowMs };
-    return { allowed: true, remaining: max - cur, resetMs: windowMs };
-  }
+} catch {
+      // In-memory fallback: simple counter with TTL
+      const cur = (l2Get(key) || 0) + 1;
+      l2Set(key, cur, windowSec);
+      if (cur > max) return { allowed: false, remaining: 0, resetMs: windowMs };
+      return { allowed: true, remaining: max - cur, resetMs: windowMs };
+    }
 }
 
 // ── Express middleware factories ────────────────────────

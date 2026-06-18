@@ -7,6 +7,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { broadcast, notifyMany } from '../services/notification.service.js';
+import { lru } from '../utils/lru.js';
 
 const _createSchema = z.object({
   title: z.string().trim().min(3).max(200),
@@ -24,17 +25,21 @@ export const list = asyncHandler(async (req, res) => {
   if (req.query.priority) where.priority = req.query.priority;
   if (req.query.pinned) where.pinned = req.query.pinned === 'true';
 
-  const [items, total] = await Promise.all([
-    prisma.announcement.findMany({
-      where,
-      orderBy: [{ pinned: 'desc' }, { [sort]: order }],
-      skip: (page - 1) * limit,
-      take: limit,
-      include: { author: { select: { id: true, name: true, avatarUrl: true } } },
-    }),
-    prisma.announcement.count({ where }),
-  ]);
-  res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+  const cacheKey = `announcements:list:p${page}:l${limit}:s${sort}:o${order}:pr${req.query.priority || ''}:pn${req.query.pinned || ''}`;
+  const payload = await lru.wrap(cacheKey, 20, async () => {
+    const [items, total] = await Promise.all([
+      prisma.announcement.findMany({
+        where,
+        orderBy: [{ pinned: 'desc' }, { [sort]: order }],
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { author: { select: { id: true, name: true, avatarUrl: true } } },
+      }),
+      prisma.announcement.count({ where }),
+    ]);
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  });
+  res.json(payload);
 });
 
 export const getById = asyncHandler(async (req, res) => {

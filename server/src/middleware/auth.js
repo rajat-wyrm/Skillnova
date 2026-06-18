@@ -4,6 +4,7 @@
 import { verifyAccessToken, verifyCsrf, COOKIE_NAMES } from '../utils/auth.js';
 import { memoryStore } from '../utils/redis.js';
 import { ApiError } from '../utils/ApiError.js';
+import { lru } from '../utils/lru.js';
 import prisma from '../utils/prisma.js';
 
 const SESSION_TTL = 60 * 60 * 24 * 7; // 7 days
@@ -30,21 +31,24 @@ export async function authenticate(req, _res, next) {
       return next();
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        status: true,
-        avatarUrl: true,
-        department: true,
-        rating: true,
-        twoFactorEnabled: true,
-        emailVerified: true,
-      },
-    });
+    // Cache user-by-id for 60s — saves a DB round-trip per request
+    const user = await lru.wrap(`user:${payload.sub}`, 60, () =>
+      prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+          avatarUrl: true,
+          department: true,
+          rating: true,
+          twoFactorEnabled: true,
+          emailVerified: true,
+        },
+      })
+    );
 
     if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
       return next();

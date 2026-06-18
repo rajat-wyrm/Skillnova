@@ -6,6 +6,7 @@ import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
+import { lru } from '../utils/lru.js';
 
 const _articleCreateSchema = z.object({
   title: z.string().trim().min(3).max(200),
@@ -70,21 +71,25 @@ export const listArticles = asyncHandler(async (req, res) => {
   if (req.query.status) where.status = req.query.status;
   if (req.query.verified) where.verified = req.query.verified === 'true';
 
-  const [items, total] = await Promise.all([
-    prisma.knowledgeArticle.findMany({
-      where,
-      orderBy: { [sort]: order },
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        author: { select: { id: true, name: true, avatarUrl: true } },
-        _count: { select: { versions: true, feedbacks: true } },
-      },
-    }),
-    prisma.knowledgeArticle.count({ where }),
-  ]);
-  res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+  const cacheKey = `kb:articles:p${page}:l${limit}:s${sort}:o${order}:q${search || ''}:c${req.query.categoryId || ''}:st${req.query.status || ''}:v${req.query.verified || ''}`;
+  const payload = await lru.wrap(cacheKey, 30, async () => {
+    const [items, total] = await Promise.all([
+      prisma.knowledgeArticle.findMany({
+        where,
+        orderBy: { [sort]: order },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+          author: { select: { id: true, name: true, avatarUrl: true } },
+          _count: { select: { versions: true, feedbacks: true } },
+        },
+      }),
+      prisma.knowledgeArticle.count({ where }),
+    ]);
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  });
+  res.json(payload);
 });
 
 export const getArticle = asyncHandler(async (req, res) => {

@@ -7,6 +7,12 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { hashPassword } from '../utils/auth.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { lru } from '../utils/lru.js';
+
+const invalidateUser = (id) => {
+  lru.del(`user:${id}`);
+  lru.del(`user:full:${id}`);
+};
 
 const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'];
 const STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
@@ -25,12 +31,14 @@ export const list = asyncHandler(async (req, res) => {
   if (req.query.status) where.status = req.query.status;
   if (req.query.department) where.department = req.query.department;
 
-  const [items, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { [sort]: order },
-      skip: (page - 1) * limit,
-      take: limit,
+  const cacheKey = `users:list:p${page}:l${limit}:s${sort}:o${order}:q${search || ''}:r${req.query.role || ''}:st${req.query.status || ''}:d${req.query.department || ''}`;
+  const payload = await lru.wrap(cacheKey, 15, async () => {
+    const [items, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { [sort]: order },
+        skip: (page - 1) * limit,
+        take: limit,
       select: {
         id: true,
         email: true,
@@ -47,7 +55,9 @@ export const list = asyncHandler(async (req, res) => {
     prisma.user.count({ where }),
   ]);
 
-  res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  });
+  res.json(payload);
 });
 
 export const getById = asyncHandler(async (req, res) => {
@@ -92,6 +102,7 @@ export const update = asyncHandler(async (req, res) => {
     throw ApiError.forbidden('Cannot change your own role or status');
   }
   const user = await prisma.user.update({ where: { id }, data });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.update', resource: 'user', resourceId: id, meta: data, req });
   res.json({ user });
 });
@@ -109,6 +120,7 @@ export const changeRole = asyncHandler(async (req, res) => {
     data: { role },
     select: { id: true, role: true, name: true },
   });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.role.change', resource: 'user', resourceId: id, meta: { newRole: role }, req });
   await notify(id, { type: 'role', title: `Your role was updated to ${role}`, link: '/profile' });
   res.json({ user: updated });
@@ -124,6 +136,7 @@ export const changeStatus = asyncHandler(async (req, res) => {
     data: { status },
     select: { id: true, status: true, name: true },
   });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.status.change', resource: 'user', resourceId: id, meta: { newStatus: status }, req });
   await notify(id, { type: 'status', title: `Your account status is now ${status}` });
   res.json({ user: updated });
@@ -137,6 +150,7 @@ export const remove = asyncHandler(async (req, res) => {
   if (target.role === 'SUPER_ADMIN') throw ApiError.forbidden('Cannot delete a super-admin');
 
   await prisma.user.delete({ where: { id } });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.delete', resource: 'user', resourceId: id, req });
   res.json({ ok: true });
 });

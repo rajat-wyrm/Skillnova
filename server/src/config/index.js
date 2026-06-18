@@ -1,13 +1,22 @@
 import 'dotenv/config';
+import crypto from 'node:crypto';
 
 const required = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
+const isProd = process.env.NODE_ENV === 'production';
+const missing = required.filter((k) => !process.env[k]);
 
-required.forEach((k) => {
-  if (!process.env[k]) {
-    console.error(`[config] Missing required env var: ${k}`);
+if (missing.length) {
+  if (isProd) {
+    console.error(`[config] Missing required env var(s): ${missing.join(', ')}`);
     process.exit(1);
   }
-});
+  // Dev / test: warn loudly and substitute placeholders so unit tests can
+  // run without a populated .env file. Production servers always set these.
+  console.warn(`[config] Missing env var(s) substituted with random placeholders: ${missing.join(', ')}`);
+  for (const k of missing) {
+    process.env[k] = `dev-${k.toLowerCase()}-${crypto.randomBytes(12).toString('hex')}`;
+  }
+}
 
 export const config = {
   env: process.env.NODE_ENV || 'development',

@@ -1,6 +1,15 @@
 // ════════════════════════════════════════════════════════════
 //  Skeleton components — premium loading states
 // ════════════════════════════════════════════════════════════
+import { Loader2 } from 'lucide-react';
+
+export const PageLoader = ({ label = 'Loading…' }) => (
+  <div className="flex flex-col items-center justify-center min-h-[40vh] gap-3 animate-fadeIn">
+    <Loader2 className="animate-spin" size={28} style={{ color: 'var(--brand-orange, #ff6d34)' }} />
+    <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>{label}</p>
+  </div>
+);
+
 export const Skeleton = ({ className = '', style }) => (
   <span className={`skeleton inline-block ${className}`} style={{ width: '100%', height: 12, ...style }} />
 );
