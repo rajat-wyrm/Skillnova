@@ -1,0 +1,32 @@
+---
+source: Intern_Performance_Evaluation.txt
+topic: Evaluation
+importance: high
+last_updated: 2026-03-10
+author: HR Department
+---
+
+Intern Performance Evaluation
+
+Your performance will be continuously assessed throughout the internship to help you grow and to evaluate your contribution to UptoSkills.
+
+1. Evaluation Criteria
+- Quality of Work: Accuracy, thoroughness, and adherence to established standards and task requirements.
+- Timeliness: Ability to meet deadlines and manage time effectively.
+- Technical Skills: Mastery of required tools, technologies, and methodologies.
+- Soft Skills: Communication, teamwork, problem-solving, and adaptability.
+- Initiative: Proactiveness in seeking out new tasks, asking questions, and taking ownership of projects.
+
+2. Evaluation Process
+- Continuous Feedback: Expect regular, informal feedback from your mentor during meetings and code reviews.
+- Mid-Term Review: A formal check-in halfway through your internship to discuss progress, highlight strengths, and identify areas for improvement.
+- Final Evaluation: A comprehensive review at the end of the internship program. This evaluation will determine your overall outcome and potential for future opportunities.
+
+3. Feedback Mechanism
+- Constructive Criticism: Feedback is intended to be constructive. Use it as a tool for learning and development.
+- Self-Assessment: You may be asked to complete a self-assessment to reflect on your own performance and learning journey.
+- Two-Way Feedback: We encourage you to provide feedback on your internship experience, mentorship, and the UptoSkills platform.
+
+4. Outcomes
+- Successful completion of the internship is based on satisfactory performance across all evaluation criteria.
+- Exceptional performance may lead to a recommendation letter, a certificate of excellence, or a potential full-time offer (subject to business needs).

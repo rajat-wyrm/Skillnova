@@ -1,0 +1,271 @@
+---
+source: Technical_FAQ.txt
+topic: Technical Support
+importance: high
+last_updated: 2026-04-04
+author: Technical Team
+---
+
+Technical FAQ - Common Coding and Platform Issues
+
+## Binary Search Algorithm - Complete Guide
+
+### What is Binary Search?
+Binary search is an efficient algorithm for finding an item in a sorted array. It repeatedly divides the search interval in half.
+
+### Step-by-Step Implementation
+
+#### 1. Basic Binary Search Code
+```python
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if arr[mid] == target:
+            return mid  # Found at index mid
+        elif arr[mid] < target:
+            left = mid + 1  # Search right half
+        else:
+            right = mid - 1  # Search left half
+    
+    return -1  # Not found
+```
+
+#### 2. How to Use It
+```python
+# Example usage
+numbers = [1, 3, 5, 7, 9, 11, 13, 15]
+target = 7
+
+result = binary_search(numbers, target)
+if result != -1:
+    print(f"Found {target} at index {result}")
+else:
+    print(f"{target} not found")
+```
+
+#### 3. Common Mistakes to Avoid
+- **Mistake**: Not sorting the array first
+- **Fix**: Always ensure array is sorted before binary search
+- **Mistake**: Using `mid = (left + right) / 2` (causes float)
+- **Fix**: Use `mid = (left + right) // 2` for integer division
+
+#### 4. Time and Space Complexity
+- **Time**: O(log n) - Very efficient for large datasets
+- **Space**: O(1) - Constant space, no extra memory needed
+
+#### 5. When to Use Binary Search
+- Searching in sorted arrays
+- Finding insertion points
+- Range queries
+- Lower/upper bound operations
+
+### Practice Problems on SkillNova
+1. **Easy**: Find target in sorted array
+2. **Medium**: Find first occurrence of element
+3. **Hard**: Search in rotated sorted array
+
+## Array Manipulation - Two Pointers Technique
+
+### What is Two Pointers?
+Using two indices to traverse array simultaneously, often from opposite ends.
+
+### Common Patterns
+
+#### 1. Opposite Direction Pointers
+```python
+def reverse_array(arr):
+    left, right = 0, len(arr) - 1
+    
+    while left < right:
+        arr[left], arr[right] = arr[right], arr[left]
+        left += 1
+        right -= 1
+    
+    return arr
+```
+
+#### 2. Same Direction Pointers (Sliding Window)
+```python
+def max_subarray_sum(arr, k):
+    max_sum = current_sum = sum(arr[:k])
+    
+    for i in range(k, len(arr)):
+        current_sum += arr[i] - arr[i-k]
+        max_sum = max(max_sum, current_sum)
+    
+    return max_sum
+```
+
+## String Processing - Essential Techniques
+
+### 1. String Reversal
+```python
+def reverse_string(s):
+    return s[::-1]  # Pythonic way
+# Or manually:
+def reverse_string_manual(s):
+    result = ""
+    for char in s:
+        result = char + result
+    return result
+```
+
+### 2. Check for Palindrome
+```python
+def is_palindrome(s):
+    # Remove non-alphanumeric and convert to lowercase
+    s = ''.join(char.lower() for char in s if char.isalnum())
+    return s == s[::-1]
+```
+
+### 3. String Tokenization
+```python
+def word_count(s):
+    words = s.split()  # Split by whitespace
+    return len(words)
+
+def extract_words(s):
+    import re
+    return re.findall(r'\b\w+\b', s.lower())
+```
+
+## Data Structures Quick Reference
+
+### 1. List Operations
+```python
+# Common operations
+arr = [1, 2, 3]
+arr.append(4)        # Add to end: [1, 2, 3, 4]
+arr.insert(0, 0)      # Insert at index: [0, 1, 2, 3, 4]
+arr.pop()             # Remove last: [0, 1, 2, 3]
+arr.remove(2)         # Remove value: [0, 1, 3]
+```
+
+### 2. Dictionary Operations
+```python
+# Common operations
+data = {"name": "Alice", "age": 25}
+data["email"] = "alice@example.com"  # Add key
+data["age"] = 26                     # Update value
+del data["name"]                     # Delete key
+value = data.get("age", 0)          # Safe get with default
+```
+
+### 3. Set Operations
+```python
+# Common operations
+set1 = {1, 2, 3}
+set2 = {3, 4, 5}
+set1.add(4)              # Add element: {1, 2, 3, 4}
+set1.remove(2)           # Remove element: {1, 3, 4}
+union = set1 | set2       # Union: {1, 3, 4, 5}
+intersection = set1 & set2  # Intersection: {3, 4}
+```
+
+## Debugging Common Errors
+
+### 1. IndexError
+```python
+# Problem: Accessing beyond array bounds
+arr = [1, 2, 3]
+# print(arr[3])  # IndexError: list index out of range
+
+# Solution: Check bounds first
+if i < len(arr):
+    print(arr[i])
+```
+
+### 2. KeyError
+```python
+# Problem: Accessing non-existent dictionary key
+data = {"name": "Alice"}
+# print(data["age"])  # KeyError: 'age'
+
+# Solution: Use get() method
+age = data.get("age", "Not specified")
+```
+
+### 3. TypeError
+```python
+# Problem: Mixing incompatible types
+# result = "5" + 3  # TypeError: can only concatenate str
+
+# Solution: Convert types explicitly
+result = int("5") + 3  # Works: 8
+```
+
+## Platform-Specific Tips
+
+### 1. Code Editor in SkillNova
+- Use Ctrl+S to save frequently
+- Check syntax with the built-in linter
+- Use Ctrl+Z for undo, Ctrl+Y for redo
+- Format code with Ctrl+Shift+F
+
+### 2. Testing Your Code
+- Always test with edge cases (empty array, single element)
+- Use print statements for debugging (remove before submission)
+- Test both positive and negative scenarios
+- Check time complexity for large inputs
+
+### 3. Submission Guidelines
+- Ensure code runs without errors
+- Include comments for complex logic
+- Follow naming conventions (snake_case for variables)
+- Don't use input() in submitted code unless required
+
+## Performance Optimization
+
+### 1. Time Complexity Rules
+- **O(1)**: Direct access, arithmetic operations
+- **O(log n)**: Binary search, divide and conquer
+- **O(n)**: Single loop, linear scan
+- **O(n log n)**: Sorting, efficient divide and conquer
+- **O(n²)**: Nested loops (avoid for large n)
+
+### 2. Memory Optimization
+- Use generators instead of lists for large data
+- Clear unused variables
+- Avoid deep recursion (use iteration instead)
+- Choose appropriate data structures
+
+### 3. Common Optimizations
+```python
+# Instead of: O(n²)
+for i in range(n):
+    for j in range(n):
+        # Some operation
+
+# Use: O(n) when possible
+result = some_function(arr)  # Single pass
+
+# Use sets for O(1) lookups instead of O(n) list searches
+lookup_set = set(arr)  # O(n) once
+if item in lookup_set:  # O(1) each time
+    # Do something
+```
+
+## Getting Help on SkillNova
+
+### 1. In-Platform Resources
+- Click the "Help" button for context-sensitive help
+- Use the search bar to find relevant guides
+- Check the "FAQ" section for common questions
+- Review example solutions in completed problems
+
+### 2. Community Support
+- Join the discussion forums for each problem
+- Ask questions in the general discussion board
+- Help others by answering their questions
+- Learn from peer solutions and approaches
+
+### 3. Mentor Communication
+- Schedule meetings through the platform
+- Use the messaging system for quick questions
+- Share your screen during debugging sessions
+- Request code reviews before final submissions
+
+Remember: The key to improvement is consistent practice and learning from mistakes!
