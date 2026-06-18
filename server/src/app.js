@@ -18,11 +18,15 @@ import apiRoutes from './routes/api.routes.js';
 import kbRoutes from './routes/kb.routes.js';
 import featuresRoutes, { publicApi as publicFeaturesRoutes } from './routes/features.routes.js';
 import { etagMiddleware } from './utils/cache.js';
+import { requestId } from './middleware/requestId.js';
 
 const app = express();
 
 // Trust proxy (so req.ip and X-Forwarded-For work behind nginx/cloudflare)
 app.set('trust proxy', 1);
+
+// Request ID — assigned early so every downstream log line can be correlated
+app.use(requestId());
 
 // Security headers
 app.use(
