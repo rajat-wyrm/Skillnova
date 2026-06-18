@@ -58,15 +58,25 @@ export const cache = {
     try { return redis.del(key); } catch { return null; }
   },
   async incr(key, ttl) {
+    // Mirror the get/set pattern: treat redis.incr returning null the same
+    // as it throwing, so the in-memory L2 fallback always wins when Redis
+    // is unreachable. Otherwise a fresh key would stay at 0 forever and
+    // rate-limit / counter logic would silently break in dev/CI.
+    let v;
     try {
-      const v = await redis.incr(key);
-      if (v === 1 && ttl) await redis.expire(key, ttl);
-      return Number(v) || 0;
+      v = await redis.incr(key);
     } catch {
+      v = null;
+    }
+    if (v == null) {
       const cur = (l2Get(key) || 0) + 1;
       l2Set(key, cur, ttl);
       return cur;
     }
+    if (v === 1 && ttl) {
+      try { await redis.expire(key, ttl); } catch { /* ignore */ }
+    }
+    return Number(v) || 0;
   },
   async wrap(key, ttl, fetcher) {
     const fast = lru.get(key);
