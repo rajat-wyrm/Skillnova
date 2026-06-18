@@ -7,6 +7,9 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { hashPassword } from '../utils/auth.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { lru } from '../utils/lru.js';
+
+const invalidateUser = (id) => lru.del(`user:${id}`);
 
 const ROLES = ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'];
 const STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
@@ -92,6 +95,7 @@ export const update = asyncHandler(async (req, res) => {
     throw ApiError.forbidden('Cannot change your own role or status');
   }
   const user = await prisma.user.update({ where: { id }, data });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.update', resource: 'user', resourceId: id, meta: data, req });
   res.json({ user });
 });
@@ -124,6 +128,7 @@ export const changeStatus = asyncHandler(async (req, res) => {
     data: { status },
     select: { id: true, status: true, name: true },
   });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.status.change', resource: 'user', resourceId: id, meta: { newStatus: status }, req });
   await notify(id, { type: 'status', title: `Your account status is now ${status}` });
   res.json({ user: updated });
@@ -137,6 +142,7 @@ export const remove = asyncHandler(async (req, res) => {
   if (target.role === 'SUPER_ADMIN') throw ApiError.forbidden('Cannot delete a super-admin');
 
   await prisma.user.delete({ where: { id } });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.delete', resource: 'user', resourceId: id, req });
   res.json({ ok: true });
 });
