@@ -78,7 +78,9 @@ jobs:
       - name: Install minimal deps
         run: |
           pip install fastapi pydantic python-dotenv SQLAlchemy \
-                      langchain-core langchain langgraph pyyaml httpx requests
+                      langchain-core langchain langchain-community \
+                      langchain-text-splitters langchain-huggingface \
+                      langgraph pyyaml httpx requests
       - name: Import every public module
         run: |
           python -c "
