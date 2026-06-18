@@ -1,0 +1,36 @@
+[project]
+name = "skillnova-ai-chatbot"
+version = "1.0.0"
+description = "Agentic RAG-powered chatbot backend integrated into the SkillNova platform."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+readme = "README.md"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["build", "dist", ".venv", "venv", "__pycache__"]
+
+[tool.ruff.lint]
+# Pragmatic rule set for a research-grade FastAPI service.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line length is handled by formatter
+    "B008",  # FastAPI uses function calls in defaults a lot
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B", "E402"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+asyncio_mode = "auto"
