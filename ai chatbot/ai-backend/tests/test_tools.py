@@ -27,7 +27,7 @@ def test_duckduckgo_search_handles_empty_results(monkeypatch):
         def __enter__(self):
             return self
 
-        def __exit__(self, *_):
+        def __exit__(self, *_exc):
             return False
 
         def text(self, *_args, **_kwargs):
@@ -35,7 +35,7 @@ def test_duckduckgo_search_handles_empty_results(monkeypatch):
 
     monkeypatch.setattr("tools.web_search.tavily_circuit", _BrokenCircuit())
 
-    import duckduckgo_search as _  # noqa: F401 — make sure dep is importable
+    import duckduckgo_search  # noqa: F401 — make sure dep is importable
     monkeypatch.setattr("duckduckgo_search.DDGS", _FakeDDGS)
     from tools import web_search
 

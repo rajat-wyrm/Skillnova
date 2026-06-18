@@ -21,11 +21,15 @@ def test_circuit_breaker_opens_after_failures():
 
 
 def test_circuit_breaker_recovery():
-    cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0)
+    """After the recovery timeout the breaker moves to half-open."""
+    import time
+
+    cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0.05)
     cb.record_failure()
-    assert not cb.can_execute()
-    # Recovery timeout is 0 — half-open immediately.
-    assert cb.can_execute()
+    # Sleep past the recovery window.
+    time.sleep(0.1)
+    assert cb.can_execute() is True
+    assert cb.state in {"half_open", "closed"}
 
 
 def test_circuit_breaker_success_resets():
