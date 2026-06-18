@@ -1,0 +1,16 @@
+# Keep the build context small and reproducible.
+__pycache__
+*.py[cod]
+.venv
+venv
+.pytest_cache
+.ruff_cache
+.git
+.gitignore
+.env
+.env.*
+logs/*.log
+chat_logs.db
+faiss_index
+tests
+*.md
