@@ -113,6 +113,7 @@ export const changeRole = asyncHandler(async (req, res) => {
     data: { role },
     select: { id: true, role: true, name: true },
   });
+  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.role.change', resource: 'user', resourceId: id, meta: { newRole: role }, req });
   await notify(id, { type: 'role', title: `Your role was updated to ${role}`, link: '/profile' });
   res.json({ user: updated });
@@ -128,7 +129,6 @@ export const changeStatus = asyncHandler(async (req, res) => {
     data: { status },
     select: { id: true, status: true, name: true },
   });
-  invalidateUser(id);
   await audit({ userId: req.user.id, action: 'user.status.change', resource: 'user', resourceId: id, meta: { newStatus: status }, req });
   await notify(id, { type: 'status', title: `Your account status is now ${status}` });
   res.json({ user: updated });
