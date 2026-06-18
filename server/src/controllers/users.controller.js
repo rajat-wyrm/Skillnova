@@ -31,12 +31,14 @@ export const list = asyncHandler(async (req, res) => {
   if (req.query.status) where.status = req.query.status;
   if (req.query.department) where.department = req.query.department;
 
-  const [items, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { [sort]: order },
-      skip: (page - 1) * limit,
-      take: limit,
+  const cacheKey = `users:list:p${page}:l${limit}:s${sort}:o${order}:q${search || ''}:r${req.query.role || ''}:st${req.query.status || ''}:d${req.query.department || ''}`;
+  const payload = await lru.wrap(cacheKey, 15, async () => {
+    const [items, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { [sort]: order },
+        skip: (page - 1) * limit,
+        take: limit,
       select: {
         id: true,
         email: true,
@@ -53,7 +55,9 @@ export const list = asyncHandler(async (req, res) => {
     prisma.user.count({ where }),
   ]);
 
-  res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  });
+  res.json(payload);
 });
 
 export const getById = asyncHandler(async (req, res) => {
