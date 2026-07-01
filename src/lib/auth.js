@@ -43,17 +43,24 @@ export const useAuthStore = create((set, get) => ({
 
   hydrate: async () => {
     if (get().hydrated) return;
+    // Always try /auth/me first — validates httpOnly cookies (Google OAuth uses these)
+    try {
+      const { data } = await api.get('/auth/me');
+      set({
+        user: data.user,
+        permissions: data.permissions ?? derivePermissions(data.user.role),
+        step: 'authenticated',
+        hydrated: true,
+      });
+      persist(get());
+      return;
+    } catch {
+      // No valid cookie — fall back to localStorage
+    }
     const persisted = loadFromStorage();
     if (persisted?.user && persisted?.accessToken) {
       set({ user: persisted.user, accessToken: persisted.accessToken, hydrated: true });
-      try {
-        const { data } = await api.get('/auth/me');
-        set({ user: data.user, permissions: data.permissions, hydrated: true });
-        persist(get());
-      } catch {
-        set({ user: null, accessToken: null, hydrated: true });
-        persist(get());
-      }
+      persist(get());
     } else {
       set({ hydrated: true });
     }
