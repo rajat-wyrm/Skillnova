@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
 import AuthGate from './AuthGate';
+import AuthCallback from './auth/pages/AuthCallback';
 import UserApp from './user/App';
 import AdminApp from './admin/App';
 import MentorApp from './mentor/App';
@@ -29,6 +30,11 @@ const App = () => {
       if (step !== 'authenticated') disconnectSocket();
     };
   }, [user, step]);
+
+  // Google OAuth callback — catch before AuthGate so no login flash
+  if (window.location.pathname === '/auth/callback') {
+    return <AuthCallback />;
+  }
 
   if (!hydrated) return <LoaderScreen label="Initialising SkillNova…" />;
   if (!user || step !== 'authenticated') return <AuthGate />;

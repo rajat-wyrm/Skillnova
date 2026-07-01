@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import * as auth from '../controllers/auth.controller.js';
+import * as googleAuth from '../controllers/googleAuth.controller.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { validate, schemas } from '../middleware/validate.js';
 import { config } from '../config/index.js';
@@ -44,5 +45,10 @@ router.post(
   validate(z.object({ code: z.string().trim().length(6) })),
   auth.enableTotp
 );
+
+// ── Google OAuth ─────────────────────────────────────────
+router.get('/google/status', googleAuth.status);
+router.get('/google', googleAuth.start);
+router.get('/google/callback', googleAuth.callback);
 
 export default router;

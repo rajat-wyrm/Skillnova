@@ -41,8 +41,16 @@ export const config = {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     secret: process.env.JWT_SECRET,
-    accessTtl: process.env.ACCESS_TOKEN_TTL || '15m',
-    refreshTtl: process.env.REFRESH_TOKEN_TTL || '7d',
+    accessTtl: process.env.ACCESS_TOKEN_TTL
+      ? /\D/.test(process.env.ACCESS_TOKEN_TTL)
+        ? process.env.ACCESS_TOKEN_TTL
+        : Number(process.env.ACCESS_TOKEN_TTL)
+      : '15m',
+    refreshTtl: process.env.REFRESH_TOKEN_TTL
+      ? /\D/.test(process.env.REFRESH_TOKEN_TTL)
+        ? process.env.REFRESH_TOKEN_TTL
+        : Number(process.env.REFRESH_TOKEN_TTL)
+      : '7d',
     otpTtl: process.env.OTP_TTL || '10m',
     twoFaTtl: process.env.TWOFA_TTL || '10m',
   },
@@ -57,6 +65,13 @@ export const config = {
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: Number(process.env.RATE_LIMIT_MAX) || 300,
     authMax: Number(process.env.AUTH_RATE_LIMIT_MAX) || 10,
+  },
+
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    enabled: process.env.GOOGLE_OAUTH_ENABLED === 'true',
+    callbackUrl: (process.env.BACKEND_URL || process.env.APP_URL || 'http://localhost:4000') + '/api/v1/auth/google/callback',
   },
 
   logLevel: process.env.LOG_LEVEL || 'info',

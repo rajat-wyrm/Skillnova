@@ -25,7 +25,7 @@ A production-grade intern management platform for UptoSkills. Real-time, RBAC-pr
 | ORM / DB | Prisma 5 on PostgreSQL (Neon-compatible) |
 | Realtime | Socket.io 4 |
 | Cache | In-memory LRU + Upstash Redis (graceful in-memory fallback) |
-| Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA |
+| Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA, Google OAuth |
 | Validation | Zod + Joi (per-endpoint) |
 | AI | Groq (`llama-3.1-8b-instant` / `llama-3.1-70b-versatile`) |
 | Logging | Pino (structured JSON in prod, pretty in dev) |
