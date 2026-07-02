@@ -84,6 +84,26 @@ export function verifyCsrf(token, sessionId) {
 // ── Random helpers ─────────────────────────────────────────
 export const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
 
+// ── OAuth state token (10-min, purpose-scoped, rejects access tokens) ──
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign({ purpose: 'oauth_state', returnTo }, config.jwt.accessSecret, {
+    expiresIn: '10m',
+    algorithm: ALGO,
+    issuer: 'skillnova',
+    audience: 'skillnova.oauth',
+  });
+}
+
+export function verifyOAuthState(token) {
+  const payload = jwt.verify(token, config.jwt.accessSecret, {
+    algorithms: [ALGO],
+    issuer: 'skillnova',
+    audience: 'skillnova.oauth',
+  });
+  if (payload.purpose !== 'oauth_state') throw new Error('Not an OAuth state token');
+  return payload;
+}
+
 export const COOKIE_NAMES = {
   refresh: 'sn_refresh',
   csrf: 'sn_csrf',
