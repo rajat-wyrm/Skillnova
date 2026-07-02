@@ -249,9 +249,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 // ── POST /auth/refresh ───────────────────────────────────
+const recentlyRefreshed = new Set();
+const REFRESH_DEDUP_TTL = 5000;
+
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies?.[COOKIE_NAMES.refresh] ?? req.body.refreshToken;
   if (!token) throw ApiError.unauthorized('No refresh token');
+
+  const tokenHash = hashToken(token);
+  if (recentlyRefreshed.has(tokenHash)) {
+    throw ApiError.unauthorized('Refresh token already used');
+  }
 
   let payload;
   try {

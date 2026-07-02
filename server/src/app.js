@@ -23,6 +23,8 @@ import skillGapRoutes from './routes/skillGap.routes.js';
 import { etagMiddleware } from './utils/cache.js';
 import { requestId } from './middleware/requestId.js';
 import { bodySizeTracker } from './utils/metrics.js';
+import fs from 'node:fs';
+import { UPLOAD_DIR_PATH } from './utils/upload.js';
 
 const app = express();
 
@@ -152,6 +154,15 @@ app.get('/api/v1/meta/version', (_req, res) => {
     build: process.env.GITHUB_SHA || 'local',
     uptime: process.uptime(),
   });
+});
+
+app.get('/healthz/disk', (_req, res) => {
+  try {
+    fs.accessSync(UPLOAD_DIR_PATH, fs.constants.W_OK);
+    res.json({ ok: true, uploadDir: UPLOAD_DIR_PATH });
+  } catch {
+    res.status(503).json({ ok: false, uploadDir: UPLOAD_DIR_PATH });
+  }
 });
 
 // ── Auth routes (no CSRF — uses OTP second factor) ───────
