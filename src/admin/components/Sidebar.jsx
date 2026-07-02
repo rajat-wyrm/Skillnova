@@ -49,6 +49,7 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
             <img
               src={APP_CONSTANTS.LOGO_PATH}
               alt="UptoSkills"
+              loading="lazy"
               style={{
                 height: "48px",
                 width: "auto",
