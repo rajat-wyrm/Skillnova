@@ -1,5 +1,47 @@
 # Changelog
 
+## [2.2.0] - 2026-07-02
+
+### Added
+- Skill Gap Analyzer - career readiness analysis tool
+- Real-time WebSocket events for Kanban, Q&A, Reports
+- Centralized configuration system
+- Comprehensive error handling with timestamps
+- Request deduplication for token refresh
+- API response time tracking headers
+- CORS preflight caching (24h)
+- Health check endpoints (disk, database pool)
+- Memory monitoring with periodic logging
+- Socket connection rate limiting
+- Comprehensive contributing guide
+- Code of Conduct (Contributor Covenant v2.1)
+- Security policy and vulnerability reporting guide
+- GitHub Actions workflows for achievements
+
+### Fixed
+- Login response format mismatch between frontend and backend
+- CSRF token handling in frontend requests
+- Profile page date normalization for ISO timestamps
+- Conflicting validation states on login failure
+- Redis fallback logging with persistence warnings
+- Environment variable validation with clear error messages
+- DATABASE_URL format validation at startup
+- Socket notification race conditions
+
+### Changed
+- All hardcoded values centralized to config files
+- Dead code removed from frontend and backend
+- LRU cache improved with request coalescing
+- Notification service error handling improved
+- Google OAuth error messages made more specific
+
+### Security
+- Added FILE_SIGN_SECRET requirement in production
+- Bcrypt rounds configurable via environment
+- TOTP issuer configurable via environment
+- Account lockout threshold and duration configurable
+- Cookie TTLs derived from configuration
+
 ## [2.1.0] - 2026-07-02
 
 ### Added
