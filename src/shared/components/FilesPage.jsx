@@ -87,12 +87,18 @@ const FilesPage = () => {
       >
         <input ref={inputRef} type="file" hidden onChange={(e) => upload(e.target.files?.[0])} />
         {uploading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Loader2 className="animate-spin mx-auto" size={28} style={{ color: '#ff6d34' }} />
             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Uploading… {progress}%</p>
-            <div className="w-64 mx-auto h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg)' }}>
-              <div className="h-full transition-all" style={{ width: `${progress}%`, background: '#ff6d34' }} />
+            <div className="w-64 mx-auto h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bg)' }}>
+              <div className="h-full rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff6d34, #00bea3)' }} />
             </div>
+            {progress > 0 && progress < 100 && (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {progress < 30 ? 'Preparing upload…' : progress < 70 ? 'Uploading data…' : 'Almost done…'}
+              </p>
+            )}
           </div>
         ) : (
           <>
