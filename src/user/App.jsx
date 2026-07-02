@@ -45,9 +45,26 @@ const PAGES = {
 
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
+  const [fade, setFade] = useState(true);
+
+  const handleNavigate = (p) => {
+    if (p === page) return;
+    setFade(false);
+    setTimeout(() => {
+      setPage(p);
+      setFade(true);
+    }, 150);
+  };
+
   return (
-    <MainLayout page={page} onNavigate={setPage}>
-      {PAGES[page]}
+    <MainLayout page={page} onNavigate={handleNavigate}>
+      <div style={{
+        opacity: fade ? 1 : 0,
+        transform: fade ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.2s ease, transform 0.2s ease',
+      }}>
+        {PAGES[page]}
+      </div>
     </MainLayout>
   );
 };
