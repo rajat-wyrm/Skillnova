@@ -101,6 +101,15 @@ app.use(authenticate);
 // ETag middleware for all GETs (automatic 304s)
 app.use(etagMiddleware());
 
+// Response time tracking header
+app.use((_req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+  });
+  next();
+});
+
 // ── Health & version ──────────────────────────────────────
 app.get('/healthz', (_req, res) => {
   res.json({
