@@ -31,6 +31,16 @@ app.set('trust proxy', 1);
 
 // Request ID — assigned early so every downstream log line can be correlated
 app.use(requestId());
+app.use((req, _res, next) => {
+  req.requestId = req.id;
+  next();
+});
+
+// API version header
+app.use((_req, res, next) => {
+  res.setHeader('X-API-Version', '1.0.0');
+  next();
+});
 
 // Security headers
 app.use(

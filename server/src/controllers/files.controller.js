@@ -88,8 +88,13 @@ export const downloadFile = asyncHandler(async (req, res) => {
   const fullPath = path.join(UPLOAD_DIR_PATH, f.path);
   if (!fs.existsSync(fullPath)) throw ApiError.notFound('File missing on disk');
 
-  res.setHeader('Content-Type', f.mimeType);
-  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(f.originalName)}"`);
+  const contentType = f.mimeType || 'application/octet-stream';
+  const disposition = contentType.startsWith('text/') || contentType === 'application/json'
+    ? `inline; filename="${encodeURIComponent(f.originalName)}"`
+    : `attachment; filename="${encodeURIComponent(f.originalName)}"`;
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', disposition);
   res.setHeader('Content-Length', f.size);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   fs.createReadStream(fullPath).pipe(res);
