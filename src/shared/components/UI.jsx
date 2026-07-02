@@ -4,7 +4,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, X, CheckSquare } from "lucide-react";
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const MotionDiv = motion.div;
 

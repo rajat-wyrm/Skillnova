@@ -42,10 +42,11 @@ export class ApiError extends Error {
   static paginated(items, total, page, limit) {
     return { success: true, data: items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
-}
+
   static payloadTooLarge(msg = 'Payload too large') {
     return new ApiError(413, msg);
   }
+
   static unsupportedMediaType(msg = 'Unsupported media type') {
     return new ApiError(415, msg);
   }

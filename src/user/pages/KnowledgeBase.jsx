@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  USER — pages/KnowledgeBase.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Search, BookOpen, Eye, ThumbsUp, ChevronRight, ChevronLeft, Clock, User, CheckCircle, Loader2,
 } from 'lucide-react';

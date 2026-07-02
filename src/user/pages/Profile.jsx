@@ -89,7 +89,7 @@ const Profile = () => {
     let v = value.trim();
     if (name === 'name') v = v.replace(/[<>'"&]/g, '').slice(0, 80);
     if (name === 'department' || name === 'college') v = v.replace(/[<>'"&]/g, '').slice(0, 100);
-    if (name === 'yearOfStudy') v = v.replace(/[^0-9\-]/g, '').slice(0, 10);
+    if (name === 'yearOfStudy') v = v.replace(/[^0-9-]/g, '').slice(0, 10);
     if (name === 'linkedinUrl') v = v.replace(/[<>"&]/g, '').slice(0, 255);
     return v;
   };
