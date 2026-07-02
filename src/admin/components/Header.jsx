@@ -41,7 +41,9 @@ const Header = ({ title, onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-1 relative">
-        <button onClick={() => setDark(!dark)} className="p-2 rounded-lg" style={{ color: 'var(--muted)' }}>
+        <button onClick={() => setDark(!dark)} className="p-2 rounded-lg" style={{ color: 'var(--muted)' }}
+          aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-pressed={dark}>
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
         <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 rounded-lg" style={{ color: 'var(--muted)' }}>
