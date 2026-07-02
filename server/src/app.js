@@ -123,6 +123,14 @@ app.get('/api/v1/meta', (_req, res) => {
   });
 });
 
+app.get('/api/v1/meta/version', (_req, res) => {
+  res.json({
+    version: '1.0.0',
+    build: process.env.GITHUB_SHA || 'local',
+    uptime: process.uptime(),
+  });
+});
+
 // ── Auth routes (no CSRF — uses OTP second factor) ───────
 app.use('/api/v1/auth', authRoutes);
 
