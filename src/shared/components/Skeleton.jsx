@@ -23,6 +23,14 @@ export const EmptyState = ({ icon: Icon, title, description, action }) => (
   </div>
 );
 
+export const EmptyStateInline = ({ icon: Icon, title, description }) => (
+  <div className="py-12 text-center">
+    {Icon && <Icon size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--muted)' }} />}
+    <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>{title}</p>
+    {description && <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{description}</p>}
+  </div>
+);
+
 export const SkillGapSkeleton = () => (
   <div className="space-y-4 animate-fadeIn">
     <div className="flex gap-3">
