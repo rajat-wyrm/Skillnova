@@ -54,14 +54,6 @@ const Login = () => {
       .catch(() => setDemoAccounts([]));
   }, []);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get('error');
-    if (error) {
-      setFormError(decodeURIComponent(error));
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
   const emailId = `${uid}-email`;
   const passwordId = `${uid}-password`;
 
@@ -71,7 +63,15 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error) {
+      window.history.replaceState({}, '', window.location.pathname);
+      return decodeURIComponent(error);
+    }
+    return '';
+  });
   const [touched, setTouched] = useState({ email: false, password: false });
   const [fieldError, setFieldError] = useState({ email: '', password: '' });
 

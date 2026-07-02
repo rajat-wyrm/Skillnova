@@ -82,12 +82,6 @@ function issueTokens(res, user, req) {
   return { accessToken, refreshToken, sessionId };
 }
 
-function sanitize(u) {
-  if (!u) return null;
-  const { passwordHash: _ph, twoFactorSecret: _tfs, ...rest } = u;
-  return rest;
-}
-
 // ── GET /auth/google/status ─────────────────────────────
 export const status = asyncHandler(async (_req, res) => {
   res.json({ enabled: isGoogleEnabled() });

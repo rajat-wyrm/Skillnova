@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/Settings.jsx (API-driven system settings)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, Toggle, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -12,11 +12,7 @@ const Settings = () => {
   const [platformName, setPlatformName] = useState('SkillNova');
   const [maxInterns, setMaxInterns] = useState('50');
   const [twoFactor, setTwoFactor] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
+  const [loading] = useState(false);
 
   const persist = async (key, value) => {
     try {
