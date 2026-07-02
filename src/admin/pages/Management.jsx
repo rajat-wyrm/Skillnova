@@ -29,6 +29,7 @@ const Management = () => {
 
   const addIntern = async () => {
     if (!form.name || !form.email) return notify.error('Fill required fields.');
+    if (!window.confirm(`Add intern "${form.name}"?`)) return;
     try {
       await api.post('/users', { ...form, skills: '' });
       notify.success('Intern added.');
