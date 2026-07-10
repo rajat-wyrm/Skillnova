@@ -7,6 +7,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { emitToRoom, getIO } from '../sockets/index.js';
 
 // Validators (also enforced at the route level for consistency)
 const _createSchema = z.object({
@@ -127,6 +128,10 @@ export const review = asyncHandler(async (req, res) => {
     body: `${report.title}${score ? ` — Score ${score}/10` : ''}`,
     link: `/reports/${report.id}`,
   });
+  getIO()?.to(`user:${report.userId}`).emit('report:reviewed', { reportId: report.id, status });
+  emitToRoom(`role:MENTOR`, 'dashboard:refresh', {});
+  emitToRoom(`role:ADMIN`, 'dashboard:refresh', {});
+  emitToRoom(`role:SUPER_ADMIN`, 'dashboard:refresh', {});
   res.json({ report });
 });
 

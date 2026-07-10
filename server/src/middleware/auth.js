@@ -9,16 +9,24 @@ import prisma from '../utils/prisma.js';
 
 const SESSION_TTL = 60 * 60 * 24 * 7; // 7 days
 
+function extractToken(req) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    return header.slice(7);
+  }
+  if (req.cookies && req.cookies[COOKIE_NAMES.session]) {
+    return req.cookies[COOKIE_NAMES.session];
+  }
+  if (req.query?.token) {
+    return req.query.token;
+  }
+  return null;
+}
+
 // ── Populate req.user from JWT ────────────────────────────
 export async function authenticate(req, _res, next) {
   try {
-    const header = req.headers.authorization;
-    let token;
-    if (header && header.startsWith('Bearer ')) {
-      token = header.slice(7);
-    } else if (req.cookies && req.cookies[COOKIE_NAMES.session]) {
-      token = req.cookies[COOKIE_NAMES.session];
-    }
+    const token = extractToken(req);
 
     if (!token) return next(); // public route
 
@@ -103,7 +111,7 @@ export function getClientIp(req) {
 }
 
 export function getUserAgent(req) {
-  return req.headers['user-agent'] || 'unknown';
+  return (req.headers['user-agent'] || 'unknown').slice(0, 250);
 }
 
 // ── Touch session activity (lightweight rate-limit per user) ──

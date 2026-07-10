@@ -7,6 +7,7 @@ import { Card, SectionHeader } from './UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
+import { APP_CONSTANTS } from '../config/constants';
 
 const humanSize = (b) => {
   if (b < 1024) return `${b} B`;
@@ -32,7 +33,7 @@ const FilesPage = () => {
 
   const upload = async (f) => {
     if (!f) return;
-    if (f.size > 25 * 1024 * 1024) return notify.error('File too large (max 25 MB)');
+    if (f.size > APP_CONSTANTS.MAX_FILE_SIZE_MB * 1024 * 1024) return notify.error(`File too large (max ${APP_CONSTANTS.MAX_FILE_SIZE_MB} MB)`);
     setUploading(true);
     setProgress(0);
     const form = new FormData();
@@ -58,7 +59,7 @@ const FilesPage = () => {
 
   const copyUrl = async (f) => {
     try {
-      const { data } = await api.get(`/files/${f.id}/url?ttl=3600`);
+      const { data } = await api.get(`/files/${f.id}/url?ttl=${APP_CONSTANTS.SIGNED_URL_TTL}`);
       const full = window.location.origin + data.url;
       await navigator.clipboard.writeText(full);
       setCopiedId(f.id);
@@ -86,18 +87,24 @@ const FilesPage = () => {
       >
         <input ref={inputRef} type="file" hidden onChange={(e) => upload(e.target.files?.[0])} />
         {uploading ? (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Loader2 className="animate-spin mx-auto" size={28} style={{ color: '#ff6d34' }} />
             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Uploading… {progress}%</p>
-            <div className="w-64 mx-auto h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg)' }}>
-              <div className="h-full transition-all" style={{ width: `${progress}%`, background: '#ff6d34' }} />
+            <div className="w-64 mx-auto h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bg)' }}>
+              <div className="h-full rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff6d34, #00bea3)' }} />
             </div>
+            {progress > 0 && progress < 100 && (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                {progress < 30 ? 'Preparing upload…' : progress < 70 ? 'Uploading data…' : 'Almost done…'}
+              </p>
+            )}
           </div>
         ) : (
           <>
             <Upload className="mx-auto" size={32} style={{ color: 'var(--muted)' }} />
             <p className="text-sm font-semibold mt-3" style={{ color: 'var(--text)' }}>Click or drop a file to upload</p>
-            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>PDF, DOCX, images, archives up to 25 MB</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>PDF, DOCX, images, archives up to {APP_CONSTANTS.MAX_FILE_SIZE_MB} MB</p>
           </>
         )}
       </Card>

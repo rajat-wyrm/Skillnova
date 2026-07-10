@@ -10,67 +10,6 @@ export const PageLoader = ({ label = 'Loading…' }) => (
   </div>
 );
 
-export const Skeleton = ({ className = '', style }) => (
-  <span className={`skeleton inline-block ${className}`} style={{ width: '100%', height: 12, ...style }} />
-);
-
-export const SkeletonText = ({ lines = 3, className = '' }) => (
-  <div className={`space-y-2 ${className}`}>
-    {Array.from({ length: lines }).map((_, i) => (
-      <Skeleton key={i} style={{ height: 12, width: i === lines - 1 ? '70%' : '100%' }} />
-    ))}
-  </div>
-);
-
-export const SkeletonCard = ({ className = '' }) => (
-  <div className={`rounded-2xl p-5 ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-    <div className="flex items-center gap-3 mb-4">
-      <Skeleton className="rounded-lg" style={{ width: 40, height: 40 }} />
-      <div className="flex-1 space-y-2">
-        <Skeleton style={{ height: 10, width: '40%' }} />
-        <Skeleton style={{ height: 8, width: '60%' }} />
-      </div>
-    </div>
-    <SkeletonText lines={3} />
-  </div>
-);
-
-export const SkeletonStat = ({ className = '' }) => (
-  <div className={`rounded-2xl p-5 ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-    <Skeleton style={{ height: 10, width: '50%' }} />
-    <Skeleton className="mt-3" style={{ height: 24, width: '40%' }} />
-    <Skeleton className="mt-3" style={{ height: 8, width: '70%' }} />
-  </div>
-);
-
-export const SkeletonTable = ({ rows = 5, cols = 4 }) => (
-  <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-    <div className="px-5 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
-        {Array.from({ length: cols }).map((_, i) => <Skeleton key={i} style={{ height: 10, width: '60%' }} />)}
-      </div>
-    </div>
-    <div>
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="px-5 py-4 grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, borderTop: '1px solid var(--border)' }}>
-          {Array.from({ length: cols }).map((_, c) => <Skeleton key={c} style={{ height: 12, width: c === 0 ? '80%' : '60%' }} />)}
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-export const SkeletonChart = ({ height = 220 }) => (
-  <div className="rounded-2xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-    <Skeleton style={{ height: 12, width: '30%' }} />
-    <div className="mt-4 flex items-end gap-1.5" style={{ height }}>
-      {[40, 65, 50, 80, 55, 70, 90, 60, 75, 85, 50, 70].map((h, i) => (
-        <Skeleton key={i} className="rounded-t" style={{ height: `${h}%`, flex: 1 }} />
-      ))}
-    </div>
-  </div>
-);
-
 export const EmptyState = ({ icon: Icon, title, description, action }) => (
   <div className="rounded-2xl p-12 text-center" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
     {Icon && (
@@ -84,4 +23,63 @@ export const EmptyState = ({ icon: Icon, title, description, action }) => (
   </div>
 );
 
-export default Skeleton;
+export const EmptyStateInline = ({ icon: Icon, title, description }) => (
+  <div className="py-12 text-center">
+    {Icon && <Icon size={36} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--muted)' }} />}
+    <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>{title}</p>
+    {description && <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{description}</p>}
+  </div>
+);
+
+export const SkillGapSkeleton = () => (
+  <div className="space-y-4 animate-fadeIn">
+    <div className="flex gap-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="skeleton h-24 rounded-xl flex-1" />
+      ))}
+    </div>
+    <div className="skeleton h-64 rounded-xl" />
+    <div className="grid grid-cols-2 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="skeleton h-32 rounded-xl" />
+      ))}
+    </div>
+  </div>
+);
+
+export const AuditLogSkeleton = () => (
+  <div className="space-y-3 animate-fadeIn">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <div key={i} className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+        <div className="skeleton w-8 h-8 rounded-full flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="skeleton h-4 rounded w-1/3" />
+          <div className="skeleton h-3 rounded w-2/3" />
+        </div>
+        <div className="skeleton h-3 w-16 rounded" />
+      </div>
+    ))}
+  </div>
+);
+
+export const ReportsSkeleton = () => (
+  <div className="space-y-4 animate-fadeIn">
+    <div className="skeleton h-10 rounded-xl w-64" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="skeleton h-40 rounded-xl" />
+      ))}
+    </div>
+  </div>
+);
+
+export const AttendanceSkeleton = () => (
+  <div className="space-y-4 animate-fadeIn">
+    <div className="skeleton h-32 rounded-xl" />
+    <div className="grid grid-cols-7 gap-2">
+      {Array.from({ length: 35 }).map((_, i) => (
+        <div key={i} className="skeleton aspect-square rounded-lg" />
+      ))}
+    </div>
+  </div>
+);

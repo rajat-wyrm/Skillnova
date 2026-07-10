@@ -7,8 +7,8 @@ import { Card, Badge } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
-
-const CATEGORIES = ['All', 'Projects', 'Reports', 'Meetings', 'Knowledge Base', 'Internship'];
+import { getSocket } from '../../lib/socket';
+import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const QA = () => {
   const [questions, setQuestions] = useState([]);
@@ -33,6 +33,22 @@ const QA = () => {
   };
 
   useEffect(() => { fetch(); }, []);
+
+  useEffect(() => {
+    if (!openId) return undefined;
+    const socket = getSocket();
+    if (!socket) return undefined;
+    const onAnswer = (data) => {
+      if (data.questionId === openId) {
+        setOpenData((prev) => prev ? { ...prev, answers: [...prev.answers, data.answer] } : prev);
+      }
+    };
+    socket.on('qa:answer', onAnswer);
+    return () => {
+      socket.off('qa:answer', onAnswer);
+      socket.emit('leave:qa', openId);
+    };
+  }, [openId]);
 
   const add = async () => {
     if (!newQuestion.trim()) return;
@@ -65,6 +81,10 @@ const QA = () => {
     try {
       const { data } = await api.get(`/qa/questions/${id}`);
       setOpenData(data.question);
+      const socket = getSocket();
+      if (socket) {
+        socket.emit('join:qa', id);
+      }
     } catch {
       notify.error('Failed to load question.');
     }
@@ -166,7 +186,7 @@ const QA = () => {
             className="w-full pl-9 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {CATEGORIES.map((c) => (
+          {APP_CONSTANTS.QA_CATEGORIES.map((c) => (
             <button key={c} onClick={() => setCategory(c)}
               className={`px-3 py-2 rounded-lg text-xs font-medium transition`}
               style={{

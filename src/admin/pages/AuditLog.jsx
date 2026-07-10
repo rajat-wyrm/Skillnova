@@ -7,6 +7,7 @@ import { Loader2, ScrollText } from 'lucide-react';
 import { Card } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { formatRelative } from '../../lib/utils';
+import { getSocket } from '../../lib/socket';
 
 const AuditLog = () => {
   const [items, setItems] = useState([]);
@@ -28,6 +29,22 @@ const AuditLog = () => {
       })
       .catch((err) => setError(err.response?.data?.error || 'Failed to load audit log.'))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return undefined;
+    const onNew = (entry) => {
+      setItems((arr) => [{
+        id: entry.id,
+        action: entry.action,
+        detail: entry.resource,
+        resource: entry.resourceId,
+        createdAt: entry.createdAt,
+      }, ...arr].slice(0, 100));
+    };
+    socket.on('audit:new', onNew);
+    return () => socket.off('audit:new', onNew);
   }, []);
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin" size={28} style={{ color: 'var(--muted)' }} /></div>;

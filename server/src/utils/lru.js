@@ -26,6 +26,7 @@ export const lru = {
   set: memSet,
   del: (k) => store.delete(k),
   has: (k) => memGet(k) != null,
+  size: () => store.size,
   // Wrap a fetcher with request coalescing + cache
   async wrap(key, ttlSec, fetcher) {
     if (inflight.has(key)) return inflight.get(key);

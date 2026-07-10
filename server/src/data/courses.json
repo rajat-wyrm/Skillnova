@@ -1,0 +1,182 @@
+{
+  "SQL": [
+    {"title": "SQL for Data Analysis", "platform": "Mode Analytics", "url": "https://mode.com/sql-tutorial/"},
+    {"title": "Intro to SQL", "platform": "Kaggle", "url": "https://www.kaggle.com/learn/intro-to-sql"}
+  ],
+  "Python": [
+    {"title": "Python for Everybody", "platform": "Coursera", "url": "https://www.coursera.org/specializations/python"},
+    {"title": "Python Tutorial", "platform": "W3Schools", "url": "https://www.w3schools.com/python/"}
+  ],
+  "Excel": [
+    {"title": "Excel Skills for Business", "platform": "Coursera", "url": "https://www.coursera.org/specializations/excel"},
+    {"title": "Excel for Beginners", "platform": "LinkedIn Learning", "url": "https://www.linkedin.com/learning/excel-essential-training"}
+  ],
+  "Power BI": [
+    {"title": "Power BI Guided Learning", "platform": "Microsoft", "url": "https://learn.microsoft.com/en-us/power-bi/guided-learning/"},
+    {"title": "Power BI A-Z", "platform": "Udemy", "url": "https://www.udemy.com/course/mspowerbi/"}
+  ],
+  "Tableau": [
+    {"title": "Tableau Training", "platform": "Tableau Official", "url": "https://www.tableau.com/learn/training"},
+    {"title": "Data Visualization with Tableau", "platform": "Coursera", "url": "https://www.coursera.org/specializations/data-visualization"}
+  ],
+  "Statistics": [
+    {"title": "Statistics with Python", "platform": "Coursera", "url": "https://www.coursera.org/specializations/statistics-with-python"},
+    {"title": "Khan Academy Statistics", "platform": "Khan Academy", "url": "https://www.khanacademy.org/math/statistics-probability"}
+  ],
+  "Machine Learning": [
+    {"title": "Machine Learning Specialization", "platform": "Coursera", "url": "https://www.coursera.org/specializations/machine-learning-introduction"},
+    {"title": "Intro to Machine Learning", "platform": "Kaggle", "url": "https://www.kaggle.com/learn/intro-to-machine-learning"}
+  ],
+  "Deep Learning": [
+    {"title": "Deep Learning Specialization", "platform": "Coursera", "url": "https://www.coursera.org/specializations/deep-learning"},
+    {"title": "Fast.ai Deep Learning", "platform": "Fast.ai", "url": "https://www.fast.ai/"}
+  ],
+  "Data Visualization": [
+    {"title": "Data Visualization with Python", "platform": "Coursera", "url": "https://www.coursera.org/learn/python-for-data-visualization"},
+    {"title": "Data Viz with Plotly", "platform": "Kaggle", "url": "https://www.kaggle.com/learn/data-visualization"}
+  ],
+  "Pandas": [
+    {"title": "Pandas Tutorial", "platform": "Kaggle", "url": "https://www.kaggle.com/learn/pandas"},
+    {"title": "Pandas Documentation", "platform": "Official Docs", "url": "https://pandas.pydata.org/docs/getting_started/"}
+  ],
+  "NumPy": [
+    {"title": "NumPy Quickstart", "platform": "Official Docs", "url": "https://numpy.org/doc/stable/user/quickstart.html"},
+    {"title": "NumPy Tutorial", "platform": "W3Schools", "url": "https://www.w3schools.com/python/numpy/"}
+  ],
+  "Scikit-learn": [
+    {"title": "Scikit-learn Tutorial", "platform": "Official Docs", "url": "https://scikit-learn.org/stable/tutorial/"},
+    {"title": "ML with Scikit-learn", "platform": "DataCamp", "url": "https://www.datacamp.com/courses/supervised-learning-with-scikit-learn"}
+  ],
+  "TensorFlow": [
+    {"title": "TensorFlow Tutorials", "platform": "TensorFlow Official", "url": "https://www.tensorflow.org/tutorials"},
+    {"title": "Intro to TensorFlow", "platform": "Coursera", "url": "https://www.coursera.org/learn/introduction-tensorflow"}
+  ],
+  "PyTorch": [
+    {"title": "PyTorch Tutorials", "platform": "PyTorch Official", "url": "https://pytorch.org/tutorials/"},
+    {"title": "Deep Learning with PyTorch", "platform": "Udemy", "url": "https://www.udemy.com/course/pytorch-for-deep-learning/"}
+  ],
+  "NLP": [
+    {"title": "NLP Specialization", "platform": "Coursera", "url": "https://www.coursera.org/specializations/natural-language-processing"},
+    {"title": "NLP with Python", "platform": "NLTK Book", "url": "https://www.nltk.org/book/"}
+  ],
+  "Docker": [
+    {"title": "Docker for Beginners", "platform": "Docker Official", "url": "https://docs.docker.com/get-started/"},
+    {"title": "Docker Mastery", "platform": "Udemy", "url": "https://www.udemy.com/course/docker-mastery/"}
+  ],
+  "Kubernetes": [
+    {"title": "Kubernetes Basics", "platform": "Kubernetes Official", "url": "https://kubernetes.io/docs/tutorials/kubernetes-basics/"},
+    {"title": "Kubernetes for Developers", "platform": "Linux Foundation", "url": "https://training.linuxfoundation.org/training/introduction-to-kubernetes/"}
+  ],
+  "Git": [
+    {"title": "Git & GitHub Crash Course", "platform": "freeCodeCamp", "url": "https://www.freecodecamp.org/news/git-and-github-crash-course/"},
+    {"title": "Pro Git Book", "platform": "Git Official", "url": "https://git-scm.com/book/en/v2"}
+  ],
+  "JavaScript": [
+    {"title": "JavaScript Algorithms and Data Structures", "platform": "freeCodeCamp", "url": "https://www.freecodecamp.org/learn/javascript-algorithms-and-data-structures/"},
+    {"title": "The Modern JavaScript Tutorial", "platform": "javascript.info", "url": "https://javascript.info/"}
+  ],
+  "React": [
+    {"title": "React Official Tutorial", "platform": "React Docs", "url": "https://react.dev/learn"},
+    {"title": "Full Stack Open", "platform": "University of Helsinki", "url": "https://fullstackopen.com/en/"}
+  ],
+  "HTML": [
+    {"title": "HTML Tutorial", "platform": "W3Schools", "url": "https://www.w3schools.com/html/"},
+    {"title": "HTML Full Course", "platform": "freeCodeCamp", "url": "https://www.freecodecamp.org/learn/responsive-web-design/"}
+  ],
+  "CSS": [
+    {"title": "CSS Tutorial", "platform": "W3Schools", "url": "https://www.w3schools.com/css/"},
+    {"title": "CSS for JavaScript Developers", "platform": "Josh Comeau", "url": "https://css-for-js.dev/"}
+  ],
+  "AWS/Azure/GCP": [
+    {"title": "AWS Cloud Practitioner", "platform": "AWS Training", "url": "https://aws.amazon.com/training/digital/aws-cloud-practitioner-essentials/"},
+    {"title": "Google Cloud Fundamentals", "platform": "Coursera", "url": "https://www.coursera.org/learn/gcp-fundamentals"}
+  ],
+  "Linux": [
+    {"title": "Linux Command Line Basics", "platform": "Udacity", "url": "https://www.udacity.com/course/linux-command-line-basics--ud595"},
+    {"title": "The Linux Command Line", "platform": "LinuxCommand.org", "url": "http://linuxcommand.org/tlcl.php"}
+  ],
+  "ETL": [
+    {"title": "ETL and Data Pipelines with Shell, Airflow and Kafka", "platform": "Coursera", "url": "https://www.coursera.org/learn/etl-and-data-pipelines-shell-airflow-kafka"},
+    {"title": "Data Engineering on Google Cloud", "platform": "Coursera", "url": "https://www.coursera.org/specializations/gcp-data-machine-learning"}
+  ],
+  "Data Modeling": [
+    {"title": "Data Modeling for Data Warehouses", "platform": "Coursera", "url": "https://www.coursera.org/learn/data-modeling-for-data-warehouses"},
+    {"title": "dbt Fundamentals", "platform": "dbt Learn", "url": "https://courses.getdbt.com/courses/fundamentals"}
+  ],
+  "DAX": [
+    {"title": "DAX in Power BI", "platform": "Microsoft Learn", "url": "https://learn.microsoft.com/en-us/power-bi/transform-model/desktop-quickstart-learn-dax-basics"},
+    {"title": "Definitive Guide to DAX", "platform": "SQLBI", "url": "https://www.sqlbi.com/articles/introducing-dax/"}
+  ],
+  "SEO": [
+    {"title": "SEO Starter Guide", "platform": "Google", "url": "https://developers.google.com/search/docs/fundamentals/seo-starter-guide"},
+    {"title": "SEO Training Course", "platform": "Moz", "url": "https://moz.com/beginners-guide-to-seo"}
+  ],
+  "Google Analytics": [
+    {"title": "Google Analytics Academy", "platform": "Google", "url": "https://analytics.google.com/analytics/academy/"},
+    {"title": "GA4 Certification", "platform": "Skillshop", "url": "https://skillshop.exceedlms.com/student/catalog/list?category_ids=6652-google-analytics"}
+  ],
+  "Network Security": [
+    {"title": "Network Security Fundamentals", "platform": "Coursera", "url": "https://www.coursera.org/learn/network-security-fundamentals"},
+    {"title": "CompTIA Security+ Study Guide", "platform": "CompTIA", "url": "https://www.comptia.org/certifications/security"}
+  ],
+  "SIEM": [
+    {"title": "Intro to SIEM", "platform": "Cybrary", "url": "https://www.cybrary.it/course/intro-to-siem/"},
+    {"title": "Splunk Fundamentals 1", "platform": "Splunk", "url": "https://www.splunk.com/en_us/training/courses/splunk-fundamentals-1.html"}
+  ],
+  "Cloud Platforms": [
+    {"title": "AWS Cloud Practitioner Essentials", "platform": "AWS", "url": "https://aws.amazon.com/training/digital/aws-cloud-practitioner-essentials/"},
+    {"title": "Microsoft Azure Fundamentals", "platform": "Microsoft Learn", "url": "https://learn.microsoft.com/en-us/certifications/azure-fundamentals/"}
+  ],
+  "TypeScript": [
+    {"title": "TypeScript Handbook", "platform": "TypeScript Official", "url": "https://www.typescriptlang.org/docs/handbook/"},
+    {"title": "Understanding TypeScript", "platform": "Udemy", "url": "https://www.udemy.com/course/understanding-typescript/"}
+  ],
+  "REST APIs": [
+    {"title": "REST API Design Best Practices", "platform": "freeCodeCamp", "url": "https://www.freecodecamp.org/news/rest-api-best-practices-rest-endpoint-design-examples/"},
+    {"title": "APIs for Beginners", "platform": "freeCodeCamp YouTube", "url": "https://www.youtube.com/watch?v=GZvSYJDk-us"}
+  ],
+  "OOP": [
+    {"title": "Object Oriented Programming in Python", "platform": "Real Python", "url": "https://realpython.com/python3-object-oriented-programming/"},
+    {"title": "OOP Concepts", "platform": "GeeksforGeeks", "url": "https://www.geeksforgeeks.org/object-oriented-programming-in-python/"}
+  ],
+  "Spark": [
+    {"title": "Apache Spark Fundamentals", "platform": "Databricks Academy", "url": "https://www.databricks.com/learn/training/apache-spark-fundamentals"},
+    {"title": "Big Data with Spark", "platform": "Coursera", "url": "https://www.coursera.org/learn/big-data-analysis"}
+  ],
+  "dbt": [
+    {"title": "dbt Fundamentals", "platform": "dbt Learn", "url": "https://courses.getdbt.com/courses/fundamentals"},
+    {"title": "dbt Documentation", "platform": "dbt Labs", "url": "https://docs.getdbt.com/"}
+  ],
+  "Hugging Face": [
+    {"title": "Hugging Face NLP Course", "platform": "Hugging Face", "url": "https://huggingface.co/learn/nlp-course/chapter1/1"},
+    {"title": "Transformers Library Tutorial", "platform": "Hugging Face Docs", "url": "https://huggingface.co/docs/transformers/index"}
+  ],
+  "Transformers": [
+    {"title": "Attention Is All You Need - Explained", "platform": "Towards Data Science", "url": "https://towardsdatascience.com/illustrated-transformer-d93ac2328b54"},
+    {"title": "NLP with Transformers", "platform": "O'Reilly", "url": "https://www.oreilly.com/library/view/natural-language-processing/9781098136789/"}
+  ],
+  "MLOps": [
+    {"title": "MLOps Specialization", "platform": "Coursera", "url": "https://www.coursera.org/specializations/machine-learning-engineering-for-production-mlops"},
+    {"title": "Full Stack Deep Learning", "platform": "FSDL", "url": "https://fullstackdeeplearning.com/"}
+  ],
+  "Terraform": [
+    {"title": "Terraform Getting Started", "platform": "HashiCorp Learn", "url": "https://developer.hashicorp.com/terraform/tutorials"},
+    {"title": "Terraform on AWS", "platform": "Udemy", "url": "https://www.udemy.com/course/terraform-beginner-to-advanced/"}
+  ],
+  "CI/CD": [
+    {"title": "CI/CD with GitHub Actions", "platform": "GitHub Docs", "url": "https://docs.github.com/en/actions"},
+    {"title": "DevOps CI/CD Pipeline", "platform": "Coursera", "url": "https://www.coursera.org/learn/devops-ci-cd-pipelines-agile-automation"}
+  ],
+  "Communication": [
+    {"title": "Business Communication Skills", "platform": "Coursera", "url": "https://www.coursera.org/learn/communication-skills"},
+    {"title": "Effective Communication", "platform": "LinkedIn Learning", "url": "https://www.linkedin.com/learning/communication-foundations"}
+  ],
+  "Data Cleaning": [
+    {"title": "Data Cleaning", "platform": "Kaggle", "url": "https://www.kaggle.com/learn/data-cleaning"},
+    {"title": "Data Wrangling with Python", "platform": "DataCamp", "url": "https://www.datacamp.com/courses/data-manipulation-with-pandas"}
+  ],
+  "Report Writing": [
+    {"title": "Technical Report Writing", "platform": "Coursera", "url": "https://www.coursera.org/learn/technical-writing"},
+    {"title": "Business Report Writing", "platform": "LinkedIn Learning", "url": "https://www.linkedin.com/learning/writing-business-reports"}
+  ]
+}

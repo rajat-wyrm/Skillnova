@@ -2,11 +2,12 @@
 //  USER — pages/Reports.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Search, FileText, Download, Upload, Loader2, X } from 'lucide-react';
+import { Search, FileText, Upload, Loader2 } from 'lucide-react';
 import { Card, Badge, SectionHeader, Input, GreenButton, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatDate } from '../../lib/utils';
+import { getSocket } from '../../lib/socket';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
@@ -29,6 +30,22 @@ const Reports = () => {
   };
 
   useEffect(() => { fetch(); }, []);
+
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return undefined;
+    const onReviewed = (data) => {
+      setReports((arr) => arr.map((r) => (r.id === data.reportId ? { ...r, status: data.status } : r)));
+      notify.info(`Your report was ${data.status.toLowerCase()}`);
+    };
+    const onRefresh = () => { fetch(); };
+    socket.on('report:reviewed', onReviewed);
+    socket.on('dashboard:refresh', onRefresh);
+    return () => {
+      socket.off('report:reviewed', onReviewed);
+      socket.off('dashboard:refresh', onRefresh);
+    };
+  }, []);
 
   const filtered = reports.filter((r) =>
     !search || r.title.toLowerCase().includes(search.toLowerCase())

@@ -29,7 +29,9 @@ enum UserStatus {
 model User {
   id              String        @id @default(cuid())
   email           String        @unique
-  passwordHash    String
+  passwordHash    String?
+  googleId        String?       @unique
+  authProvider    String        @default("password")
   name            String
   role            UserRole      @default(INTERN)
   status          UserStatus    @default(PENDING)

@@ -1,0 +1,165 @@
+domain,role,skill,category,proficiency,weight
+Software Development,Python Developer,Python,core,intermediate,0.9
+Software Development,Python Developer,Git,core,intermediate,0.8
+Software Development,Python Developer,REST APIs,core,intermediate,0.8
+Software Development,Python Developer,Django/Flask,core,intermediate,0.7
+Software Development,Python Developer,SQL,core,intermediate,0.7
+Software Development,Python Developer,OOP,core,intermediate,0.8
+Software Development,Python Developer,Unit Testing,secondary,intermediate,0.5
+Software Development,Python Developer,Linux,secondary,beginner,0.4
+Software Development,Java Developer,Java,core,intermediate,0.9
+Software Development,Java Developer,Spring Boot,core,intermediate,0.8
+Software Development,Java Developer,Maven,core,beginner,0.7
+Software Development,Java Developer,SQL,core,intermediate,0.7
+Software Development,Java Developer,Git,core,intermediate,0.8
+Software Development,Java Developer,OOP,core,intermediate,0.8
+Software Development,Java Developer,REST APIs,secondary,intermediate,0.5
+Software Development,Java Developer,JUnit,secondary,intermediate,0.4
+Software Development,Frontend Developer,HTML,core,intermediate,0.9
+Software Development,Frontend Developer,CSS,core,intermediate,0.9
+Software Development,Frontend Developer,JavaScript,core,intermediate,0.9
+Software Development,Frontend Developer,React,core,intermediate,0.8
+Software Development,Frontend Developer,Git,core,intermediate,0.8
+Software Development,Frontend Developer,TypeScript,secondary,intermediate,0.5
+Software Development,Frontend Developer,Responsive Design,secondary,intermediate,0.4
+Software Development,Frontend Developer,REST APIs,secondary,beginner,0.4
+Software Development,Full Stack Developer,HTML,core,intermediate,0.8
+Software Development,Full Stack Developer,CSS,core,intermediate,0.8
+Software Development,Full Stack Developer,JavaScript,core,intermediate,0.9
+Software Development,Full Stack Developer,React,core,intermediate,0.8
+Software Development,Full Stack Developer,Python,core,intermediate,0.8
+Software Development,Full Stack Developer,SQL,core,intermediate,0.7
+Software Development,Full Stack Developer,Git,core,intermediate,0.8
+Software Development,Full Stack Developer,REST APIs,secondary,intermediate,0.5
+Software Development,Full Stack Developer,Docker,secondary,beginner,0.4
+Data Analytics,Data Analyst,SQL,core,intermediate,0.9
+Data Analytics,Data Analyst,Excel,core,intermediate,0.8
+Data Analytics,Data Analyst,Python,core,intermediate,0.7
+Data Analytics,Data Analyst,Power BI,core,intermediate,0.8
+Data Analytics,Data Analyst,Statistics,core,intermediate,0.7
+Data Analytics,Data Analyst,Data Visualization,secondary,intermediate,0.5
+Data Analytics,Data Analyst,Tableau,secondary,intermediate,0.5
+Data Analytics,Data Analyst,Data Cleaning,secondary,beginner,0.4
+Data Analytics,Business Analyst,SQL,core,intermediate,0.8
+Data Analytics,Business Analyst,Excel,core,intermediate,0.8
+Data Analytics,Business Analyst,Power BI,core,intermediate,0.7
+Data Analytics,Business Analyst,Communication,core,intermediate,0.8
+Data Analytics,Business Analyst,Requirements Gathering,core,intermediate,0.8
+Data Analytics,Business Analyst,Tableau,secondary,beginner,0.4
+Data Analytics,Business Analyst,Process Mapping,secondary,intermediate,0.5
+Data Analytics,Business Analyst,JIRA,secondary,beginner,0.3
+Data Analytics,Reporting Analyst,SQL,core,intermediate,0.9
+Data Analytics,Reporting Analyst,Excel,core,intermediate,0.9
+Data Analytics,Reporting Analyst,Power BI,core,intermediate,0.8
+Data Analytics,Reporting Analyst,Tableau,core,intermediate,0.7
+Data Analytics,Reporting Analyst,Data Visualization,core,intermediate,0.7
+Data Analytics,Reporting Analyst,Communication,secondary,intermediate,0.4
+Data Analytics,Reporting Analyst,Report Writing,secondary,intermediate,0.5
+Data Analytics,BI Analyst,SQL,core,intermediate,0.9
+Data Analytics,BI Analyst,Power BI,core,expert,0.9
+Data Analytics,BI Analyst,Tableau,core,intermediate,0.7
+Data Analytics,BI Analyst,DAX,core,intermediate,0.8
+Data Analytics,BI Analyst,Data Modeling,core,intermediate,0.8
+Data Analytics,BI Analyst,Excel,secondary,intermediate,0.4
+Data Analytics,BI Analyst,ETL,secondary,intermediate,0.5
+Data Analytics,BI Analyst,Statistics,secondary,beginner,0.4
+Data Science,Data Scientist,Python,core,expert,0.9
+Data Science,Data Scientist,SQL,core,intermediate,0.8
+Data Science,Data Scientist,Machine Learning,core,expert,0.9
+Data Science,Data Scientist,Statistics,core,expert,0.9
+Data Science,Data Scientist,Pandas,core,intermediate,0.8
+Data Science,Data Scientist,NumPy,secondary,intermediate,0.5
+Data Science,Data Scientist,Scikit-learn,secondary,intermediate,0.5
+Data Science,Data Scientist,Data Visualization,secondary,intermediate,0.4
+Data Science,Data Scientist,Deep Learning,secondary,intermediate,0.5
+Data Science,Data Engineer,Python,core,expert,0.9
+Data Science,Data Engineer,SQL,core,expert,0.9
+Data Science,Data Engineer,Spark,core,intermediate,0.8
+Data Science,Data Engineer,ETL,core,intermediate,0.8
+Data Science,Data Engineer,Cloud Platforms,core,intermediate,0.8
+Data Science,Data Engineer,Hadoop,secondary,intermediate,0.4
+Data Science,Data Engineer,Airflow,secondary,intermediate,0.5
+Data Science,Data Engineer,Docker,secondary,beginner,0.4
+Data Science,Data Engineer,Kafka,secondary,intermediate,0.4
+Data Science,Analytics Engineer,SQL,core,expert,0.9
+Data Science,Analytics Engineer,dbt,core,intermediate,0.8
+Data Science,Analytics Engineer,Python,core,intermediate,0.8
+Data Science,Analytics Engineer,Data Modeling,core,intermediate,0.8
+Data Science,Analytics Engineer,ETL,core,intermediate,0.7
+Data Science,Analytics Engineer,Git,secondary,intermediate,0.4
+Data Science,Analytics Engineer,Cloud Platforms,secondary,intermediate,0.5
+Data Science,Analytics Engineer,Tableau,secondary,beginner,0.3
+AI & Machine Learning,AI Engineer,Python,core,expert,0.9
+AI & Machine Learning,AI Engineer,TensorFlow,core,intermediate,0.8
+AI & Machine Learning,AI Engineer,PyTorch,core,intermediate,0.8
+AI & Machine Learning,AI Engineer,Machine Learning,core,expert,0.9
+AI & Machine Learning,AI Engineer,Deep Learning,core,expert,0.9
+AI & Machine Learning,AI Engineer,NLP,secondary,intermediate,0.5
+AI & Machine Learning,AI Engineer,Computer Vision,secondary,intermediate,0.5
+AI & Machine Learning,AI Engineer,Docker,secondary,beginner,0.4
+AI & Machine Learning,AI Engineer,Cloud Platforms,secondary,intermediate,0.4
+AI & Machine Learning,Machine Learning Engineer,Python,core,expert,0.9
+AI & Machine Learning,Machine Learning Engineer,Machine Learning,core,expert,0.9
+AI & Machine Learning,Machine Learning Engineer,Scikit-learn,core,intermediate,0.8
+AI & Machine Learning,Machine Learning Engineer,TensorFlow,core,intermediate,0.8
+AI & Machine Learning,Machine Learning Engineer,SQL,core,intermediate,0.7
+AI & Machine Learning,Machine Learning Engineer,MLOps,secondary,intermediate,0.5
+AI & Machine Learning,Machine Learning Engineer,Docker,secondary,intermediate,0.5
+AI & Machine Learning,Machine Learning Engineer,Statistics,secondary,intermediate,0.5
+AI & Machine Learning,Machine Learning Engineer,Feature Engineering,secondary,intermediate,0.4
+AI & Machine Learning,NLP Engineer,Python,core,expert,0.9
+AI & Machine Learning,NLP Engineer,NLP,core,expert,0.9
+AI & Machine Learning,NLP Engineer,Transformers,core,intermediate,0.8
+AI & Machine Learning,NLP Engineer,Hugging Face,core,intermediate,0.8
+AI & Machine Learning,NLP Engineer,SpaCy,core,intermediate,0.7
+AI & Machine Learning,NLP Engineer,Machine Learning,secondary,intermediate,0.5
+AI & Machine Learning,NLP Engineer,Deep Learning,secondary,intermediate,0.5
+AI & Machine Learning,NLP Engineer,TensorFlow,secondary,beginner,0.4
+Cloud & DevOps,Cloud Engineer,AWS/Azure/GCP,core,intermediate,0.9
+Cloud & DevOps,Cloud Engineer,Docker,core,intermediate,0.8
+Cloud & DevOps,Cloud Engineer,Kubernetes,core,intermediate,0.8
+Cloud & DevOps,Cloud Engineer,Terraform,core,intermediate,0.8
+Cloud & DevOps,Cloud Engineer,Linux,core,intermediate,0.8
+Cloud & DevOps,Cloud Engineer,CI/CD,secondary,intermediate,0.5
+Cloud & DevOps,Cloud Engineer,Networking,secondary,intermediate,0.4
+Cloud & DevOps,Cloud Engineer,Python/Bash,secondary,beginner,0.4
+Cloud & DevOps,DevOps Engineer,Docker,core,intermediate,0.9
+Cloud & DevOps,DevOps Engineer,Kubernetes,core,intermediate,0.8
+Cloud & DevOps,DevOps Engineer,CI/CD,core,intermediate,0.9
+Cloud & DevOps,DevOps Engineer,Git,core,intermediate,0.8
+Cloud & DevOps,DevOps Engineer,Linux,core,intermediate,0.8
+Cloud & DevOps,DevOps Engineer,Terraform,secondary,intermediate,0.5
+Cloud & DevOps,DevOps Engineer,Jenkins,secondary,intermediate,0.5
+Cloud & DevOps,DevOps Engineer,Python/Bash,secondary,intermediate,0.4
+Cloud & DevOps,DevOps Engineer,Monitoring,secondary,intermediate,0.4
+Cyber Security,Security Analyst,Network Security,core,intermediate,0.9
+Cyber Security,Security Analyst,SIEM,core,intermediate,0.8
+Cyber Security,Security Analyst,Vulnerability Assessment,core,intermediate,0.8
+Cyber Security,Security Analyst,Python,core,intermediate,0.7
+Cyber Security,Security Analyst,Linux,core,intermediate,0.7
+Cyber Security,Security Analyst,Incident Response,secondary,intermediate,0.5
+Cyber Security,Security Analyst,Firewalls,secondary,intermediate,0.5
+Cyber Security,Security Analyst,Compliance,secondary,beginner,0.4
+Cyber Security,SOC Analyst,SIEM,core,intermediate,0.9
+Cyber Security,SOC Analyst,Incident Response,core,intermediate,0.9
+Cyber Security,SOC Analyst,Network Security,core,intermediate,0.8
+Cyber Security,SOC Analyst,Log Analysis,core,intermediate,0.8
+Cyber Security,SOC Analyst,Threat Intelligence,secondary,intermediate,0.5
+Cyber Security,SOC Analyst,Linux,secondary,intermediate,0.4
+Cyber Security,SOC Analyst,Firewalls,secondary,beginner,0.4
+Cyber Security,SOC Analyst,Communication,secondary,beginner,0.3
+Digital Marketing,Digital Marketing Executive,SEO,core,intermediate,0.8
+Digital Marketing,Digital Marketing Executive,Google Ads,core,intermediate,0.8
+Digital Marketing,Digital Marketing Executive,Social Media Marketing,core,intermediate,0.8
+Digital Marketing,Digital Marketing Executive,Google Analytics,core,intermediate,0.7
+Digital Marketing,Digital Marketing Executive,Content Marketing,secondary,intermediate,0.5
+Digital Marketing,Digital Marketing Executive,Email Marketing,secondary,intermediate,0.4
+Digital Marketing,Digital Marketing Executive,CRM Tools,secondary,beginner,0.4
+Digital Marketing,SEO Analyst,SEO,core,expert,0.9
+Digital Marketing,SEO Analyst,Google Analytics,core,intermediate,0.9
+Digital Marketing,SEO Analyst,Keyword Research,core,intermediate,0.9
+Digital Marketing,SEO Analyst,On-page SEO,core,intermediate,0.8
+Digital Marketing,SEO Analyst,Link Building,core,intermediate,0.7
+Digital Marketing,SEO Analyst,Content Writing,secondary,intermediate,0.5
+Digital Marketing,SEO Analyst,Ahrefs/SEMrush,secondary,intermediate,0.5
+Digital Marketing,SEO Analyst,HTML Basics,secondary,beginner,0.3

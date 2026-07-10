@@ -84,13 +84,23 @@ const Profile = () => {
 
   if (!profile) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin" size={28} style={{ color: 'var(--muted)' }} /></div>;
 
+  const sanitize = (name, value) => {
+    if (typeof value !== 'string') return value;
+    let v = value.trim();
+    if (name === 'name') v = v.replace(/[<>'"&]/g, '').slice(0, 80);
+    if (name === 'department' || name === 'college') v = v.replace(/[<>'"&]/g, '').slice(0, 100);
+    if (name === 'yearOfStudy') v = v.replace(/[^0-9-]/g, '').slice(0, 10);
+    if (name === 'linkedinUrl') v = v.replace(/[<>"&]/g, '').slice(0, 255);
+    return v;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile((p) => ({ ...p, [name]: value }));
+    setProfile((p) => ({ ...p, [name]: sanitize(name, value) }));
     setSaved(false);
     if (touched[name]) {
       const f = FIELDS.find((x) => x.key === name);
-      setErrors((prev) => ({ ...prev, [name]: f?.validate ? f.validate(value) : '' }));
+      setErrors((prev) => ({ ...prev, [name]: f?.validate ? f.validate(sanitize(name, value)) : '' }));
     }
   };
 
@@ -157,7 +167,7 @@ const Profile = () => {
           <div className="flex flex-col items-center sm:flex-row sm:items-end gap-4 -mt-10 mb-6 text-center sm:text-left">
             <div className="w-20 h-20 rounded-xl border-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)', borderColor: 'var(--card)' }}>
-              {profile.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+              {((profile.name || '').split(' ').map((n) => n[0]).join('').slice(0, 2) || '?').toUpperCase()}
             </div>
             <div className="pb-1 flex-1 min-w-0">
               <h2 className="text-lg font-bold break-words" style={{ color: 'var(--text)' }}>{profile.name}</h2>

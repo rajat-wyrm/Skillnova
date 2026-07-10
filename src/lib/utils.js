@@ -30,5 +30,3 @@ export const initials = (name = '') =>
     .join('') || '?';
 
 export const cn = (...args) => args.filter(Boolean).join(' ');
-
-export const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));

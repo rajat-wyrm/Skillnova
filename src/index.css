@@ -19,6 +19,22 @@
   --brand-red: #dc2626;
   --brand-blue: #2563eb;
 
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Typography */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
   /* Light */
   --bg: #f6f7f9;
   --bg-soft: #eef1f5;
@@ -124,22 +140,11 @@ textarea:focus-visible,
 
 /* ===== ANIMATION UTILS ===== */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .animate-fadeIn  { animation: fadeIn 0.25s ease both; }
-.animate-slideUp { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-slideDown { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-scaleIn { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
-.animate-shimmer {
-  background: linear-gradient(90deg, var(--elevated) 0%, var(--input-bg) 50%, var(--elevated) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
-}
 .animate-pulse  { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-spin   { animation: spin 0.7s linear infinite; }
 
@@ -247,24 +252,6 @@ button:disabled { opacity: 0.55; cursor: not-allowed !important; }
 }
 
 /* ===== UTILITIES ===== */
-.glass {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: saturate(180%) blur(16px);
-  -webkit-backdrop-filter: saturate(180%) blur(16px);
-}
-.dark .glass {
-  background: rgba(20, 26, 31, 0.6);
-}
-
-.gradient-text-brand {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
-
-.text-balance { text-wrap: balance; }
 
 /* Focus-visible cleanup for our auth screens */
 .auth-container *:focus-visible {

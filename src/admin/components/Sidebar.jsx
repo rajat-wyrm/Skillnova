@@ -10,6 +10,7 @@ import {
   LayoutGrid, Calendar, Folder, Bell, Webhook,
 } from "lucide-react";
 import { useAuthStore } from '../../lib/auth';
+import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const ADMIN_MENU = [
   { id: "admin-dashboard",     label: "Overview",          icon: LayoutDashboard },
@@ -46,8 +47,9 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
         {!isCollapsed && (
           <div className="flex items-center flex-1 min-w-0">
             <img
-              src="/logo.png"
+              src={APP_CONSTANTS.LOGO_PATH}
               alt="UptoSkills"
+              loading="lazy"
               style={{
                 height: "48px",
                 width: "auto",

@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════════
 import prisma from '../utils/prisma.js';
 import { logger } from '../utils/logger.js';
+import { getIO } from '../sockets/index.js';
 
 export async function audit({
   userId,
@@ -19,7 +20,8 @@ export async function audit({
       ip = ip ?? req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ?? req.ip;
       userAgent = userAgent ?? req.headers?.['user-agent'];
     }
-    await prisma.auditLog.create({
+    const [actionCategory] = action.split('.');
+    const entry = await prisma.auditLog.create({
       data: {
         userId: userId ?? null,
         action,
@@ -28,8 +30,11 @@ export async function audit({
         meta: meta ?? undefined,
         ip,
         userAgent,
+        resourceType: resource,
+        actionCategory,
       },
     });
+    getIO()?.to('role:SUPER_ADMIN').to('role:ADMIN').emit('audit:new', entry);
   } catch (err) {
     logger.warn({ err, action }, 'audit:log-failed');
   }

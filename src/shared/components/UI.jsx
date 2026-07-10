@@ -4,35 +4,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, X, CheckSquare } from "lucide-react";
-
-// UptoSkills Brand Colors
-export const BRAND = {
-  orange:    "#ff6d34", // Main Brand Color
-  green:     "#00bea3",
-  dark:      "#2D3436",
-  orangeLight: "#fff3ee",
-  greenLight:  "#e6faf8",
-};
+import { useEffect, useRef, useState } from "react";
 
 const MotionDiv = motion.div;
-
-/* ── Avatar ─────────────────────────────────── */
-export const Avatar = ({ initials, size = "md" }) => {
-  const sizes = {
-    sm: "w-7 h-7 text-xs",
-    md: "w-9 h-9 text-sm",
-    lg: "w-12 h-12 text-base",
-    xl: "w-20 h-20 text-2xl",
-  };
-  return (
-    <div
-      className={`${sizes[size]} rounded-full flex items-center justify-center font-bold text-white flex-shrink-0`}
-      style={{ background: "linear-gradient(135deg, #ff6d34, #00bea3)" }}
-    >
-      {initials}
-    </div>
-  );
-};
 
 /* ── Badge ───────────────────────────────────── */
 export const Badge = ({ children, variant = "default" }) => {
@@ -61,13 +35,13 @@ export const Card = ({ children, className = "", hover = false, onClick, delay =
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3, delay }}
     onClick={onClick}
-    whileHover={hover ? { y: -5, boxShadow: "0 10px 25px -5px rgba(255,109,52,0.15)" } : {}}
+    whileHover={hover ? { y: -4, boxShadow: "0 12px 28px -6px rgba(255,109,52,0.18)" } : {}}
     className={`rounded-2xl ${className} ${hover ? 'cursor-pointer' : ''}`}
     style={{
       background: "var(--card)",
       border: "1px solid var(--border)",
       boxShadow: "var(--card-shadow)",
-      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+      transition: "transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.22s ease",
     }}
   >
     {children}
@@ -175,24 +149,58 @@ export const Input = ({ label, icon: Icon, error, ...props }) => (
 );
 
 /* ── Modal ────────────────────────────────────── */
-export const Modal = ({ isOpen, onClose, title, children, footer }) => (
-  <AnimatePresence>
-    {isOpen && (
-      <>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
-        />
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+export const Modal = ({ isOpen, onClose, title, children, footer }) => {
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const trapFocus = (e) => {
+      if (e.key !== 'Tab') return;
+      const modal = modalRef.current;
+      if (!modal) return;
+      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', trapFocus);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', trapFocus);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
-          >
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
+          />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              ref={modalRef}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-label={title}
+            >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="font-bold text-lg text-slate-900">{title}</h3>
               <button 
@@ -216,4 +224,35 @@ export const Modal = ({ isOpen, onClose, title, children, footer }) => (
       </>
     )}
   </AnimatePresence>
-);
+  );
+};
+
+/* ── Tooltip ──────────────────────────────────── */
+export const Tooltip = ({ children, content, side = 'top' }) => {
+  const [show, setShow] = useState(false);
+  const positions = {
+    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
+    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
+    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
+    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  };
+
+  if (!content) return children;
+
+  return (
+    <span className="relative inline-flex"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onFocus={() => setShow(true)}
+      onBlur={() => setShow(false)}>
+      {children}
+      {show && (
+        <span className={`absolute z-50 px-2.5 py-1.5 text-xs font-medium rounded-lg shadow-lg whitespace-nowrap pointer-events-none ${positions[side]}`}
+          style={{ background: '#1f2937', color: '#f9fafb' }}
+          role="tooltip">
+          {content}
+        </span>
+      )}
+    </span>
+  );
+};

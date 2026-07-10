@@ -30,11 +30,6 @@ const MainLayout = ({ page, onNavigate, children }) => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>

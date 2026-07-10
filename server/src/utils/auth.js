@@ -9,7 +9,7 @@ import { config } from '../config/index.js';
 
 const ALGO = 'HS256';
 
-export const hashPassword = (plain) => bcrypt.hashSync(plain, 12);
+export const hashPassword = (plain) => bcrypt.hashSync(plain, config.security.bcryptRounds);
 export const verifyPassword = (plain, hash) => bcrypt.compareSync(plain, hash);
 
 export function signAccessToken(payload) {
@@ -57,7 +57,7 @@ export function generateOtp(length = 6) {
 }
 
 export function generateSecret() {
-  return speakeasy.generateSecret({ name: 'SkillNova', length: 32 });
+  return speakeasy.generateSecret({ name: config.security.totpIssuer, length: 32 });
 }
 
 export function verifyTotp(token, secret) {
@@ -83,6 +83,26 @@ export function verifyCsrf(token, sessionId) {
 
 // ── Random helpers ─────────────────────────────────────────
 export const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
+
+// ── OAuth state token (10-min, purpose-scoped, rejects access tokens) ──
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign({ purpose: 'oauth_state', returnTo }, config.jwt.accessSecret, {
+    expiresIn: '10m',
+    algorithm: ALGO,
+    issuer: 'skillnova',
+    audience: 'skillnova.oauth',
+  });
+}
+
+export function verifyOAuthState(token) {
+  const payload = jwt.verify(token, config.jwt.accessSecret, {
+    algorithms: [ALGO],
+    issuer: 'skillnova',
+    audience: 'skillnova.oauth',
+  });
+  if (payload.purpose !== 'oauth_state') throw new Error('Not an OAuth state token');
+  return payload;
+}
 
 export const COOKIE_NAMES = {
   refresh: 'sn_refresh',

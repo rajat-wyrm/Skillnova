@@ -5,7 +5,7 @@ import { Component } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 export class ErrorBoundary extends Component {
-  state = { error: null, info: null };
+  state = { error: null, info: null, retryCount: 0 };
 
   static getDerivedStateFromError(error) {
     return { error };
@@ -16,7 +16,7 @@ export class ErrorBoundary extends Component {
     console.error('ErrorBoundary caught:', error, info);
   }
 
-  reset = () => this.setState({ error: null, info: null });
+  reset = () => this.setState((s) => ({ error: null, info: null, retryCount: s.retryCount + 1 }));
 
   render() {
     if (this.state.error) {
@@ -36,9 +36,21 @@ export class ErrorBoundary extends Component {
                 {this.state.error.stack}
               </pre>
             </details>
-            <button onClick={() => { this.reset(); window.location.reload(); }} className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ background: '#ff6d34' }}>
-              <RefreshCw size={14} /> Reload
-            </button>
+            <p className="text-xs mt-3" style={{ color: 'var(--muted)' }}>
+              Attempt {this.state.retryCount + 1} of 3
+            </p>
+            <div className="flex justify-center gap-3 mt-4">
+              <button onClick={this.reset} disabled={this.state.retryCount >= 3}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+                style={{ background: '#ff6d34' }}>
+                <RefreshCw size={14} /> Retry
+              </button>
+              <button onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }}>
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       );

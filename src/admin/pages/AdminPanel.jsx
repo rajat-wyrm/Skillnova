@@ -2,7 +2,7 @@
 //  ADMIN — pages/AdminPanel.jsx (User Management, API)
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, UserX, Loader2 } from 'lucide-react';
+import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, Loader2 } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal, Input } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
