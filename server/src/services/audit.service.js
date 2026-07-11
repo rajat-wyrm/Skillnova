@@ -17,24 +17,38 @@ export async function audit({
 }) {
   try {
     if (req) {
-      ip = ip ?? req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ?? req.ip;
-      userAgent = userAgent ?? req.headers?.['user-agent'];
+      ip =
+        ip ??
+        req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ??
+        req.ip;
+
+      userAgent =
+        userAgent ??
+        req.headers?.['user-agent'];
     }
-    const [actionCategory] = action.split('.');
+
     const entry = await prisma.auditLog.create({
       data: {
-        userId: userId ?? null,
+        user: userId
+          ? {
+              connect: {
+                id: userId,
+              },
+            }
+          : undefined,
         action,
         resource,
         resourceId,
         meta: meta ?? undefined,
         ip,
         userAgent,
-        resourceType: resource,
-        actionCategory,
       },
     });
-    getIO()?.to('role:SUPER_ADMIN').to('role:ADMIN').emit('audit:new', entry);
+
+    getIO()
+      ?.to('role:SUPER_ADMIN')
+      .to('role:ADMIN')
+      .emit('audit:new', entry);
   } catch (err) {
     logger.warn({ err, action }, 'audit:log-failed');
   }

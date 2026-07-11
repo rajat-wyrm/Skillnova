@@ -19,15 +19,52 @@ api.use(authenticate, requireAuth);
 
 const idParam = z.object({ id: z.string().cuid() });
 
-// ── Reports ───────────────────────────────────────────────
+
+// ?? Reports ???????????????????????????????????????????????
 api.get(
   '/reports',
   requirePermission('reports:read'),
   validate(schemas.pagination, 'query'),
   reports.list
 );
+api.get('/reports/current-week', requirePermission('reports:read'), reports.currentWeek);
 api.get('/reports/stats', requirePermission('reports:read'), reports.stats);
+api.get('/reports/daily-logs', requirePermission('reports:read'), reports.listDailyLogs);
+api.post(
+  '/reports/daily-logs',
+  requirePermission('reports:create'),
+  validate(
+    z.object({
+      date: z.coerce.date().optional(),
+      workDone: z.string().trim().min(1),
+      hoursWorked: z.coerce.number().min(0).max(24),
+      technologiesUsed: z.string().trim().max(1000).optional().nullable(),
+      challenges: z.string().trim().max(2000).optional().nullable(),
+      tomorrowPlan: z.string().trim().max(2000).optional().nullable(),
+    })
+  ),
+  reports.createDailyLog
+);
+api.put(
+  '/reports/daily-logs/:id',
+  requirePermission('reports:update'),
+  validate(z.object({ id: z.string().cuid() }), 'params'),
+  validate(
+    z.object({
+      date: z.coerce.date().optional(),
+      workDone: z.string().trim().min(1),
+      hoursWorked: z.coerce.number().min(0).max(24),
+      technologiesUsed: z.string().trim().max(1000).optional().nullable(),
+      challenges: z.string().trim().max(2000).optional().nullable(),
+      tomorrowPlan: z.string().trim().max(2000).optional().nullable(),
+    })
+  ),
+  reports.updateDailyLog
+);
+api.post('/reports/daily-logs/:id/reopen', requirePermission('reports:review'), validate(z.object({ id: z.string().cuid() }), 'params'), reports.reopenDailyLog);
+api.post('/reports/generate-weekly', requirePermission('reports:create'), reports.generateWeekly);
 api.get('/reports/:id', requirePermission('reports:read'), validate(idParam, 'params'), reports.getById);
+api.get('/reports/:id/history', requirePermission('reports:read'), validate(idParam, 'params'), reports.history);
 api.post(
   '/reports',
   requirePermission('reports:create'),
@@ -37,6 +74,7 @@ api.post(
       content: z.string().min(1).optional(),
       fileUrl: z.string().url().optional(),
       weekNumber: z.number().int().min(1).max(104).optional(),
+      status: z.enum(['DRAFT', 'SUBMITTED']).optional(),
     })
   ),
   reports.create
@@ -55,14 +93,15 @@ api.patch(
   ),
   reports.update
 );
+api.post('/reports/:id/submit', requirePermission('reports:create'), validate(idParam, 'params'), reports.submit);
 api.patch(
   '/reports/:id/review',
   requirePermission('reports:review'),
   validate(idParam, 'params'),
   validate(
     z.object({
-      status: z.enum(['PENDING', 'REVIEWED', 'REJECTED']).default('REVIEWED'),
-      score: z.number().min(0).max(10).optional(),
+      status: z.enum(['UNDER_REVIEW', 'REVIEWED', 'NEEDS_REVISION', 'APPROVED', 'REJECTED']),
+      rating: z.coerce.number().int().min(1).max(5).optional(),
       feedback: z.string().max(2000).optional(),
     })
   ),
