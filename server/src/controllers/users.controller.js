@@ -8,6 +8,7 @@ import { hashPassword } from '../utils/auth.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { lru } from '../utils/lru.js';
+import { getEffectiveStreak } from '../services/streak.service.js';
 
 const invalidateUser = (id) => {
   lru.del(`user:${id}`);
@@ -39,23 +40,31 @@ export const list = asyncHandler(async (req, res) => {
         orderBy: { [sort]: order },
         skip: (page - 1) * limit,
         take: limit,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        status: true,
-        department: true,
-        rating: true,
-        avatarUrl: true,
-        createdAt: true,
-        lastLoginAt: true,
-      },
-    }),
-    prisma.user.count({ where }),
-  ]);
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          status: true,
+          department: true,
+          rating: true,
+          avatarUrl: true,
+          currentStreak: true,
+          longestStreak: true,
+          lastActivityAt: true,
+          createdAt: true,
+          lastLoginAt: true,
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
 
-    return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const mappedItems = items.map((u) => ({
+      ...u,
+      currentStreak: getEffectiveStreak(u),
+    }));
+
+    return { items: mappedItems, total, page, limit, totalPages: Math.ceil(total / limit) };
   });
   res.json(payload);
 });
