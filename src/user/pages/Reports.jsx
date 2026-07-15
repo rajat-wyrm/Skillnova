@@ -52,6 +52,7 @@ const Reports = () => {
   const [logEditor, setLogEditor] = useState(null);
   const [logForm, setLogForm] = useState(emptyLogForm);
   const [reportForm, setReportForm] = useState(emptyReportForm);
+  const [selectedReport, setSelectedReport] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -63,7 +64,13 @@ const Reports = () => {
         api.get('/reports/current-week'),
       ]);
       setStats(statsRes.data);
-      setReports(reportsRes.data.items || []);
+      const reportList = reportsRes.data.items || [];
+
+setReports(reportList);
+
+if (reportList.length && !selectedReport) {
+  setSelectedReport(reportList[0]);
+}
       setDailyLogs(logsRes.data.items || []);
       setCurrentWeek(currentRes.data);
       const initialReport = currentRes.data?.report || null;
@@ -84,11 +91,14 @@ const Reports = () => {
     load();
   }, []);
 
-  const currentReport = currentWeek?.report || null;
+  const currentReport =
+  selectedReport ||
+  currentWeek?.report ||
+  null;
   const currentPreview = currentWeek?.preview || null;
   const todayLog = currentWeek?.todayLog || dailyLogs.find((item) => item.date?.slice(0, 10) === todayKey()) || null;
   const needsReminder = currentWeek?.missingToday ?? !todayLog;
-  const editableReport = currentReport && ['DRAFT', 'NEEDS_REVISION'].includes(currentReport.status);
+  const editableReport = currentReport && ['DRAFT', 'NEEDS_REVISION', 'REJECTED'].includes(currentReport.status); console.log(currentReport);
   const weeklySummary = currentReport?.summary || currentPreview?.summary || {
     totalHours: 0,
     challenges: [],
@@ -175,6 +185,8 @@ const Reports = () => {
       });
       setCurrentWeek((prev) => ({ ...prev, report: data.report, preview: data.report }));
       notify.success('Draft saved.');
+      setSelectedReport(data.report);
+      load();
     } catch (err) {
       notify.error(err.response?.data?.error || 'Failed to save draft.');
     } finally {
@@ -189,6 +201,7 @@ const Reports = () => {
       const { data } = await api.post(`/reports/${currentReport.id}/submit`);
       setCurrentWeek((prev) => ({ ...prev, report: data.report, preview: data.report }));
       notify.success('Weekly report submitted.');
+      setSelectedReport(null);
       load();
     } catch (err) {
       notify.error(err.response?.data?.error || 'Failed to submit report.');
@@ -211,6 +224,30 @@ const Reports = () => {
       setHistoryLoading(false);
     }
   };
+const editReport = async (report) => {
+  try {
+    const { data } = await api.get(`/reports/${report.id}`);
+
+    console.log(data);
+
+    setSelectedReport(data.report);
+
+    setReportForm({
+      title: data.report.title || "",
+      content: data.report.content || "",
+    });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    notify.success("Editing report");
+  } catch (err) {
+    console.error(err);
+    notify.error("Unable to open report");
+  }
+};
 
   const feedbackCards = useMemo(() => {
     return reports.filter((report) => report.latestReview || report.feedback || report.status !== 'DRAFT');
@@ -423,7 +460,16 @@ const Reports = () => {
                 {currentReport ? getReportStatusLabel(currentReport.status) : 'Draft preview'}
               </Badge>
             </div>
-
+              <div className="mb-4">
+    <GreenButton
+        onClick={generateWeekly}
+        icon={Sparkles}
+    >
+        {generating
+            ? 'Generating...'
+            : 'Generate New Report'}
+    </GreenButton>
+</div>
             {currentReport ? (
               <>
                 <Input
@@ -432,15 +478,46 @@ const Reports = () => {
                   onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })}
                   disabled={!editableReport}
                 />
+                <div className="grid grid-cols-3 gap-3 mb-4">
+
+<Card className="p-3">
+<p className="text-xs uppercase">Status</p>
+<p className="font-bold">
+{getReportStatusLabel(currentReport.status)}
+</p>
+</Card>
+
+<Card className="p-3">
+<p className="text-xs uppercase">Week</p>
+<p className="font-bold">
+{reportForm.title}
+</p>
+</Card>
+
+<Card className="p-3">
+<p className="text-xs uppercase">Generated</p>
+<p className="font-bold">
+{formatDate(new Date())}
+</p>
+</Card>
+
+</div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Weekly Report</label>
-                  <textarea
-                    rows={18}
-                    value={reportForm.content}
-                    onChange={(e) => setReportForm({ ...reportForm, content: e.target.value })}
-                    disabled={!editableReport}
-                    className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition font-sans whitespace-pre-wrap"
-                  />
+                <label className="text-xl font-bold flex items-center gap-2">
+    📄 Weekly Internship Progress Report
+</label>
+
+<div
+    className="rounded-2xl border p-6 bg-white dark:bg-slate-800 overflow-auto max-h-[700px]"
+    style={{ borderColor: 'var(--border)' }}
+>
+    <pre
+        className="whitespace-pre-wrap font-sans leading-7 text-sm"
+        style={{ color: 'var(--text)' }}
+    >
+        {reportForm.content}
+    </pre>
+</div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl p-4 border" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
@@ -491,15 +568,20 @@ const Reports = () => {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Generated Preview</label>
-                  <textarea
-                    readOnly
-                    rows={16}
-                    value={currentPreview?.content || ''}
-                    className="w-full px-4 py-3 text-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none font-sans whitespace-pre-wrap opacity-90"
-                  />
+                <div
+    className="rounded-2xl border p-6 bg-white dark:bg-slate-800 overflow-auto max-h-[650px]"
+    style={{ borderColor: 'var(--border)' }}
+>
+    <pre
+        className="whitespace-pre-wrap leading-7 text-sm"
+        style={{ color: 'var(--text)' }}
+    >
+        {currentPreview?.content || ""}
+    </pre>
+</div>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <GreenButton onClick={generateWeekly} icon={Sparkles}>{generating ? 'Generating...' : 'Generate Weekly Report'}</GreenButton>
+                  <GreenButton onClick={generateWeekly} icon={Sparkles}>{generating ? 'Generating...' : 'Generate New Report'}</GreenButton>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-2xl p-4 border" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
@@ -526,14 +608,33 @@ const Reports = () => {
             <div className="space-y-3 max-h-[32rem] overflow-auto pr-1">
               {feedbackCards.length === 0 ? (
                 <p className="text-sm py-8 text-center" style={{ color: 'var(--muted)' }}>No feedback history yet.</p>
-              ) : feedbackCards.map((report) => (
-                <button
+              ) :
+                feedbackCards.map((report) => (
+                <div
                   key={report.id}
-                  onClick={() => openHistory(report)}
-                  className="w-full text-left rounded-2xl border p-4 transition hover:border-orange-300"
+                  className="w-full rounded-2xl border p-4 transition hover:border-orange-300"
                   style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}
                 >
+                <div className="flex justify-end gap-2 mb-3">
+
+  <button
+    onClick={() => editReport(report)}
+    className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs"
+  >
+    Edit
+  </button>
+
+  <button
+    onClick={() => openHistory(report)}
+    className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 text-xs"
+  >
+    History
+  </button>
+
+</div>
+
                   <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1"></div>
                     <div className="min-w-0">
                       <p className="font-semibold break-words" style={{ color: 'var(--text)' }}>{report.title}</p>
                       <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Submitted {formatRelative(report.submittedAt)} ? {report.latestReview ? ratingToStars(report.latestReview.rating || 0) : 'No rating yet'}</p>
@@ -541,7 +642,7 @@ const Reports = () => {
                     <Badge variant={reportBadgeVariant(report.status)}>{getReportStatusLabel(report.status)}</Badge>
                   </div>
                   {report.latestReview?.feedback && <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>{report.latestReview.feedback}</p>}
-                </button>
+                </div >
               ))}
             </div>
           </Card>

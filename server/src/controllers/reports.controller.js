@@ -242,7 +242,12 @@ export const currentWeek = asyncHandler(async (req, res) => {
       select: dailyLogSelect,
     }),
     prisma.report.findFirst({
-      where: { userId: req.user.id, weekStartDate: toUtcDateOnly(weekStart) },
+      where: {
+    userId: req.user.id,
+},
+orderBy: {
+    createdAt: "desc",
+},
       include: reportDetailInclude,
     }),
   ]);
@@ -382,64 +387,75 @@ export const reopenDailyLog = asyncHandler(async (req, res) => {
 export const generateWeekly = asyncHandler(async (req, res) => {
   const weekStart = startOfWeek(new Date());
   const weekEnd = endOfWeek(new Date());
-  const dailyLogs = await prisma.dailyWorkLog.findMany({
-    where: { userId: req.user.id, date: { gte: weekStart, lte: weekEnd } },
-    orderBy: { date: 'asc' },
-  });
-  if (!dailyLogs.length) throw ApiError.badRequest('Add at least one daily log before generating a weekly report');
 
-  const draft = buildWeeklyReportDraft(dailyLogs, { weekStart, weekEnd });
-  const weekStartDate = toUtcDateOnly(weekStart);
-  const weekEndDate = toUtcDateOnly(weekEnd);
-  const weekNumber = getIsoWeekNumber(weekStart);
-  const existing = await prisma.report.findFirst({
-    where: { userId: req.user.id, weekStartDate },
-    include: reportDetailInclude,
+  const dailyLogs = await prisma.dailyWorkLog.findMany({
+    where: {
+      userId: req.user.id,
+      date: {
+        gte: weekStart,
+        lte: weekEnd,
+      },
+    },
+    orderBy: {
+      date: 'asc',
+    },
   });
-  if (existing && !EDITABLE_REPORT_STATUSES.has(existing.status)) {
-    throw ApiError.forbidden('Submitted reports cannot be regenerated');
+
+  if (!dailyLogs.length) {
+    throw ApiError.badRequest(
+      'Add at least one daily log before generating a weekly report'
+    );
   }
 
-  const report = existing
-    ? await prisma.report.update({
-        where: { id: existing.id },
-        data: {
-          title: draft.title,
-          content: draft.content,
-          weekNumber,
-          weekStartDate,
-          weekEndDate,
-          generatedAt: new Date(),
-          status: 'DRAFT',
-          score: null,
-          feedback: null,
-          reviewedById: null,
-          reviewedAt: null,
-          dailyLogs: { connect: dailyLogs.map((log) => ({ id: log.id })) },
-        },
-        include: reportDetailInclude,
-      })
-    : await prisma.report.create({
-        data: {
-          userId: req.user.id,
-          title: draft.title,
-          content: draft.content,
-          weekNumber,
-          weekStartDate,
-          weekEndDate,
-          generatedAt: new Date(),
-          status: 'DRAFT',
-          dailyLogs: { connect: dailyLogs.map((log) => ({ id: log.id })) },
-        },
-        include: reportDetailInclude,
-      });
+  const draft = buildWeeklyReportDraft(dailyLogs, {
+    weekStart,
+    weekEnd,
+  });
+
+  const report = await prisma.report.create({
+    data: {
+      userId: req.user.id,
+      title: draft.title,
+      content: draft.content,
+      weekNumber: getIsoWeekNumber(weekStart),
+      weekStartDate: toUtcDateOnly(weekStart),
+      weekEndDate: toUtcDateOnly(weekEnd),
+      generatedAt: new Date(),
+      status: 'DRAFT',
+      score: null,
+      feedback: null,
+      reviewedAt: null,
+      reviewedById: null,
+    },
+    include: reportDetailInclude,
+  });
 
   await prisma.dailyWorkLog.updateMany({
-    where: { id: { in: dailyLogs.map((log) => log.id) } },
-    data: { reportId: report.id },
+    where: {
+      id: {
+        in: dailyLogs.map((log) => log.id),
+      },
+    },
+    data: {
+      reportId: report.id,
+      status: 'OPEN',
+    },
   });
-  await audit({ userId: req.user.id, action: 'report.generate', resource: 'report', resourceId: report.id, meta: { weekNumber }, req });
-  res.status(existing ? 200 : 201).json({ report: responseWithSummary(report) });
+
+  await audit({
+    userId: req.user.id,
+    action: 'report.generate',
+    resource: 'report',
+    resourceId: report.id,
+    meta: {
+      weekNumber: report.weekNumber,
+    },
+    req,
+  });
+
+  res.status(201).json({
+    report: responseWithSummary(report),
+  });
 });
 
 export const create = asyncHandler(async (req, res) => {
@@ -552,6 +568,19 @@ export const review = asyncHandler(async (req, res) => {
         feedback: feedback || null,
       },
     });
+    if (status === "NEEDS_REVISION") {
+  await tx.dailyWorkLog.updateMany({
+    where: {
+      reportId: report.id,
+    },
+    data: {
+      status: "REOPENED",
+      reopenedById: req.user.id,
+      reopenedAt: new Date(),
+      lockedAt: null,
+    },
+  });
+}
 
     return reportUpdate;
   });
