@@ -1,17 +1,53 @@
 // ════════════════════════════════════════════════════════════
 //  Mentor — pages/Dashboard.jsx
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import AddInternModal from "../components/AddInternModal";
 import { Users, FileText, AlertTriangle, Loader2, TrendingUp } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 
-const MentorDashboard = () => {
+const MentorDashboard = ({ onNavigate, onSelectIntern }) => {
   const { user } = useAuthStore();
   const [interns, setInterns] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+
+   const [showModal, setShowModal] = useState(false);
+   const [editingIntern,setEditingIntern] = useState(null);
+
+  const handleSaveIntern = (intern) => {
+  console.log("Intern Data:", intern);
+
+  const newIntern = {
+    id: Date.now(),
+    ...intern,
+    avgScore: 0,
+    completedTasks: 0,
+    attendanceRate: 100,
+  };
+
+  setInterns((prev) => [...prev, newIntern]);
+  setShowModal(false); // Close modal after saving
+};
+
+const handleViewWorkflow = (intern) => {
+  console.log(intern);
+  onSelectIntern(intern);
+  onNavigate("mentor-workflow");
+  };
+
+const handleEditIntern = (intern) => {
+  setEditingIntern(intern);
+  setShowModal(true);
+};
+
+const handleDeleteIntern = (id) => {
+  if (window.confirm("Delete this intern?")) {
+    setInterns((prev) => prev.filter((i) => i.id !== id));
+  }
+};
 
   useEffect(() => {
     (async () => {
@@ -37,8 +73,18 @@ const MentorDashboard = () => {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end mb-4">
+  <button
+    onClick={() => setShowModal(true)}
+    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+  >
+    + Add Intern
+  </button>
+</div>
       <div className="rounded-xl p-5 sm:p-8 text-white" style={{ background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)' }}>
-        <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: '#A78BFA' }}>Mentor Overview</p>
+  <p className="text-xs uppercase tracking-widest font-bold mb-1">
+  Captain Overview
+</p>
         <h1 className="text-2xl sm:text-3xl font-bold">Good day, {user?.name?.split(' ')[0]} 👋</h1>
         <p className="opacity-80 mt-2 text-sm">You have {interns.length} intern{interns.length !== 1 ? 's' : ''} and {reports.length} report{reports.length !== 1 ? 's' : ''} pending review.</p>
       </div>
@@ -54,13 +100,26 @@ const MentorDashboard = () => {
         <SectionHeader title="My Interns" subtitle="Click an intern to see their reports and tasks" />
         <div className="sn-table-scroll -mx-1">
           <table className="w-full text-sm min-w-[40rem]">
-            <thead>
-              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance'].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-left" style={{ color: 'var(--muted)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
+             <thead>
+  <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+    {[
+      'Intern',
+      'Department',
+      'Avg Score',
+      'Tasks Done',
+      'Attendance',
+      'Actions'
+    ].map((h) => (
+      <th
+        key={h}
+        className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-left"
+        style={{ color: 'var(--muted)' }}
+      >
+        {h}
+      </th>
+    ))}
+  </tr>
+</thead>
             <tbody>
               {interns.map((i) => (
                 <tr key={i.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -74,12 +133,41 @@ const MentorDashboard = () => {
                       {i.attendanceRate}%
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+  <div className="flex gap-2">
+    <button
+      className="bg-blue-600 text-white px-2 py-1 rounded text-xs"
+      onClick={() => handleViewWorkflow(i)}
+    >
+      👁 View
+    </button>
+
+    <button
+      className="bg-yellow-500 text-white px-2 py-1 rounded text-xs"
+      onClick={() => handleEditIntern(i)}
+    >
+      ✏ Edit
+    </button>
+
+    <button
+      className="bg-red-600 text-white px-2 py-1 rounded text-xs"
+      onClick={() => handleDeleteIntern(i.id)}
+    >
+      🗑 Delete
+    </button>
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+      <AddInternModal
+  isOpen={showModal}
+  onClose={() => setShowModal(false)}
+  onSave={handleSaveIntern}
+/>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 // src/main.jsx
 import React, { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
@@ -13,15 +14,11 @@ if (localStorage.getItem(APP_CONSTANTS.THEME_STORAGE_KEY) === 'dark') {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <StrictMode>
+  <BrowserRouter>
     <ErrorBoundary>
       <App />
-      <Toaster
-        position={APP_CONSTANTS.TOAST_POSITION}
-        toastOptions={{
-          duration: APP_CONSTANTS.TOAST_DURATION,
-          style: APP_CONSTANTS.TOAST_STYLE,
-        }}
-      />
+      <Toaster />
     </ErrorBoundary>
-  </StrictMode>
+  </BrowserRouter>
+</StrictMode>
 );

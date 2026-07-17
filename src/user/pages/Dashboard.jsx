@@ -1,3 +1,4 @@
+import InternshipWorkflow from "../../components/InternshipWorkflow";
 // ════════════════════════════════════════════════════════════
 //  USER — pages/Dashboard.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
@@ -7,6 +8,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
+
 import {
   CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2,
 } from 'lucide-react';
@@ -69,6 +71,20 @@ const Dashboard = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6 pb-16">
+
+      <InternshipWorkflow
+  data={{
+    offerLetterDate: "10 Jul 2026",
+    tlName: "Captain Raj",
+    startDate: "14 Jul 2026",
+    tasksAssigned: 5,
+    tasksCompleted: 2,
+    deadline: "31 Aug 2026",
+    internshipCompleted: false,
+    certificateIssued: false,
+  }}
+/>
+
       <MotionDiv
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
