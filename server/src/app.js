@@ -25,6 +25,7 @@ import { requestId } from './middleware/requestId.js';
 import { bodySizeTracker } from './utils/metrics.js';
 import fs from 'node:fs';
 import { UPLOAD_DIR_PATH } from './utils/upload.js';
+import progressRoutes from './routes/progress.routes.js';
 
 const app = express();
 
@@ -186,6 +187,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/kb', kbRoutes);
 app.use('/api/v1/skill-gap', skillGapRoutes);
 app.use('/api/v1', csrfProtection, apiRoutes);
+app.use('/api/v1/progress', progressRoutes);
 
 // ── 404 ────────────────────────────────────────────────────
 app.use((req, _res, next) => {

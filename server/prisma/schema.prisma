@@ -51,6 +51,11 @@ model User {
   lastLoginIp     String?
   failedAttempts  Int           @default(0)
   lockedUntil     DateTime?
+  xp              Int           @default(0)
+  level           Int           @default(1)
+  streak          Int           @default(0)
+  longestStreak   Int           @default(0)
+  lastActive      DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -74,6 +79,9 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  badges            UserBadge[]
+  dailyGoals        DailyGoal[]
+  streakLogs        StreakLog[]
 
   @@index([role])
   @@index([status])
@@ -619,5 +627,59 @@ model MeetingAttendee {
   createdAt DateTime @default(now())
 
   @@unique([meetingId, userId])
+  @@index([userId])
+}
+
+model Badge {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  description     String
+  icon            String
+  xpReward        Int      @default(100)
+  requirementType String
+  requirementValue Int
+  createdAt       DateTime @default(now())
+  userBadges      UserBadge[]
+}
+
+model UserBadge {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId     String
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model DailyGoal {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  tasksGoal   Int      @default(1)
+  reportsGoal Int      @default(0)
+  kbReadGoal  Int      @default(1)
+  tasksDone   Int      @default(0)
+  reportsDone Int      @default(0)
+  kbReadDone  Int      @default(0)
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model StreakLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
   @@index([userId])
 }

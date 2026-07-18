@@ -7,6 +7,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { lru } from '../utils/lru.js';
+import * as gamification from '../services/gamification.service.js';
 
 const _articleCreateSchema = z.object({
   title: z.string().trim().min(3).max(200),
@@ -109,6 +110,14 @@ export const getArticle = asyncHandler(async (req, res) => {
   if (!article) throw ApiError.notFound();
   // Increment views (fire & forget)
   prisma.knowledgeArticle.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => {});
+
+  // Gamification triggers on reading article (only for interns)
+  if (req.user && req.user.role === 'INTERN') {
+    await gamification.logActivity(req.user.id);
+    await gamification.awardXP(req.user.id, 10);
+    await gamification.updateDailyGoal(req.user.id, 'kbRead', 1);
+  }
+
   res.json({ article });
 });
 

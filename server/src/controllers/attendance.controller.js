@@ -6,6 +6,7 @@ import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
+import * as gamification from '../services/gamification.service.js';
 
 const _markSchema = z.object({
   userId: z.string().cuid(),
@@ -89,6 +90,14 @@ export const checkInOut = asyncHandler(async (req, res) => {
       checkIn: now,
     },
   });
+
+  if (status === 'PRESENT') {
+    await gamification.logActivity(req.user.id);
+    await gamification.awardXP(req.user.id, 50);
+    const count = await prisma.attendance.count({ where: { userId: req.user.id, status: 'PRESENT' } });
+    await gamification.checkBadges(req.user.id, 'ATTENDANCE', count);
+  }
+
   res.json({ attendance: record });
 });
 

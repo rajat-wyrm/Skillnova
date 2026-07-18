@@ -387,6 +387,19 @@ async function main() {
     create: { key: 'platform.registrationOpen', value: true },
   });
 
+  // ── Seeding Badges ─────────────────────────────────────────
+  console.log('🏅  Seeding Badges…');
+  await prisma.badge.deleteMany({});
+  await prisma.badge.createMany({
+    data: [
+      { name: 'Welcome Aboard', description: 'Log your first daily check-in', icon: 'Rocket', xpReward: 100, requirementType: 'ATTENDANCE', requirementValue: 1 },
+      { name: 'Streak Starter', description: 'Maintain a 3-day active streak', icon: 'Flame', xpReward: 150, requirementType: 'STREAK', requirementValue: 3 },
+      { name: 'Streak Master', description: 'Maintain a 7-day active streak', icon: 'Award', xpReward: 300, requirementType: 'STREAK', requirementValue: 7 },
+      { name: 'Task Crusher', description: 'Mark 5 project tasks as completed', icon: 'CheckSquare', xpReward: 250, requirementType: 'TASKS', requirementValue: 5 },
+      { name: 'First Report', description: 'Submit your first weekly report', icon: 'FileText', xpReward: 150, requirementType: 'REPORTS', requirementValue: 1 },
+    ]
+  });
+
   console.log('\n✅  Seed complete!\n');
   console.log('Demo accounts (change passwords immediately in production):');
   console.log('  Super Admin : superadmin@skillnova.com / SuperAdmin#2026');

@@ -628,4 +628,22 @@ Either `GROQ_API_KEY` is missing / invalid, or the curated KB has no relevant se
 
 ## License
 
+<<<<<<< HEAD
 Internal. UptoSkills / SkillNova.
+=======
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+## Contact
+
+- **Project Maintainer**: Rajat
+- **GitHub**: [rajat-wyrm](https://github.com/rajat-wyrm)
+- **Repository**: [https://github.com/rajat-wyrm/Skillnova](https://github.com/rajat-wyrm/Skillnova)
+
+For security issues, please email directly (do not use the public issue tracker).
+
+---
+
+*Last updated: June 2026*
+>>>>>>> 66fd2f62982d0e7c022716fac3046c2a64459c80
