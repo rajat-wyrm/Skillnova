@@ -47,6 +47,7 @@ router.patch(
       yearOfStudy: z.string().max(40).optional().nullable(),
       dateOfBirth: z.coerce.date().optional().nullable(),
       linkedinUrl: z.string().url().optional().nullable(),
+      githubUrl: z.string().url().optional().nullable(),
       skills: z.string().max(500).optional().nullable(),
       avatarUrl: z.string().url().optional().nullable(),
       rating: z.coerce.number().min(0).max(10).optional(),

@@ -21,7 +21,7 @@ export default defineConfig({
     target: 'es2020',
   },
   server: {
-    port: 5174,
+    port: 5273,
     host: true,
     proxy: {
       // Proxy widget dev requests to the AIAssistant FastAPI backend.

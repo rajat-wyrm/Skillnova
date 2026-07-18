@@ -63,6 +63,8 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+const [resetValue, setResetValue] = useState('');
   const [formError, setFormError] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
@@ -126,6 +128,7 @@ const Login = () => {
   const pwdState = touched.password && !formError
     ? (fieldError.password ? 'error' : password ? 'success' : '')
     : '';
+    
 
   return (
     <div className="auth-container">
@@ -193,6 +196,24 @@ const Login = () => {
               </button>
             </div>
             {pwdState === 'error' && <p id={`${passwordId}-error`} className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
+            <div style={{ textAlign: 'right', marginTop: 8 }}>
+  <button
+    type="button"
+onClick={() => {
+  console.log("Forgot clicked");
+  setShowForgot(true);
+}}    style={{
+      background: 'none',
+      border: 'none',
+      color: '#ff6d34',
+      cursor: 'pointer',
+      fontSize: 13,
+      padding: 0,
+    }}
+  >
+    Forgot Password?
+  </button>
+</div>
           </div>
 
           {formError && (
@@ -226,12 +247,81 @@ const Login = () => {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 18 }}>
-          By signing in you agree to our{' '}
-          <a href="#" style={{ color: '#ff6d34' }}>Terms</a> and{' '}
-          <a href="#" style={{ color: '#ff6d34' }}>Privacy Policy</a>.
-        </p>
+  By signing in you agree to our{' '}
+  <a href="#" style={{ color: '#ff6d34' }}>Terms</a> and{' '}
+  <a href="#" style={{ color: '#ff6d34' }}>Privacy Policy</a>.
+</p>
+
+{showForgot && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        background: "#fff",
+        padding: 24,
+        borderRadius: 12,
+        width: 350,
+      }}
+    >
+      <h3>Forgot Password</h3>
+
+      <input
+        type="email"
+        placeholder="Enter your email"
+        value={resetValue}
+        onChange={(e) => setResetValue(e.target.value)}
+        style={{
+          width: "100%",
+          padding: 10,
+          margin: "15px 0",
+          border: "1px solid #ccc",
+          borderRadius: 8,
+        }}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 10,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            notify.success("Password reset link sent! (Demo)");
+            setShowForgot(false);
+            setResetValue("");
+          }}
+        >
+          Send Link
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setShowForgot(false);
+            setResetValue("");
+          }}
+        >
+          Cancel
+        </button>
       </div>
     </div>
+  </div>
+)}
+
+</div>
+</div>
   );
 };
 

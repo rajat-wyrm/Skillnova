@@ -18,6 +18,15 @@ const FIELDS = [
   { label: 'Date of Birth', key: 'dateOfBirth', type: 'date' },
   { label: 'LinkedIn', key: 'linkedinUrl', type: 'url',
     validate: (v) => v && !/^https?:\/\/.+/.test(v) ? 'Enter a valid URL starting with https://' : '' },
+  {
+  label: 'GitHub',
+  key: 'githubUrl',
+  type: 'url',
+  validate: (v) =>
+    v && !/^https?:\/\/.+/.test(v)
+      ? 'Enter a valid URL starting with https://'
+      : '',
+},
 ];
 
 const FormField = ({ field, value, editing, onChange, touched, error }) => {
@@ -46,16 +55,36 @@ const FormField = ({ field, value, editing, onChange, touched, error }) => {
         {field.label}
         {field.required && editing && <span style={{ color: '#ff6d34' }}> *</span>}
       </label>
-      <input id={uid} type={field.type} value={value ? new Date(value).toISOString?.().slice(0, 10) === value.slice(0, 10) && field.type === 'date' ? value : value : ''} disabled={!editing || field.disabled}
-        onChange={onChange}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        maxLength={field.maxLen}
-        style={inputStyle}
-        aria-invalid={hasError ? 'true' : undefined}
-      />
+      <input
+  id={uid}
+  type={field.type}
+  value={value || ""}
+  disabled={!editing || field.disabled}
+  onChange={onChange}
+  onFocus={() => setFocused(true)}
+  onBlur={() => setFocused(false)}
+  maxLength={field.maxLen}
+  style={inputStyle}
+  aria-invalid={hasError ? 'true' : undefined}
+/>
       {hasError && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
     </div>
   );
+};
+
+const formatDateTime = (date) => {
+  if (!date) return "Never";
+
+  const d = new Date(date);
+
+  if (isNaN(d.getTime())) {
+    return "Never";
+  }
+
+  return d.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 };
 
 const Profile = () => {
@@ -69,6 +98,12 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    console.log(user);
+
+if (user?.dateOfBirth) {
+  console.log("DOB:", user.dateOfBirth);
+  console.log("Date object:", new Date(user.dateOfBirth));
+}
     if (!user) return;
     setProfile({
       name: user.name ?? '',
@@ -76,9 +111,14 @@ const Profile = () => {
       department: user.department ?? '',
       college: user.college ?? '',
       yearOfStudy: user.yearOfStudy ?? '',
-      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : '',
+      dateOfBirth:
+  user.dateOfBirth && !isNaN(new Date(user.dateOfBirth))
+    ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
+    : '',
       linkedinUrl: user.linkedinUrl ?? '',
+      githubUrl: user.githubUrl ?? '',
       skills: user.skills ?? '',
+      updatedAt: user.updatedAt,
     });
   }, [user]);
 
@@ -90,7 +130,8 @@ const Profile = () => {
     if (name === 'name') v = v.replace(/[<>'"&]/g, '').slice(0, 80);
     if (name === 'department' || name === 'college') v = v.replace(/[<>'"&]/g, '').slice(0, 100);
     if (name === 'yearOfStudy') v = v.replace(/[^0-9-]/g, '').slice(0, 10);
-    if (name === 'linkedinUrl') v = v.replace(/[<>"&]/g, '').slice(0, 255);
+    if (name === 'linkedinUrl' || name === 'githubUrl')
+    v = v.replace(/[<>"&]/g, '').slice(0, 255);
     return v;
   };
 
@@ -141,6 +182,7 @@ const Profile = () => {
         yearOfStudy: profile.yearOfStudy,
         dateOfBirth: profile.dateOfBirth || null,
         linkedinUrl: profile.linkedinUrl,
+        githubUrl: profile.githubUrl,
         skills: profile.skills,
       });
       notify.success('Profile saved!');
@@ -155,20 +197,91 @@ const Profile = () => {
   };
 
   const hasErrors = Object.values(errors).some(Boolean);
+  const profileFields = [
+  profile.name,
+  profile.email,
+  profile.department,
+  profile.college,
+  profile.yearOfStudy,
+  profile.dateOfBirth,
+  profile.linkedinUrl,
+  profile.skills,
+];
 
+const completion = Math.round(
+  (profileFields.filter(Boolean).length / profileFields.length) * 100
+);
   return (
     <div className="max-w-3xl space-y-6 w-full min-w-0">
       <SectionHeader title="My Profile" subtitle="Manage your profile information" />
 
       <Card className="overflow-hidden">
+        <div
+  style={{
+    padding: 20,
+    borderBottom: '1px solid var(--border)',
+  }}
+>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+      fontWeight: 600,
+    }}
+  >
+    <span>Profile Completion</span>
+    <span>{completion}%</span>
+  </div>
+
+  <div
+    style={{
+      height: 10,
+      background: 'var(--border)',
+      borderRadius: 999,
+      overflow: 'hidden',
+    }}
+  >
+    <div
+      style={{
+        width: `${completion}%`,
+        height: '100%',
+        background: completion === 100
+          ? '#10b981'
+          : 'linear-gradient(90deg,#2563EB,#7C3AED)',
+        transition: '0.3s',
+      }}
+    />
+  </div>
+</div>
         <div className="h-24 w-full" style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }} />
 
         <div className="px-6 pb-6">
           <div className="flex flex-col items-center sm:flex-row sm:items-end gap-4 -mt-10 mb-6 text-center sm:text-left">
-            <div className="w-20 h-20 rounded-xl border-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)', borderColor: 'var(--card)' }}>
-              {((profile.name || '').split(' ').map((n) => n[0]).join('').slice(0, 2) || '?').toUpperCase()}
-            </div>
+<div
+  onClick={() => notify.info("Profile photo upload will be available in a future update.")}
+  title="Change Profile Photo"
+  className="w-20 h-20 rounded-xl border-4 flex items-center justify-center text-2xl font-bold text-white shadow-lg flex-shrink-0"
+  style={{
+    background: 'linear-gradient(135deg, #2563EB, #7C3AED)',
+    borderColor: 'var(--card)',
+    cursor: 'pointer',
+  }}
+>
+  {((profile.name || '').split(' ').map((n) => n[0]).join('').slice(0, 2) || '?').toUpperCase()}
+</div>
+<p
+  onClick={() => notify.info("Profile photo upload will be available in a future update.")}
+  style={{
+    fontSize: 12,
+    color: 'var(--muted)',
+    cursor: 'pointer',
+    marginTop: 6,
+  }}
+>
+  Change Photo
+</p>
+              
             <div className="pb-1 flex-1 min-w-0">
               <h2 className="text-lg font-bold break-words" style={{ color: 'var(--text)' }}>{profile.name}</h2>
               <p className="text-sm" style={{ color: 'var(--muted)' }}>{user?.role} · {profile.department}</p>
@@ -214,6 +327,21 @@ const Profile = () => {
                 rows={2} style={{ width: '100%', padding: '9px 12px', fontSize: 14, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', resize: 'vertical', opacity: editing ? 1 : 0.6 }} />
             </div>
           </div>
+         <div
+  style={{
+    marginTop: 24,
+    paddingTop: 16,
+    borderTop: '1px solid var(--border)',
+    color: 'var(--muted)',
+    fontSize: 13,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  }}
+>
+  <span>🕒 Last Updated</span>
+  <span>{formatDateTime(profile.updatedAt)}</span>
+</div> 
         </div>
       </Card>
     </div>

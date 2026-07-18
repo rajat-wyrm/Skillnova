@@ -172,6 +172,14 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
   const [modalTask, setModalTask] = useState(null);
   const [project, setProject] = useState(null);
 
+  const stats = {
+  total: tasks.length,
+  todo: tasks.filter((t) => t.status === 'TODO').length,
+  progress: tasks.filter((t) => t.status === 'IN_PROGRESS').length,
+  review: tasks.filter((t) => t.status === 'REVIEW').length,
+  done: tasks.filter((t) => t.status === 'DONE').length,
+};
+
   const fetch = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
@@ -254,16 +262,136 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
     notify.success('Task created');
   };
 
+
+  
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}><Loader2 size={20} className="animate-spin" style={{ display: 'inline-block', verticalAlign: 'middle' }} /></div>;
 
+
+
   return (
-    <div>
-      {project && (
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{project.name}</h2>
-          {project.description && <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{project.description}</p>}
+  <div>
+    {project && (
+      <div style={{ marginBottom: 16 }}>
+        <h2
+          style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: 'var(--text)',
+          }}
+        >
+          {project.name}
+        </h2>
+
+        {project.description && (
+          <p
+            style={{
+              fontSize: 13,
+              color: 'var(--muted)',
+              marginTop: 4,
+            }}
+          >
+            {project.description}
+          </p>
+        )}
+      </div>
+    )}
+
+    {/* Task Counters */}
+    <div
+      style={{
+        display: 'flex',
+        gap: 12,
+        marginBottom: 16,
+        flexWrap: 'wrap',
+      }}
+    >
+      {[
+        { label: 'Total', value: stats.total },
+        { label: 'To Do', value: stats.todo },
+        { label: 'In Progress', value: stats.progress },
+        { label: 'Review', value: stats.review },
+        { label: 'Done', value: stats.done },
+      ].map((item) => (
+        <div
+          key={item.label}
+          style={{
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            padding: '10px 16px',
+            minWidth: 90,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--muted)',
+            }}
+          >
+            {item.label}
+          </div>
+
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--text)',
+            }}
+          >
+            {item.value}
+          </div>
         </div>
-      )}
+      ))}
+    </div>
+
+    {/* Progress Bar */}
+    <div
+      style={{
+        marginBottom: 20,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: 6,
+          fontSize: 13,
+          color: 'var(--text)',
+        }}
+      >
+        <span>Project Progress</span>
+
+        <span>
+          {stats.total === 0
+            ? 0
+            : Math.round((stats.done / stats.total) * 100)}
+          %
+        </span>
+      </div>
+
+      <div
+        style={{
+          height: 8,
+          background: 'var(--border)',
+          borderRadius: 999,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: `${
+              stats.total === 0
+                ? 0
+                : (stats.done / stats.total) * 100
+            }%`,
+            height: '100%',
+            background: '#00bea3',
+            transition: '0.3s',
+          }}
+        />
+      </div>
+    </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
           {COLUMNS.map((c) => (
