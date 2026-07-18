@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { emitToRoom, getIO } from '../sockets/index.js';
+import * as gamification from '../services/gamification.service.js';
 
 // Validators (also enforced at the route level for consistency)
 const _createSchema = z.object({
@@ -82,6 +83,14 @@ export const create = asyncHandler(async (req, res) => {
   const report = await prisma.report.create({
     data: { ...data, userId: req.user.id },
   });
+
+  // Gamification triggers on report submission
+  await gamification.logActivity(req.user.id);
+  await gamification.awardXP(req.user.id, 150);
+  await gamification.updateDailyGoal(req.user.id, 'reports', 1);
+  const count = await prisma.report.count({ where: { userId: req.user.id } });
+  await gamification.checkBadges(req.user.id, 'REPORTS', count);
+
   await audit({ userId: req.user.id, action: 'report.create', resource: 'report', resourceId: report.id, req });
   // Notify mentor
   const profile = await prisma.internProfile.findUnique({ where: { userId: req.user.id } });

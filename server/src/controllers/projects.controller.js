@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { emitToRoom } from '../sockets/index.js';
+import * as gamification from '../services/gamification.service.js';
 
 // Local schemas (validators live in routes; kept here for documentation & reuse)
 const _projectSchema = z.object({
@@ -142,6 +143,16 @@ export const updateTask = asyncHandler(async (req, res) => {
     update.completedAt = new Date();
   }
   const updated = await prisma.projectTask.update({ where: { id }, data: update });
+
+  // Gamification triggers on task completion
+  if (req.body.status === 'DONE' && task.status !== 'DONE' && updated.assigneeId) {
+    await gamification.logActivity(updated.assigneeId);
+    await gamification.awardXP(updated.assigneeId, 100);
+    await gamification.updateDailyGoal(updated.assigneeId, 'tasks', 1);
+    const count = await prisma.projectTask.count({ where: { assigneeId: updated.assigneeId, status: 'DONE' } });
+    await gamification.checkBadges(updated.assigneeId, 'TASKS', count);
+  }
+
   await audit({ userId: req.user.id, action: 'task.update', resource: 'task', resourceId: id, meta: req.body, req });
   emitToRoom(`project:${updated.projectId}`, 'task:updated', { projectId: updated.projectId, taskId: updated.id, task: updated });
   emitToRoom(`role:MENTOR`, 'dashboard:refresh', {});

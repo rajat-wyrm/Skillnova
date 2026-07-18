@@ -271,4 +271,8 @@ api.post('/notifications/read-all', notif.markAllRead);
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
 
+// ── Gamification ──────────────────────────────────────────
+import gamification from './gamification.routes.js';
+api.use('/gamification', gamification);
+
 export default api;

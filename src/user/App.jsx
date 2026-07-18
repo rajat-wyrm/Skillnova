@@ -22,9 +22,11 @@ const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 const SkillGapAnalyzer = lazy(() => import('./pages/SkillGapAnalyzer'));
+const GamificationDashboard = lazy(() => import('./pages/GamificationDashboard'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
+  progress:       <Suspense fallback={<PageLoader />}><GamificationDashboard /></Suspense>,
   knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
   qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
   project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
