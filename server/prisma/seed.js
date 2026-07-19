@@ -25,7 +25,7 @@ async function main() {
     ].map((c) =>
       prisma.knowledgeCategory.upsert({
         where: { slug: c.name.toLowerCase().replace(/\s+/g, '-') },
-        update: {},
+      update: {},
         create: {
           name: c.name,
           slug: c.name.toLowerCase().replace(/\s+/g, '-'),
