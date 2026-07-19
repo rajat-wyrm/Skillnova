@@ -21,7 +21,7 @@ const Leaderboard = () => {
       try {
         const res = await api.get('/analytics/leaderboard');
         setItems(res.data.items || []);
-      } catch (err) {
+      } catch {
         /* ignore */
       } finally {
         setLoading(false);
@@ -57,9 +57,9 @@ const Leaderboard = () => {
 
   return (
     <div className="space-y-6 pb-16 font-sans">
-      <SectionHeader 
-        title="Learning Streak Leaderboard" 
-        subtitle="Ranked by active learning days and consistent daily habits" 
+      <SectionHeader
+        title="Learning Streak Leaderboard"
+        subtitle="Ranked by active learning days and consistent daily habits"
         action={
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -81,8 +81,8 @@ const Leaderboard = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative rounded-2xl p-5 overflow-hidden border flex flex-col sm:flex-row items-center justify-between gap-4"
-          style={{ 
-            background: 'linear-gradient(135deg, #2D3436 0%, #1a1f20 100%)', 
+          style={{
+            background: 'linear-gradient(135deg, #2D3436 0%, #1a1f20 100%)',
             borderColor: 'rgba(255,255,255,0.08)',
             boxShadow: '0 8px 30px rgba(0,0,0,0.12)'
           }}
@@ -123,11 +123,11 @@ const Leaderboard = () => {
             const style = podiumColors[i] || podiumColors[2];
             const isMe = intern.id === currentUser?.id;
             return (
-              <Card 
+              <Card
                 key={intern.id}
                 className="relative overflow-hidden p-6 text-center border-t-4 transition-all duration-300"
-                style={{ 
-                  borderTopColor: style.border, 
+                style={{
+                  borderTopColor: style.border,
                   background: isMe ? 'rgba(255,109,52,0.03)' : 'var(--card)',
                   boxShadow: `0 10px 30px -10px ${style.shadow}`
                 }}
@@ -142,21 +142,21 @@ const Leaderboard = () => {
                 <div className="flex flex-col items-center">
                   <div className="relative mb-4">
                     {intern.avatarUrl ? (
-                      <img 
-                        src={intern.avatarUrl} 
-                        alt={intern.name} 
+                      <img
+                        src={intern.avatarUrl}
+                        alt={intern.name}
                         className="w-20 h-20 rounded-2xl object-cover border-2 shadow-md"
                         style={{ borderColor: style.border }}
                       />
                     ) : (
-                      <div 
+                      <div
                         className="w-20 h-20 rounded-2xl flex items-center justify-center font-black text-white text-2xl border-2 shadow-md"
                         style={{ borderColor: style.border, background: 'linear-gradient(135deg, #ff6d34, #00bea3)' }}
                       >
                         {intern.name.charAt(0)}
                       </div>
                     )}
-                    <span 
+                    <span
                       className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase text-white shadow-sm"
                       style={{ background: style.border }}
                     >

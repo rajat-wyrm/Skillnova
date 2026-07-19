@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/Reports.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { FileText, Loader2, CheckCircle, Star } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -18,14 +18,14 @@ const AdminReports = () => {
   const [score, setScore] = useState('');
   const [feedback, setFeedback] = useState('');
 
-  const fetch = async () => {
+  const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/reports', { params: { limit: 50, status: filter === 'ALL' ? undefined : filter } });
       setReports(data.items);
     } finally { setLoading(false); }
-  };
-  useEffect(() => { fetch(); }, [filter]);
+  }, [filter]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const review = async () => {
     try {
