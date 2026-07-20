@@ -6,6 +6,7 @@ import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
+import { recordActivity } from '../services/streak.service.js';
 
 const _markSchema = z.object({
   userId: z.string().cuid(),
@@ -67,6 +68,9 @@ export const mark = asyncHandler(async (req, res) => {
     create: { userId, date: day, status, notes, checkIn, checkOut, markedById: req.user.id },
   });
   await audit({ userId: req.user.id, action: 'attendance.mark', resource: 'attendance', resourceId: record.id, meta: { userId, status }, req });
+  if (['PRESENT', 'LATE', 'HALF_DAY'].includes(status)) {
+    await recordActivity(userId);
+  }
   res.json({ attendance: record });
 });
 
@@ -89,6 +93,9 @@ export const checkInOut = asyncHandler(async (req, res) => {
       checkIn: now,
     },
   });
+  if (['PRESENT', 'LATE', 'HALF_DAY'].includes(status)) {
+    await recordActivity(req.user.id);
+  }
   res.json({ attendance: record });
 });
 
@@ -98,13 +105,22 @@ export const summary = asyncHandler(async (req, res) => {
   start.setDate(start.getDate() - 30);
   start.setUTCHours(0, 0, 0, 0);
 
-  const [present, absent, leave, total] = await Promise.all([
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const targetUserId = where.userId || req.user.id;
+
+  const [present, absent, leave, total, todayRecord] = await Promise.all([
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'PRESENT' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'ABSENT' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'LEAVE' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
+    prisma.attendance.findUnique({
+      where: { userId_date: { userId: targetUserId, date: today } },
+      select: { status: true },
+    }),
   ]);
-  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0 });
+  const markedToday = !!todayRecord && ['PRESENT', 'LATE', 'HALF_DAY'].includes(todayRecord.status);
+  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0, markedToday });
 });
 
 export default { list, mark, checkInOut, summary };

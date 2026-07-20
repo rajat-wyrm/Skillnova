@@ -271,6 +271,7 @@ api.post('/notifications/read-all', notif.markAllRead);
 // ── Analytics ─────────────────────────────────────────────
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+api.get('/analytics/leaderboard', notif.leaderboard);
 
 // ── Collaborative Tasks ───────────────────────────────────
 api.use('/collab-tasks', collaborativeTasksRouter);

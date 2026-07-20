@@ -96,18 +96,22 @@ async function main() {
   });
 
   const internData = [
-    { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5 },
-    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8 },
-    { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0 },
-    { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2 },
-    { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8 },
+    { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5, currentStreak: 12, longestStreak: 15, lastActivityAt: new Date() },
+    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8, currentStreak: 8,  longestStreak: 10, lastActivityAt: new Date() },
+    { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0, currentStreak: 15, longestStreak: 20, lastActivityAt: new Date() },
+    { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2, currentStreak: 0,  longestStreak: 5,  lastActivityAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+    { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8, currentStreak: 3,  longestStreak: 4,  lastActivityAt: new Date() },
   ];
 
   const interns = [];
   for (const i of internData) {
     const user = await prisma.user.upsert({
       where: { email: i.email },
-      update: {},
+      update: {
+        currentStreak: i.currentStreak,
+        longestStreak: i.longestStreak,
+        lastActivityAt: i.lastActivityAt,
+      },
       create: {
         email: i.email,
         passwordHash: hash('User#2026'),
@@ -123,6 +127,9 @@ async function main() {
         dateOfBirth: new Date('2003-05-12'),
         linkedinUrl: `https://linkedin.com/in/${i.email.split('@')[0]}`,
         rating: i.rating,
+        currentStreak: i.currentStreak,
+        longestStreak: i.longestStreak,
+        lastActivityAt: i.lastActivityAt,
         internProfile: {
           create: {
             startDate: new Date('2026-01-15'),
