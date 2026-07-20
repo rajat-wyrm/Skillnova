@@ -15,6 +15,7 @@ const MENU = [
   { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
   { id: 'ai_insights',    label: 'AI Insights',    icon: Sparkles        },
   { id: 'leaderboard',    label: 'Leaderboard',    icon: Trophy          },
+  { id: 'achievements',   label: 'Achievements',   icon: Award           },
   { id: 'goal_progress',  label: 'Goal Progress',  icon: Target          },
   { id: 'productivity',   label: 'Productivity',   icon: Activity        },
   { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },

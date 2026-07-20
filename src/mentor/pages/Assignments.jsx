@@ -6,12 +6,190 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Loader2, ListChecks, Clock } from 'lucide-react';
 import { Card, SectionHeader, Badge, PrimaryButton } from '../../shared/components/UI';
-import { TaskModal } from '../../shared/components/KanbanBoard';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
 
 const STATUS_VARIANT = { TODO: 'default', IN_PROGRESS: 'warning', REVIEW: 'default', DONE: 'success', BLOCKED: 'danger' };
+
+const TaskModal = ({ task, interns, onClose, onSave, onDelete }) => {
+  const [title, setTitle] = useState(task?.title || '');
+  const [description, setDescription] = useState(task?.description || '');
+  const [priority, setPriority] = useState(task?.priority || 'MEDIUM');
+  const [status, setStatus] = useState(task?.status || 'TODO');
+  const [dueDate, setDueDate] = useState(task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
+  const [assigneeId, setAssigneeId] = useState(task?.assigneeId || '');
+  const [saving, setSaving] = useState(false);
+
+  if (!task) return null;
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      notify.error('Title is required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await onSave({
+        ...task,
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        status,
+        dueDate: dueDate || null,
+        assigneeId: assigneeId || null,
+      });
+      onClose();
+    } catch (err) {
+      notify.error(err.response?.data?.error || 'Failed to save task');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl">
+        <h3 className="text-base font-bold mb-4" style={{ color: 'var(--text)' }}>
+          {task.id ? 'Edit assignment' : 'New assignment'}
+        </h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+              Title
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Task title"
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              placeholder="Optional details"
+              className="w-full rounded-xl border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+                Assignee
+              </label>
+              <select
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+              >
+                <option value="">Unassigned</option>
+                {interns.map((intern) => (
+                  <option key={intern.id} value={intern.id}>
+                    {intern.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+                Due Date
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+                Priority
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+              >
+                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
+              >
+                {['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED'].map((value) => (
+                  <option key={value} value={value}>
+                    {value.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between gap-3">
+          <div>
+            {task.id && (
+              <button
+                onClick={() => onDelete(task)}
+                className="rounded-xl border px-4 py-2 text-sm font-medium"
+                style={{ borderColor: 'rgba(220,38,38,0.3)', color: '#dc2626', background: 'rgba(220,38,38,0.05)' }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onClose}
+              className="rounded-xl border px-4 py-2 text-sm font-medium"
+              style={{ borderColor: 'var(--border)', color: 'var(--text)', background: 'var(--card)' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl px-4 py-2 text-sm font-semibold text-white"
+              style={{ background: '#7C3AED', opacity: saving ? 0.7 : 1 }}
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Assignments = () => {
   const [projects, setProjects] = useState([]);

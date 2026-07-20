@@ -143,6 +143,7 @@ cp server/.env.example server/.env
 # 3. Push the Prisma schema and seed demo data
 cd server
 npm run prisma:generate
+npm run prisma:migrate
 npm run prisma:push
 npm run seed
 cd ..

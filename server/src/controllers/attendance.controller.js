@@ -5,6 +5,7 @@ import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
+import { recordActivity } from '../services/streak.service.js';
 
 const toDayStart = (value = new Date()) => {
   const date = new Date(value);
@@ -88,6 +89,9 @@ export const mark = asyncHandler(async (req, res) => {
   });
 
   await audit({ userId: req.user.id, action: 'attendance.mark', resource: 'attendance', resourceId: record.id, meta: { userId, status }, req });
+  if (['PRESENT', 'LATE', 'HALF_DAY'].includes(status)) {
+    await recordActivity(userId);
+  }
   res.json({ attendance: record });
 });
 
@@ -120,6 +124,7 @@ export const checkInOut = asyncHandler(async (req, res) => {
     });
 
     await audit({ userId: req.user.id, action: 'attendance.check_in', resource: 'attendance', resourceId: attendance.id, req });
+    await recordActivity(req.user.id);
     return res.json({ attendance, ...getTodayState(attendance) });
   }
 
@@ -144,14 +149,30 @@ export const summary = asyncHandler(async (req, res) => {
   start.setDate(start.getDate() - 30);
   start.setUTCHours(0, 0, 0, 0);
 
-  const [present, absent, leave, total] = await Promise.all([
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const targetUserId =
+    typeof where.userId === 'string'
+      ? where.userId
+      : req.user.role === 'INTERN'
+        ? req.user.id
+        : null;
+
+  const [present, absent, leave, total, todayRecord] = await Promise.all([
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'PRESENT' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'ABSENT' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'LEAVE' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
+    targetUserId
+      ? prisma.attendance.findUnique({
+          where: { userId_date: { userId: targetUserId, date: today } },
+          select: { status: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const rate = total ? Math.round(((present + leave) / total) * 100) : 0;
+  const markedToday = !!todayRecord && ['PRESENT', 'LATE', 'HALF_DAY'].includes(todayRecord.status);
   res.json({
     present,
     absent,
@@ -163,6 +184,7 @@ export const summary = asyncHandler(async (req, res) => {
     leaveDays: leave,
     totalWorkingDays: total,
     attendancePercentage: rate,
+    markedToday,
   });
 });
 

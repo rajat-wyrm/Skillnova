@@ -51,6 +51,9 @@ model User {
   lastLoginIp     String?
   failedAttempts  Int           @default(0)
   lockedUntil     DateTime?
+  currentStreak   Int           @default(0)
+  longestStreak   Int           @default(0)
+  lastActivityAt  DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -76,6 +79,9 @@ model User {
   reviewedLeaves    LeaveRequest[]  @relation("LeaveReviewer")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  collaborativeTasksCreated CollaborativeTask[] @relation("TaskCreator")
+  collaborativeTasksAssigned CollaborativeTask[] @relation("TaskAssignees")
+  teams          Team[]              @relation("TeamMembers")
 
   @@index([role])
   @@index([status])
@@ -696,4 +702,35 @@ model Certificate {
   issuedAt       DateTime       @default(now())
 
   @@index([userId])
+}
+
+// ── Collaborative Task Models ────────────────────────────────
+
+model Team {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  members     User[]              @relation("TeamMembers")
+  tasks       CollaborativeTask[]
+}
+
+model CollaborativeTask {
+  id          String            @id @default(cuid())
+  teamId      String
+  team        Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus        @default(TODO)
+  creatorId   String
+  creator     User              @relation("TaskCreator", fields: [creatorId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  assignees   User[]            @relation("TaskAssignees")
+
+  @@index([teamId])
+  @@index([creatorId])
 }

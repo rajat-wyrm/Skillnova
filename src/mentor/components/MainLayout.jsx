@@ -7,6 +7,7 @@ import Header from './Header';
 
 const PAGE_TITLES = {
   dashboard:      'Mentor Dashboard',
+  leaderboard:    'Leaderboard',
   interns:        'My Interns',
   reports:        'Reports to Review',
   projects:       'Projects & Tasks',
@@ -14,6 +15,7 @@ const PAGE_TITLES = {
   taskdashboard:  'Task Dashboard',   // NEW
   'leave-approvals': 'Leave Approvals',
   knowledge:      'Knowledge Base',
+  feedback:       'Mentor Feedback',
   qa:             'Q&A Forum',
   announcements:  'Announcements',
   ai:             'AI Assistant',

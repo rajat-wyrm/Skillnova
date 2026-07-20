@@ -8,7 +8,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend
 } from 'recharts';
 import {
-  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, Flame, Clock, Target, Trophy
+  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, Flame, Clock, Target,
 } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -35,10 +35,6 @@ const Dashboard = ({ onNavigate }) => {
   const [myTasks, setMyTasks] = useState([]);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Gamification Mock State
-  const [streak] = useState(7);
-  const [points] = useState(1250);
 
   useEffect(() => {
     (async () => {
@@ -96,8 +92,8 @@ const Dashboard = ({ onNavigate }) => {
       >
         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
         <div className="absolute top-0 left-0 right-0 h-1" style={{ background: 'linear-gradient(90deg, #ff6d34, #00bea3, #7C3AED)' }} />
-        
-        <div className="relative p-7 sm:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+
+        <div className="relative p-7 sm:p-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
           <div>
             <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-2 text-emerald-400">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -110,19 +106,25 @@ const Dashboard = ({ onNavigate }) => {
               and {stats?.pending ?? 0} reports awaiting review.
             </p>
           </div>
-          
-          {/* Gamification Widget */}
-          <div className="flex gap-4">
-             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg transform hover:scale-105 transition">
-                <Flame className="text-orange-500 mb-1" size={28} />
-                <span className="text-2xl font-black text-white">{streak}</span>
-                <span className="text-[10px] uppercase tracking-widest text-slate-300 font-semibold mt-1">Day Streak</span>
-             </div>
-             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg transform hover:scale-105 transition">
-                <Trophy className="text-yellow-400 mb-1" size={28} />
-                <span className="text-2xl font-black text-white">{points}</span>
-                <span className="text-[10px] uppercase tracking-widest text-slate-300 font-semibold mt-1">Total Points</span>
-             </div>
+          <div className="grid grid-cols-2 gap-3 w-full xl:max-w-md">
+            {[
+              { label: 'Reviewed Reports', value: stats?.reviewed ?? 0, icon: ClipboardList, accent: '#ff6d34' },
+              { label: 'Attendance', value: `${attendance?.rate ?? 0}%`, icon: CalendarCheck, accent: '#00bea3' },
+              { label: 'Current Streak', value: `${user?.currentStreak ?? 0} days`, icon: Flame, accent: '#f59e0b' },
+              { label: 'Score', value: user?.rating?.toFixed(1) ?? '—', icon: TrendingUp, accent: '#7C3AED' },
+            ].map((item) => (
+              <div key={item.label} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-2xl font-black text-white">{item.value}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-slate-300 font-semibold mt-1">{item.label}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${item.accent}20`, color: item.accent }}>
+                    <item.icon size={20} />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </MotionDiv>
@@ -210,6 +212,63 @@ const Dashboard = ({ onNavigate }) => {
                    </div>
                 ))
              )}
+          </div>
+        </Card>
+
+        {/* Gamified Learning Streak & Daily Checklist Card */}
+        <Card className="p-5 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+              Learning Streak <Flame size={16} fill={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'transparent'} color={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'var(--muted)'} />
+            </h3>
+            
+            <div className="flex items-center gap-3 py-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner"
+                style={{ background: (user?.currentStreak ?? 0) > 0 ? 'rgba(255,109,52,0.08)' : 'var(--bg)', border: '1px solid var(--border)' }}>
+                <Flame size={28} fill={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'transparent'} color={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'var(--muted)'} className={(user?.currentStreak ?? 0) > 0 ? 'animate-bounce' : ''} />
+              </div>
+              <div>
+                <p className="text-2xl font-black" style={{ color: 'var(--text)' }}>{user?.currentStreak ?? 0} days</p>
+                <p className="text-[10px] uppercase font-bold" style={{ color: 'var(--muted)' }}>Longest Streak: {user?.longestStreak ?? 0} days</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--muted)' }}>Today's Checklist</p>
+
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${attendance?.markedToday ? 'bg-emerald-500 border-emerald-500' : 'border-slate-400'}`}>
+                  {attendance?.markedToday && <CheckCircle size={10} className="text-white" />}
+                </div>
+                <span style={{ color: attendance?.markedToday ? 'var(--text)' : 'var(--muted)' }}>Mark Attendance</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${myReports.some(r => new Date(r.submittedAt).toDateString() === new Date().toDateString()) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-400'}`}>
+                  {myReports.some(r => new Date(r.submittedAt).toDateString() === new Date().toDateString()) && <CheckCircle size={10} className="text-white" />}
+                </div>
+                <span style={{ color: myReports.some(r => new Date(r.submittedAt).toDateString() === new Date().toDateString()) ? 'var(--text)' : 'var(--muted)' }}>Submit Daily Report</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition-colors ${myTasks.some(t => t.completedAt && new Date(t.completedAt).toDateString() === new Date().toDateString()) ? 'bg-emerald-500 border-emerald-500' : 'border-slate-400'}`}>
+                  {myTasks.some(t => t.completedAt && new Date(t.completedAt).toDateString() === new Date().toDateString()) && <CheckCircle size={10} className="text-white" />}
+                </div>
+                <span style={{ color: myTasks.some(t => t.completedAt && new Date(t.completedAt).toDateString() === new Date().toDateString()) ? 'var(--text)' : 'var(--muted)' }}>Complete a Task</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 text-center border-t border-dashed" style={{ borderColor: 'var(--border)' }}>
+            {(user?.currentStreak ?? 0) > 0 ? (
+              <span className="text-[9px] text-[#00bea3] bg-[#00bea3]/10 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                Streak secure for today! 🎉
+              </span>
+            ) : (
+              <span className="text-[9px] text-[#ff6d34] bg-[#ff6d34]/10 px-2 py-0.5 rounded font-black uppercase tracking-wider">
+                Action needed to start streak! 🔥
+              </span>
+            )}
           </div>
         </Card>
       </div>

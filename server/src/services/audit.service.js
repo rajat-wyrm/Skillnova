@@ -30,8 +30,6 @@ export async function audit({
         meta: meta ?? undefined,
         ip,
         userAgent,
-        resourceType: resource,
-        actionCategory,
       },
     });
     getIO()?.to('role:SUPER_ADMIN').to('role:ADMIN').emit('audit:new', entry);

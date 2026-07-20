@@ -8,7 +8,8 @@ import Header from './Header';
 const PAGE_TITLES = {
   dashboard:      'Dashboard',
   ai_insights:    'AI Insights Panel',
-  leaderboard:    'Leaderboard & Achievements',
+  leaderboard:    'Learning Streak Leaderboard',
+  achievements:   'Leaderboard & Achievements',
   goal_progress:  'Goal Progress & KPIs',
   productivity:   'Productivity & Activity',
   knowledge:      'Knowledge Base',
