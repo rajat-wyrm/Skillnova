@@ -20,7 +20,6 @@ export async function audit({
       ip = ip ?? req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ?? req.ip;
       userAgent = userAgent ?? req.headers?.['user-agent'];
     }
-    const [actionCategory] = action.split('.');
     const entry = await prisma.auditLog.create({
       data: {
         userId: userId ?? null,

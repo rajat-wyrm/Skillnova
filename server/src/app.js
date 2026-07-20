@@ -20,6 +20,7 @@ import apiRoutes from './routes/api.routes.js';
 import kbRoutes from './routes/kb.routes.js';
 import featuresRoutes, { publicApi as publicFeaturesRoutes } from './routes/features.routes.js';
 import skillGapRoutes from './routes/skillGap.routes.js';
+import communityRoutes from './routes/community.routes.js';
 import { etagMiddleware } from './utils/cache.js';
 import { requestId } from './middleware/requestId.js';
 import { bodySizeTracker } from './utils/metrics.js';
@@ -104,11 +105,19 @@ app.use(etagMiddleware());
 // Response time tracking header
 app.use((_req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => {
-    res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+
+  res.on("finish", () => {
+    logger.info({
+      method: _req.method,
+      path: _req.originalUrl,
+      status: res.statusCode,
+      responseTime: `${Date.now() - start}ms`,
+    });
   });
+
   next();
 });
+
 
 // ── Health & version ──────────────────────────────────────
 app.get('/healthz', (_req, res) => {
@@ -184,6 +193,7 @@ app.use('/api/v1', publicFeaturesRoutes);
 app.use('/api/v1', featuresRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/kb', kbRoutes);
+app.use('/api/v1/community', communityRoutes);
 app.use('/api/v1/skill-gap', skillGapRoutes);
 app.use('/api/v1', csrfProtection, apiRoutes);
 

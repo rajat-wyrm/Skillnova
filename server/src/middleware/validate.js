@@ -17,9 +17,9 @@ export function validate(schema, source = 'body') {
       return next(ApiError.badRequest('Validation failed', errors));
     }
     // Replace data with parsed (typed) value
-    if (source === 'query') req.validatedQuery = result.data;
+    if (source === 'query') req.validatedQuery = { ...(req.validatedQuery || {}), ...result.data };
     else if (source === 'params') req.validatedParams = result.data;
-    else req.body = result.data;
+    else req.validatedBody = result.data;
     next();
   };
 }

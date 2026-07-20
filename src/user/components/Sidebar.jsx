@@ -22,6 +22,7 @@ const MENU = [
   { id: 'files',          label: 'Files',          icon: Folder          },
   { id: 'ai',             label: 'AI Assistant',   icon: Bot             },
   { id: 'qa',             label: 'Q&A Forum',      icon: MessageSquare   },
+  { id: 'community',      label: 'Community',      icon: Users           },
   { id: 'notifications',  label: 'Notifications',  icon: Bell            },
   { id: 'announcements',  label: 'Announcements',  icon: Megaphone       },
   { id: 'analytics',      label: 'Analytics',      icon: BarChart2       },
