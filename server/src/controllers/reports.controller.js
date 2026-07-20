@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { emitToRoom, getIO } from '../sockets/index.js';
+import { recordActivity } from '../services/streak.service.js';
 
 // Validators (also enforced at the route level for consistency)
 const _createSchema = z.object({
@@ -93,6 +94,7 @@ export const create = asyncHandler(async (req, res) => {
       link: `/reports/${report.id}`,
     });
   }
+  await recordActivity(req.user.id);
   res.status(201).json({ report });
 });
 

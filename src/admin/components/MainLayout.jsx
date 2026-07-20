@@ -8,6 +8,7 @@ import Header  from "./Header";
 
 const PAGE_TITLES = {
   "admin-dashboard":     "Admin Overview",
+  "admin-leaderboard":   "Leaderboard",
   "admin-users":         "User Management",
   "admin-management":    "Intern Management",
   "admin-knowledge":     "Knowledge Base",

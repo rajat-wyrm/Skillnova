@@ -4,13 +4,14 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut,
+  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
   { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'leaderboard',   label: 'Leaderboard',    icon: Trophy          },
   { id: 'interns',       label: 'My Interns',     icon: Users           },
   { id: 'reports',       label: 'Report Reviews', icon: FileText        },
   { id: 'projects',      label: 'Projects',       icon: Activity        },

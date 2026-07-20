@@ -5,6 +5,7 @@
 import prisma from '../utils/prisma.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { lru } from '../utils/lru.js';
+import { getEffectiveStreak } from '../services/streak.service.js';
 
 export const list = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.validatedQuery ?? { page: 1, limit: 20 };
@@ -92,6 +93,7 @@ export const internPerformance = asyncHandler(async (req, res) => {
       where: { role: 'INTERN' },
       select: {
         id: true, name: true, department: true, rating: true, avatarUrl: true,
+        currentStreak: true, longestStreak: true, lastActivityAt: true,
         reports: { select: { status: true, score: true } },
         projectTasks: { select: { status: true } },
         attendances: {
@@ -109,11 +111,59 @@ export const internPerformance = asyncHandler(async (req, res) => {
         id: i.id, name: i.name, department: i.department, avatarUrl: i.avatarUrl, rating: i.rating,
         avgScore: Math.round(avgScore * 10) / 10, completedTasks: completed,
         attendanceRate: i.attendances.length ? Math.round((present / i.attendances.length) * 100) : 0,
+        currentStreak: getEffectiveStreak(i),
+        longestStreak: i.longestStreak,
+        lastActivityAt: i.lastActivityAt,
       };
     });
   });
   res.json({ items });
 });
 
-export default { list, markRead, markAllRead, platformStats, internPerformance };
+export const leaderboard = asyncHandler(async (req, res) => {
+  const cacheKey = 'analytics:leaderboard';
+  const list = await lru.wrap(cacheKey, 10, async () => {
+    const interns = await prisma.user.findMany({
+      where: { role: 'INTERN', status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        department: true,
+        avatarUrl: true,
+        currentStreak: true,
+        longestStreak: true,
+        lastActivityAt: true,
+      },
+    });
+
+    const mapped = interns.map((u) => {
+      const eff = getEffectiveStreak(u);
+      return {
+        id: u.id,
+        name: u.name,
+        department: u.department,
+        avatarUrl: u.avatarUrl,
+        currentStreak: eff,
+        longestStreak: u.longestStreak,
+        lastActivityAt: u.lastActivityAt,
+      };
+    });
+
+    mapped.sort((a, b) => {
+      if (b.currentStreak !== a.currentStreak) {
+        return b.currentStreak - a.currentStreak;
+      }
+      if (b.longestStreak !== a.longestStreak) {
+        return b.longestStreak - a.longestStreak;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return mapped;
+  });
+
+  res.json({ items: list });
+});
+
+export default { list, markRead, markAllRead, platformStats, internPerformance, leaderboard };
 

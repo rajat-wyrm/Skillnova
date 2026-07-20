@@ -13,11 +13,13 @@ const KnowledgeBase  = lazy(() => import('./pages/KnowledgeBase'));
 const QnA            = lazy(() => import('./pages/QnA'));
 const Announcements  = lazy(() => import('./pages/Announcements'));
 const AIAssistant    = lazy(() => import('./pages/AIAssistant'));
+const Leaderboard    = lazy(() => import('../user/pages/Leaderboard'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Settings       = lazy(() => import('./pages/Settings'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
+  leaderboard:    <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
   interns:        <Suspense fallback={<PageLoader />}><Interns /></Suspense>,
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   projects:       <Suspense fallback={<PageLoader />}><Projects /></Suspense>,

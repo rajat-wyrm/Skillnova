@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import { PageLoader } from '../shared/components/Skeleton';
 
 const KnowledgeBase    = lazy(() => import('./pages/KnowledgeBase'));
+const Leaderboard      = lazy(() => import('./pages/Leaderboard'));
 const QA               = lazy(() => import('./pages/QA'));
 const Reports          = lazy(() => import('./pages/Reports'));
 const AIAssistant      = lazy(() => import('./pages/AIAssistant'));
@@ -26,6 +27,7 @@ const CommunityDashboard = lazy(() => import('./pages/CommunityDashboard'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
+  leaderboard:    <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
   knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
   qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
   community:      <Suspense fallback={<PageLoader />}><CommunityDashboard /></Suspense>,

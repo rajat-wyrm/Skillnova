@@ -2,7 +2,7 @@
 //  Mentor — pages/Dashboard.jsx
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Loader2, TrendingUp } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Loader2, TrendingUp, Flame } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
@@ -56,7 +56,7 @@ const MentorDashboard = () => {
           <table className="w-full text-sm min-w-[40rem]">
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance'].map((h) => (
+                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance', 'Streak'].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-left" style={{ color: 'var(--muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -72,6 +72,12 @@ const MentorDashboard = () => {
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
                       style={{ background: i.attendanceRate >= 90 ? 'rgba(0,190,163,0.12)' : i.attendanceRate >= 75 ? 'rgba(245,158,11,0.12)' : 'rgba(220,38,38,0.12)', color: i.attendanceRate >= 90 ? '#00bea3' : i.attendanceRate >= 75 ? '#d97706' : '#dc2626' }}>
                       {i.attendanceRate}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-semibold">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ background: i.currentStreak > 0 ? 'rgba(255,109,52,0.12)' : 'rgba(148,163,184,0.12)', color: i.currentStreak > 0 ? '#ff6d34' : 'var(--muted)' }}>
+                      {i.currentStreak ?? 0} <Flame size={12} fill={i.currentStreak > 0 ? '#ff6d34' : 'transparent'} />
                     </span>
                   </td>
                 </tr>
