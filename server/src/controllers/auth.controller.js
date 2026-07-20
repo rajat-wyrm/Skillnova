@@ -207,7 +207,11 @@ export const login = asyncHandler(async (req, res) => {
 
   if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
   if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
-
+console.log({
+  emailReceived: email,
+  passwordReceived: password,
+  dbEmail: user.email
+});
   const ok = verifyPassword(password, user.passwordHash);
   if (!ok) {
     const failed = user.failedAttempts + 1;

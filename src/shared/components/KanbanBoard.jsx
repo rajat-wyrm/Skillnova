@@ -20,6 +20,29 @@ const COLUMNS = [
   { id: 'DONE',        title: 'Done',          color: '#00bea3' },
 ];
 
+const PRIORITY_COLORS = {
+  URGENT: '#dc2626', HIGH: '#ff6d34', MEDIUM: '#f59e0b', LOW: '#94a3b8',
+};
+const PRIORITY_ORDER = {
+  URGENT: 1,
+  HIGH: 2,
+  MEDIUM: 3,
+  LOW: 4,
+};
+const isOverdue = (date) => {
+  if (!date) return false;
+  return new Date(date) < new Date();
+};
+const isDueSoon = (date) => {
+  if (!date) return false;
+
+  const now = new Date();
+  const due = new Date(date);
+
+  const diffHours = (due - now) / (1000 * 60 * 60);
+
+  return diffHours > 0 && diffHours <= 24;
+};
 const STATUS_ICON = {
   TODO: Clock,
   IN_PROGRESS: Loader2,
@@ -71,6 +94,42 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick }) => {
           <GripVertical size={14} style={{ color: 'var(--muted)', opacity: 0.5, flexShrink: 0, marginTop: 2 }} />
         )}
       </div>
+     {task.dueDate && (
+  <p
+  style={{
+    fontSize: 11,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    padding: '3px 8px',
+    borderRadius: 20,
+    fontWeight: 600,
+    background: isOverdue(task.dueDate)
+      ? '#fee2e2'
+      : isDueSoon(task.dueDate)
+      ? '#fef3c7'
+      : 'var(--bg)',
+    color: isOverdue(task.dueDate)
+      ? '#dc2626'
+      : isDueSoon(task.dueDate)
+      ? '#d97706'
+      : 'var(--muted)'
+  }}
+>
+    <Clock size={10} />
+
+    {isOverdue(task.dueDate)
+      ? `⚠ Deadline passed (${formatRelative(task.dueDate)})`
+      : isDueSoon(task.dueDate)
+      ? `⏰ Deadline is near (${formatRelative(task.dueDate)})`
+      : `Due ${formatRelative(task.dueDate)}`}
+  </p>
+)}
+      {task.assignee && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+          <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg, #ff6d34, #00bea3)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {task.assignee.name?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
 
       {task.description && (
         <p style={{
@@ -637,12 +696,36 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreateStatus, setShowCreateStatus] = useState('TODO');
   const [modalTask, setModalTask] = useState(null);
+  const [project, setProject] = useState(null);
+  const [search, setSearch] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('ALL');
   const [team, setTeam] = useState(null);
 
   const fetchTasks = useCallback(async () => {
     if (!teamId) return;
     setLoading(true);
     try {
+      const [p, t] = await Promise.all([
+        api.get(`/projects/${projectId}`).catch(() => null),
+        api.get('/tasks', { params: { projectId, limit: 100 } }),
+      ]);
+      setProject(p?.data?.project);
+     setTasks(t.data.items);
+
+setTimeout(() => {
+  const upcoming = t.data.items.filter((task) => isDueSoon(task.dueDate));
+
+  if (upcoming.length > 0) {
+    notify.warning(
+      `⏰ ${upcoming.length} task${upcoming.length > 1 ? 's' : ''} deadline is near`
+    );
+  }
+}, 500);
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [projectId]);
+const checkDeadlineAlerts = () => {
+  const upcoming = tasks.filter((task) => isDueSoon(task.dueDate));
       const response = await api.get(`/collab-tasks/team/${teamId}`);
       setTasks(response.data.tasks || []);
       const activeTeam = teams.find((t) => t.id === teamId);
@@ -654,6 +737,12 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
     }
   }, [teamId, teams]);
 
+  if (upcoming.length > 0) {
+    notify.warning(
+      `⏰ ${upcoming.length} task${upcoming.length > 1 ? 's' : ''} deadline is near`
+    );
+  }
+};
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -698,7 +787,20 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
       setTasks(originalTasks);
     }
   };
+const filteredTasks = tasks.filter((task) => {
+  const matchesSearch = task.title
+    .toLowerCase()
+    .includes(search.toLowerCase());
 
+  const matchesPriority =
+    priorityFilter === 'ALL' ||
+    task.priority === priorityFilter;
+
+  return matchesSearch && matchesPriority;
+})
+.sort((a, b) =>
+  PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
+);
   const onAdd = (status) => {
     setShowCreateStatus(status);
     setShowCreateModal(true);
@@ -777,6 +879,54 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
           </button>
         </div>
       )}
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        <div
+  style={{
+    marginBottom: 16,
+    display: 'flex',
+    gap: 10,
+    alignItems: 'center'
+  }}
+>
+
+<input
+  placeholder="🔍 Search tasks..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  style={{
+    width: 280,
+    padding: '9px 14px',
+    border: '1px solid var(--border)',
+    borderRadius: 10,
+    background: 'var(--card)',
+    color: 'var(--text)',
+    fontSize: 13
+  }}
+/>
+
+<select
+  value={priorityFilter}
+  onChange={(e) => setPriorityFilter(e.target.value)}
+  style={{
+    padding: '9px 14px',
+    border: '1px solid var(--border)',
+    borderRadius: 10,
+    background: 'var(--card)',
+    color: 'var(--text)',
+    fontSize: 13,
+    cursor: 'pointer'
+  }}
+>
+  <option value="ALL">All Priority</option>
+  <option value="LOW">Low</option>
+  <option value="MEDIUM">Medium</option>
+  <option value="HIGH">High</option>
+  <option value="URGENT">Urgent</option>
+</select>
+
+</div>
+
+<div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
 
       <DndContext
         sensors={sensors}
@@ -795,7 +945,7 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
             <Column
               key={c.id}
               column={c}
-              tasks={tasks.filter((t) => t.status === c.id)}
+              tasks={filteredTasks.filter((t) => t.status === c.id)}
               canEdit={canEdit}
               onAdd={onAdd}
               onClickTask={(t) => canEdit && setModalTask(t)}
