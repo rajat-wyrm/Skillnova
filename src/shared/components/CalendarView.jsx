@@ -35,9 +35,11 @@ const CalendarView = () => {
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
     setLoading(true);
-    api.get('/meetings', { params: { from: monthStart.toISOString(), to: addDays(monthEnd, 1).toISOString() } })
+    const start = startOfMonth(currentMonth);
+    const end = endOfMonth(currentMonth);
+    api.get('/meetings', { params: { from: start.toISOString(), to: addDays(end, 1).toISOString() } })
       .then((r) => setMeetings(r.data.items))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [currentMonth]);

@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { emitToRoom } from '../sockets/index.js';
+import { recordActivity } from '../services/streak.service.js';
 
 // Local schemas (validators live in routes; kept here for documentation & reuse)
 const _projectSchema = z.object({
@@ -147,6 +148,9 @@ export const updateTask = asyncHandler(async (req, res) => {
   emitToRoom(`role:MENTOR`, 'dashboard:refresh', {});
   emitToRoom(`role:ADMIN`, 'dashboard:refresh', {});
   emitToRoom(`role:SUPER_ADMIN`, 'dashboard:refresh', {});
+  if (req.body.status === 'DONE' && task.status !== 'DONE' && updated.assigneeId) {
+    await recordActivity(updated.assigneeId);
+  }
   res.json({ task: updated });
 });
 

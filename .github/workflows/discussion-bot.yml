@@ -20,22 +20,24 @@ jobs:
             const now = new Date();
             const week = Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7);
             const title = `Weekly Tech Talk - Week ${week}`;
-            const body = `## 🎯 Weekly Tech Discussion - Week ${week}
-
-Welcome to our weekly tech discussion! Share what you're working on, ask questions, or discuss the latest in tech.
-
-### Discussion Prompts:
-- What are you building this week?
-- Any technical challenges you're facing?
-- Cool libraries or tools you've discovered?
-- Career advice or industry trends?
-
-### Skillnova Updates:
-- Check out the latest commits and PRs
-- Review open issues and contribute
-- Share feedback on the platform
-
-Feel free to start a conversation below! 👇`;
+            const body = [
+              `## 🎯 Weekly Tech Discussion - Week ${week}`,
+              "",
+              "Welcome to our weekly tech discussion! Share what you're working on, ask questions, or discuss the latest in tech.",
+              "",
+              "### Discussion Prompts:",
+              "- What are you building this week?",
+              "- Any technical challenges you're facing?",
+              "- Cool libraries or tools you've discovered?",
+              "- Career advice or industry trends?",
+              "",
+              "### Skillnova Updates:",
+              "- Check out the latest commits and PRs",
+              "- Review open issues and contribute",
+              "- Share feedback on the platform",
+              "",
+              "Feel free to start a conversation below! 👇"
+            ].join("\n");
 
             try {
               const repo = context.repo;
