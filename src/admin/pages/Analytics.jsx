@@ -2,8 +2,7 @@
 //  ADMIN — pages/Analytics.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { FileText, TrendingUp, BookOpen, MessageSquare, Loader2, Users, ShieldCheck } from 'lucide-react';
-import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
+import { FileText, TrendingUp, BookOpen, Loader2, Users, ShieldCheck } from 'lucide-react';
 import api from '../../lib/api';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -11,6 +10,43 @@ import {
 } from 'recharts';
 
 const COLORS = ['#2563EB', '#7C3AED', '#059669', '#D97706', '#DC2626'];
+
+const Card = ({ children, className = '' }) => (
+  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)' }}>
+    {children}
+  </div>
+);
+
+const SectionHeader = ({ title, subtitle }) => (
+  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between mb-6">
+    <div className="min-w-0">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {subtitle && <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>{subtitle}</p>}
+    </div>
+  </div>
+);
+
+const StatCard = ({ title, value, icon: Icon, color = '#ff6d34', subtitle }) => (
+  <Card className="p-6 transition-all duration-300">
+    <div className="flex items-center justify-between">
+      <div className="space-y-1">
+        <p className="text-[11px] font-bold uppercase tracking-wider opacity-60">{title}</p>
+        <div className="flex items-baseline gap-1">
+          <p className="text-2xl font-black">{value}</p>
+          {subtitle && <span className="text-[10px] opacity-40 font-medium">{subtitle}</span>}
+        </div>
+      </div>
+      <div className="p-2.5 rounded-xl" style={{ color }}>
+        <Icon size={24} />
+      </div>
+    </div>
+    <div className="flex items-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      <TrendingUp size={12} style={{ color: '#00bea3' }} />
+      <span className="text-[11px] font-bold" style={{ color: '#00bea3' }}>Live</span>
+      <span className="text-[11px] opacity-40 font-medium ml-auto">Updated</span>
+    </div>
+  </Card>
+);
 
 const Analytics = () => {
   const [stats, setStats] = useState(null);

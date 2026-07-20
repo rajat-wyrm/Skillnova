@@ -5,7 +5,7 @@ SkillNova API
 
 ```bash
 cd server
-cp .env .env.local       # edit if needed
+cp .env.example .env     # fill DATABASE_URL and secrets
 npm install
 npm run prisma:generate
 npm run prisma:push      # creates tables in your Postgres

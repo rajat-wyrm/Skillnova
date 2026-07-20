@@ -6,6 +6,7 @@ import Login from './auth/pages/Login';
 import AdminOTP from './auth/pages/AdminOTP';
 import User2FA from './auth/pages/User2FA';
 import { useAuthStore } from './lib/auth';
+import LoaderScreen from './shared/components/LoaderScreen';
 
 const AuthGate = () => {
   const { step, user, hydrate } = useAuthStore();
@@ -13,6 +14,8 @@ const AuthGate = () => {
   useEffect(() => {
     if (!user && step === 'login') hydrate();
   }, [hydrate, step, user]);
+
+  if (step === 'auth-checking') return <LoaderScreen label="Checking your session…" />;
 
   if (step === 'login') return <Login />;
 

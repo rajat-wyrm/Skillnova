@@ -31,6 +31,7 @@ api.interceptors.request.use((config) => {
 
 // ── Response interceptor — auto refresh on 401 ───────────
 let refreshing = null;
+const REFRESH_EXCLUDED_URLS = new Set(['/auth/refresh', '/auth/login', '/auth/verify-otp']);
 
 api.interceptors.response.use(
   (r) => r,
@@ -38,7 +39,7 @@ api.interceptors.response.use(
     const original = error.config;
     const status = error.response?.status;
 
-    if (status === 401 && !original._retry && original.url !== '/auth/refresh' && original.url !== '/auth/login') {
+    if (status === 401 && !original._retry && !REFRESH_EXCLUDED_URLS.has(original.url)) {
       original._retry = true;
       try {
         refreshing = refreshing || axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });

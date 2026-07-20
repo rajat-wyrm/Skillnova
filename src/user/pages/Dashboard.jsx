@@ -8,7 +8,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
-  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2,
+  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, ArrowRight, LayoutGrid,
 } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -67,6 +67,22 @@ const Dashboard = ({ onNavigate }) => {
     return 'Good evening';
   })();
 
+  const nextDeadline = [...myTasks]
+    .filter((t) => t.dueDate && t.status !== 'DONE')
+    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
+
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const todaysTasks = myTasks.filter((t) => t.status !== 'DONE' && t.dueDate && String(t.dueDate).slice(0, 10) === todayKey);
+  const agendaItems = todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : myTasks.filter((t) => t.status !== 'DONE').slice(0, 3);
+
+  const quickActions = [
+    { label: 'New Report', page: 'reports', icon: ClipboardList, color: '#ff6d34' },
+    { label: 'Task Board', page: 'kanban', icon: LayoutGrid, color: '#00bea3' },
+    { label: 'Calendar', page: 'calendar', icon: CalendarCheck, color: '#7C3AED' },
+    { label: 'Ask AI', page: 'ai', icon: MessageSquare, color: '#2563EB' },
+  ];
+
   return (
     <div className="space-y-6 pb-16">
       <MotionDiv
@@ -108,6 +124,74 @@ const Dashboard = ({ onNavigate }) => {
         <StatCard title="Attendance Rate" value={`${attendance?.rate ?? 0}%`} icon={CalendarCheck} color="#ff6d34" />
         <StatCard title="Avg Score"       value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
+        <Card className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Quick Actions</h3>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Jump to the most useful places</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.page}
+                  onClick={() => onNavigate?.(action.page)}
+                  className="flex items-center justify-between rounded-xl border px-3 py-3 text-left transition hover:translate-y-[-1px]"
+                  style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="p-2 rounded-lg" style={{ background: `${action.color}20`, color: action.color }}>
+                      <Icon size={14} />
+                    </span>
+                    <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{action.label}</span>
+                  </span>
+                  <ArrowRight size={14} style={{ color: 'var(--muted)' }} />
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Next Deadline</h3>
+          {nextDeadline ? (
+            <div className="rounded-xl p-4" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{nextDeadline.title}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{formatRelative(nextDeadline.dueDate)} · {nextDeadline.status.replace('_', ' ')}</p>
+            </div>
+          ) : (
+            <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>No upcoming deadlines.</p>
+          )}
+        </Card>
+      </div>
+
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Today's Agenda</h3>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{todaysTasks.length > 0 ? 'Priority items for today' : 'No tasks scheduled for today'}</p>
+          </div>
+        </div>
+        {agendaItems.length === 0 ? (
+          <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>All clear — nothing urgent today.</p>
+        ) : (
+          <div className="space-y-2">
+            {agendaItems.map((task) => (
+              <div key={task.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: 'var(--bg)' }}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.priority === 'HIGH' || task.priority === 'URGENT' ? '#ff6d34' : '#00bea3' }} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{task.title}</p>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>{task.dueDate ? formatRelative(task.dueDate) : task.status.replace('_', ' ')}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">

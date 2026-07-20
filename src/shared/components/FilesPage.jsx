@@ -2,11 +2,25 @@
 //  Files Manager — upload, list, download, copy signed URL
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState, useRef } from 'react';
-import { Upload, FileText, Loader2, Download, Trash2, Copy, Check, X } from 'lucide-react';
-import { Card, SectionHeader } from './UI';
+import { Upload, FileText, Loader2, Download, Trash2, Copy, Check } from 'lucide-react';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
+
+const Card = ({ children, className = '', style, onClick, onDragOver, onDragLeave, onDrop }) => (
+  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)', ...style }} onClick={onClick} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+    {children}
+  </div>
+);
+
+const SectionHeader = ({ title, subtitle }) => (
+  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between mb-6">
+    <div className="min-w-0">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {subtitle && <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>{subtitle}</p>}
+    </div>
+  </div>
+);
 
 const humanSize = (b) => {
   if (b < 1024) return `${b} B`;

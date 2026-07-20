@@ -47,9 +47,15 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
+    <script type="module">
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
+        window.addEventListener('load', async () => {
+          if (import.meta.env.DEV) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((reg) => reg.unregister()));
+            return;
+          }
+
           navigator.serviceWorker.register('/sw.js').catch(() => null);
         });
       }

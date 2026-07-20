@@ -31,6 +31,7 @@ const App = () => {
   }, [user, step]);
 
   if (!hydrated) return <LoaderScreen label="Initialising SkillNova…" />;
+  if (step === 'auth-checking') return <LoaderScreen label="Checking your session…" />;
   if (!user || step !== 'authenticated') return <AuthGate />;
 
   return (

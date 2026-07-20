@@ -1,16 +1,23 @@
 // ════════════════════════════════════════════════════════════
 //  CalendarView — month/week grid of meetings
 // ════════════════════════════════════════════════════════════
-import { useState, useEffect, useMemo } from 'react';
+import * as React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, X, Plus, Loader2 } from 'lucide-react';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, format,
   isSameMonth, isSameDay, parseISO,
 } from 'date-fns';
-import { Card } from './UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { useAuthStore } from '../../lib/auth';
+
+const { useState, useEffect, useMemo } = React;
+
+const Card = ({ children, className = '' }) => (
+  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)' }}>
+    {children}
+  </div>
+);
 
 const TYPE_COLORS = {
   STANDUP: '#00bea3', ONE_ON_ONE: '#ff6d34', REVIEW: '#7C3AED', TRAINING: '#2563EB', OTHER: '#94a3b8',

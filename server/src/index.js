@@ -8,6 +8,7 @@ import { connectDB, disconnectDB } from './utils/prisma.js';
 import { connectRedis } from './utils/redis.js';
 import { createSocketServer } from './sockets/index.js';
 import { logger } from './utils/logger.js';
+import { findAvailablePort } from './utils/port.js';
 
 async function bootstrap() {
   await connectDB();
@@ -16,10 +17,13 @@ async function bootstrap() {
   const httpServer = http.createServer(app);
   createSocketServer(httpServer);
 
-  httpServer.listen(config.port, () => {
-    logger.info(`🚀  SkillNova API listening on http://localhost:${config.port} (${config.env})`);
-    logger.info(`📚  Health: http://localhost:${config.port}/healthz`);
-    logger.info(`🔐  Auth:   http://localhost:${config.port}/api/v1/auth/login`);
+  const port = Number(config.port) || 4000;
+  const resolvedPort = await findAvailablePort(port);
+
+  httpServer.listen(resolvedPort, () => {
+    logger.info(`🚀  SkillNova API listening on http://localhost:${resolvedPort} (${config.env})`);
+    logger.info(`📚  Health: http://localhost:${resolvedPort}/healthz`);
+    logger.info(`🔐  Auth:   http://localhost:${resolvedPort}/api/v1/auth/login`);
   });
 
   // Graceful shutdown

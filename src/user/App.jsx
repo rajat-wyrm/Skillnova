@@ -22,27 +22,28 @@ const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 
-const PAGES = {
-  dashboard:      <Dashboard />,
-  knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
-  qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
-  project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
-  kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
-  calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
-  files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
-  reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
-  attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
-  ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
-  notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
-  announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
-  exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
-  analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
-  profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
-  settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
-};
-
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
+
+  const PAGES = {
+    dashboard:      <Dashboard onNavigate={setPage} />,
+    knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
+    qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
+    project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
+    kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
+    calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
+    files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
+    reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
+    attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
+    ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
+    notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
+    announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
+    exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
+    analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
+    profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
+    settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
+  };
+
   return (
     <MainLayout page={page} onNavigate={setPage}>
       {PAGES[page]}

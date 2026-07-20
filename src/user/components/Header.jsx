@@ -1,23 +1,45 @@
 // ════════════════════════════════════════════════════════════
 //  USER — components/Header.jsx
 // ════════════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Bell, Search, Sun, Moon, Menu } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { useNotifications } from '../../shared/hooks/useNotifications';
 import { initials } from '../../lib/utils';
 import { formatRelative } from '../../lib/utils';
 
-const Header = ({ title, onMenuToggle }) => {
+const Header = ({ title, onMenuToggle, onNavigate }) => {
   const { user } = useAuthStore();
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [showNotif, setShowNotif] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { items, unreadCount, markRead, markAllRead } = useNotifications();
 
   useEffect(() => {
     if (dark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
     else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
   }, [dark]);
+
+  const searchOptions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const base = [
+      { label: 'Dashboard', page: 'dashboard', hint: 'Overview' },
+      { label: 'Reports', page: 'reports', hint: 'Submit and track' },
+      { label: 'Task Board', page: 'kanban', hint: 'Project tasks' },
+      { label: 'Calendar', page: 'calendar', hint: 'Meetings' },
+      { label: 'Knowledge Base', page: 'knowledge', hint: 'Articles' },
+      { label: 'AI Assistant', page: 'ai', hint: 'Help' },
+      { label: 'Files', page: 'files', hint: 'Uploads' },
+      { label: 'Announcements', page: 'announcements', hint: 'Latest updates' },
+    ];
+    if (!query) return base.slice(0, 4);
+    return base.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(query));
+  }, [searchQuery]);
+
+  const goToSearchResult = (page) => {
+    onNavigate?.(page);
+    setSearchQuery('');
+  };
 
   return (
     <header className="h-16 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 flex-shrink-0" style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}>
@@ -31,10 +53,33 @@ const Header = ({ title, onMenuToggle }) => {
 
       <div className="relative hidden md:block">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }} />
-        <input className="pl-9 pr-4 py-2 text-sm rounded-lg w-64 focus:outline-none" placeholder="Search knowledge base…"
+        <input
+          className="pl-9 pr-4 py-2 text-sm rounded-lg w-64 focus:outline-none"
+          placeholder="Search pages…"
           style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && searchOptions[0]) {
+              e.preventDefault();
+              goToSearchResult(searchOptions[0].page);
+            }
+          }}
           onFocus={(e) => (e.target.style.borderColor = '#ff6d34')}
-          onBlur={(e) => (e.target.style.borderColor = 'var(--border)')} />
+          onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
+        />
+        {searchQuery && (
+          <div className="absolute left-0 right-0 top-11 rounded-xl shadow-xl z-50 overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            {searchOptions.length === 0 ? (
+              <p className="px-3 py-2 text-xs" style={{ color: 'var(--muted)' }}>No matches</p>
+            ) : searchOptions.map((item) => (
+              <button key={item.page} onMouseDown={() => goToSearchResult(item.page)} className="w-full text-left px-3 py-2 hover:bg-white/5" style={{ color: 'var(--text)' }}>
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-[11px] mt-0.5" style={{ color: 'var(--muted)' }}>{item.hint}</p>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1 relative">

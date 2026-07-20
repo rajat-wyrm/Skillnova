@@ -8,7 +8,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import { config } from './config/index.js';
+import { config, isCorsOriginAllowed } from './config/index.js';
 import { logger } from './utils/logger.js';
 import { ApiError } from './utils/ApiError.js';
 import prisma from './utils/prisma.js';
@@ -45,8 +45,7 @@ app.use(compression());
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      if (config.corsOrigin.includes(origin)) return cb(null, true);
+      if (isCorsOriginAllowed(origin)) return cb(null, true);
       cb(new Error('CORS: origin not allowed'));
     },
     credentials: true,
