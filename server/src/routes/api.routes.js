@@ -4,9 +4,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import * as reports from '../controllers/reports.controller.js';
+import * as feedback from '../controllers/feedback.controller.js';
+import * as certificates from '../controllers/certificates.controller.js';
 import * as announcements from '../controllers/announcements.controller.js';
 import * as qa from '../controllers/qa.controller.js';
 import * as attendance from '../controllers/attendance.controller.js';
+import * as leave from '../controllers/leave.controller.js';
 import * as projects from '../controllers/projects.controller.js';
 import * as ai from '../controllers/ai.controller.js';
 import * as notif from '../controllers/notifications.controller.js';
@@ -17,7 +20,7 @@ import { validate, schemas } from '../middleware/validate.js';
 const api = Router();
 api.use(authenticate, requireAuth);
 
-const idParam = z.object({ id: z.string().cuid() });
+const idParam = z.object({ id: z.string().min(1) });
 
 // ── Reports ───────────────────────────────────────────────
 api.get(
@@ -69,7 +72,49 @@ api.patch(
   reports.review
 );
 api.delete('/reports/:id', requirePermission('reports:delete'), validate(idParam, 'params'), reports.remove);
+// ── Mentor Feedback ───────────────────────────────────────
+api.get(
+  '/feedback',
+  requirePermission('feedback:read'),
+  validate(schemas.pagination, 'query'),
+  feedback.list
+);
+api.get('/feedback/:id', requirePermission('feedback:read'), validate(idParam, 'params'), feedback.getById);
+api.post(
+  '/feedback',
+  requirePermission('feedback:create'),
+  validate(
+    z.object({
+      internId: z.string().cuid(),
+      rating: z.coerce.number().int().min(1).max(5),
+      completionStatus: z.enum(['IN_PROGRESS', 'COMPLETED', 'TERMINATED']).default('IN_PROGRESS'),
+      comments: z.string().max(2000).optional(),
+    })
+  ),
+  feedback.create
+);
 
+// ── Certificates ──────────────────────────────────────────
+api.get(
+  '/certificates',
+  requirePermission('certificates:read'),
+  validate(schemas.pagination, 'query'),
+  certificates.list
+);
+api.get('/certificates/:id', requirePermission('certificates:read'), validate(idParam, 'params'), certificates.getById);
+api.post(
+  '/certificates/generate',
+  requirePermission('certificates:generate'),
+  validate(
+    z.object({
+      feedbackId: z.string().cuid(),
+      role: z.string().max(120).optional(),
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date(),
+    })
+  ),
+  certificates.generate
+);
 // ── Announcements ─────────────────────────────────────────
 api.get(
   '/announcements',
@@ -142,7 +187,8 @@ api.post(
 api.post('/qa/answers/:id/accept', requirePermission('qa:update'), validate(idParam, 'params'), qa.acceptAnswer);
 
 // ── Attendance ────────────────────────────────────────────
-api.get('/attendance', requirePermission('attendance:read'), validate(schemas.pagination, 'query'), attendance.list);
+api.get('/attendance', requirePermission('attendance:self'), validate(schemas.pagination, 'query'), attendance.list);
+api.get('/attendance/today', requirePermission('attendance:self'), attendance.today);
 api.get('/attendance/summary', requirePermission('attendance:self'), attendance.summary);
 api.post(
   '/attendance/mark',
@@ -162,8 +208,36 @@ api.post(
 api.post(
   '/attendance/check',
   requirePermission('attendance:self'),
-  validate(z.object({ status: z.enum(['PRESENT', 'LEAVE']).default('PRESENT'), notes: z.string().max(300).optional() })),
+  validate(z.object({ action: z.enum(['CHECK_IN', 'CHECK_OUT']), notes: z.string().max(300).optional() })),
   attendance.checkInOut
+);
+
+// ── Leave Requests ────────────────────────────────────────
+api.get('/leave-requests', requirePermission('attendance:self'), validate(schemas.pagination, 'query'), leave.list);
+api.post(
+  '/leave-requests',
+  requirePermission('attendance:self'),
+  validate(
+    z.object({
+      leaveType: z.string().trim().min(2).max(50),
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date(),
+      reason: z.string().trim().min(1).max(500),
+    })
+  ),
+  leave.create
+);
+api.patch(
+  '/leave-requests/:id/review',
+  requirePermission('attendance:mark'),
+  validate(idParam, 'params'),
+  validate(
+    z.object({
+      status: z.enum(['APPROVED', 'REJECTED']),
+      reviewerNote: z.string().max(300).optional(),
+    })
+  ),
+  leave.review
 );
 
 // ── Projects ──────────────────────────────────────────────
@@ -199,6 +273,18 @@ api.patch(
   projects.updateProject
 );
 api.delete('/projects/:id', requirePermission('projects:delete'), validate(idParam, 'params'), projects.deleteProject);
+api.patch(
+  '/projects/:id/interns',
+  requirePermission('projects:update'),
+  validate(idParam, 'params'),
+  validate(
+    z.object({
+      userId: z.string().cuid(),
+      remove: z.boolean().optional(),
+    })
+  ),
+  projects.assignIntern
+);
 
 api.get('/tasks', requirePermission('tasks:read'), validate(schemas.pagination, 'query'), projects.listTasks);
 api.post(
@@ -206,13 +292,14 @@ api.post(
   requirePermission('tasks:create'),
   validate(
     z.object({
-      projectId: z.string().cuid(),
-      assigneeId: z.string().cuid().optional().nullable(),
+      projectId: z.string().min(1),
+      assigneeId: z.string().min(1).optional().nullable(),
       title: z.string().min(3).max(200),
       description: z.string().max(2000).optional(),
       status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).default('TODO'),
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
       dueDate: z.coerce.date().optional(),
+      attachmentIds: z.array(z.string().cuid()).optional(),
     })
   ),
   projects.createTask
@@ -228,7 +315,8 @@ api.patch(
       status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).optional(),
       priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
       dueDate: z.coerce.date().optional(),
-      assigneeId: z.string().cuid().nullable().optional(),
+      attachmentIds: z.array(z.string().cuid()).optional(),
+      assigneeId: z.string().min(1).nullable().optional(),
     })
   ),
   projects.updateTask

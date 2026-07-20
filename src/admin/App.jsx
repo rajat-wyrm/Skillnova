@@ -19,9 +19,13 @@ const CalendarView       = lazy(() => import('./pages/Calendar'));
 const FilesPage          = lazy(() => import('./pages/Files'));
 const NotificationPrefs  = lazy(() => import('./pages/NotificationPreferences'));
 const WebhooksPage       = lazy(() => import('./pages/Webhooks'));
+const DepartmentAnalytics = lazy(() => import('./pages/DepartmentAnalytics'));
+const HealthRiskDashboard = lazy(() => import('./pages/HealthRiskDashboard'));
 
 const PAGES = {
   'admin-dashboard':     <Dashboard />,
+  'admin-dept-analytics': <Suspense fallback={<PageLoader />}><DepartmentAnalytics /></Suspense>,
+  'admin-health-risk':    <Suspense fallback={<PageLoader />}><HealthRiskDashboard /></Suspense>,
   'admin-users':         <Suspense fallback={<PageLoader />}><AdminPanel /></Suspense>,
   'admin-management':    <Suspense fallback={<PageLoader />}><Management /></Suspense>,
   'admin-knowledge':     <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,

@@ -6,78 +6,87 @@
 // ── Permissions catalogue ─────────────────────────────────
 export const PERMISSIONS = {
   // Users
-  'users:read':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'users:create':     ['SUPER_ADMIN', 'ADMIN'],
-  'users:update':     ['SUPER_ADMIN', 'ADMIN'],
-  'users:delete':     ['SUPER_ADMIN'],
-  'users:role:change':['SUPER_ADMIN'],
+  'users:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'users:create': ['SUPER_ADMIN', 'ADMIN'],
+  'users:update': ['SUPER_ADMIN', 'ADMIN'],
+  'users:delete': ['SUPER_ADMIN'],
+  'users:role:change': ['SUPER_ADMIN'],
 
   // Reports
-  'reports:read':     ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'reports:create':   ['INTERN', 'MENTOR'],
-  'reports:update':   ['INTERN', 'MENTOR', 'ADMIN', 'SUPER_ADMIN'],
-  'reports:review':   ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'reports:delete':   ['SUPER_ADMIN', 'ADMIN'],
+  'reports:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'reports:create': ['INTERN', 'MENTOR'],
+  'reports:update': ['INTERN', 'MENTOR', 'ADMIN', 'SUPER_ADMIN'],
+  'reports:review': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'reports:delete': ['SUPER_ADMIN', 'ADMIN'],
+  // Mentor Feedback
+  'feedback:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'feedback:create': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'feedback:update': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+
+  // Certificates
+  'certificates:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'certificates:generate': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'certificates:delete': ['SUPER_ADMIN', 'ADMIN'],
 
   // Knowledge Base
-  'kb:read':          ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'kb:create':        ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'kb:update':        ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'kb:verify':        ['SUPER_ADMIN', 'ADMIN'],
-  'kb:delete':        ['SUPER_ADMIN', 'ADMIN'],
+  'kb:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'kb:create': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'kb:update': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'kb:verify': ['SUPER_ADMIN', 'ADMIN'],
+  'kb:delete': ['SUPER_ADMIN', 'ADMIN'],
 
   // Announcements
-  'announcements:read':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'announcements:create':  ['SUPER_ADMIN', 'ADMIN'],
-  'announcements:update':  ['SUPER_ADMIN', 'ADMIN'],
-  'announcements:delete':  ['SUPER_ADMIN', 'ADMIN'],
+  'announcements:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'announcements:create': ['SUPER_ADMIN', 'ADMIN'],
+  'announcements:update': ['SUPER_ADMIN', 'ADMIN'],
+  'announcements:delete': ['SUPER_ADMIN', 'ADMIN'],
 
   // Attendance
-  'attendance:read':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'attendance:mark':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'attendance:self':       ['INTERN', 'MENTOR', 'ADMIN', 'SUPER_ADMIN'],
+  'attendance:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'attendance:mark': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'attendance:self': ['INTERN', 'MENTOR', 'ADMIN', 'SUPER_ADMIN'],
 
   // Projects & Tasks
-  'projects:read':   ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'projects:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
   'projects:create': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
   'projects:update': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
   'projects:delete': ['SUPER_ADMIN', 'ADMIN'],
 
-  'tasks:read':      ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'tasks:create':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'tasks:update':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'tasks:delete':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'tasks:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'tasks:create': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'tasks:update': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'tasks:delete': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
 
   // Q&A
-  'qa:read':         ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'qa:create':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'qa:update':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'qa:delete':       ['SUPER_ADMIN', 'ADMIN'],
+  'qa:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'qa:create': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'qa:update': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'qa:delete': ['SUPER_ADMIN', 'ADMIN'],
 
   // AI Assistant
-  'ai:use':          ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'ai:use': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
 
   // Files
-  'files:read':       ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'files:write':      ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'files:delete':     ['SUPER_ADMIN', 'ADMIN'],
+  'files:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'files:write': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'files:delete': ['SUPER_ADMIN', 'ADMIN'],
 
   // Webhooks
-  'webhooks:read':    ['SUPER_ADMIN', 'ADMIN'],
-  'webhooks:write':   ['SUPER_ADMIN', 'ADMIN'],
+  'webhooks:read': ['SUPER_ADMIN', 'ADMIN'],
+  'webhooks:write': ['SUPER_ADMIN', 'ADMIN'],
 
   // Meetings
-  'meetings:read':    ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
-  'meetings:write':   ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
-  'meetings:delete':  ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'meetings:read': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'meetings:write': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
+  'meetings:delete': ['SUPER_ADMIN', 'ADMIN', 'MENTOR'],
 
   // Exports
-  'exports:use':      ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
+  'exports:use': ['SUPER_ADMIN', 'ADMIN', 'MENTOR', 'INTERN'],
 
   // Settings & Audit
-  'settings:read':   ['SUPER_ADMIN', 'ADMIN'],
+  'settings:read': ['SUPER_ADMIN', 'ADMIN'],
   'settings:update': ['SUPER_ADMIN'],
-  'audit:read':      ['SUPER_ADMIN'],
+  'audit:read': ['SUPER_ADMIN'],
 };
 
 // ── Helpers ───────────────────────────────────────────────

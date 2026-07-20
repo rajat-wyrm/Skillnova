@@ -88,6 +88,29 @@ export const deleteProject = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+export const assignIntern = asyncHandler(async (req, res) => {
+  const projectId = req.validatedParams.id;
+  const { userId, remove } = req.body;
+
+  const profile = await prisma.internProfile.findUnique({ where: { userId } });
+  if (!profile) throw ApiError.notFound('Intern profile not found for this user');
+
+  const updated = await prisma.internProfile.update({
+    where: { userId },
+    data: { projectId: remove ? null : projectId },
+  });
+
+  await audit({
+    userId: req.user.id,
+    action: remove ? 'project.intern.remove' : 'project.intern.add',
+    resource: 'project',
+    resourceId: projectId,
+    req,
+  });
+
+  res.json({ ok: true, internProfile: updated });
+});
+
 // ── Tasks ──────────────────────────────────────────────────
 export const listTasks = asyncHandler(async (req, res) => {
   const { page, limit, sort = 'dueDate', order } = req.validatedQuery;

@@ -1,43 +1,51 @@
 // ════════════════════════════════════════════════════════════
 //  Attendance Controller
 // ════════════════════════════════════════════════════════════
-import { z } from 'zod';
 import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 
-const _markSchema = z.object({
-  userId: z.string().cuid(),
-  date: z.coerce.date().optional(),
-  status: z.enum(['PRESENT', 'ABSENT', 'LEAVE', 'HALF_DAY', 'LATE']).default('PRESENT'),
-  notes: z.string().max(300).optional(),
-  checkIn: z.coerce.date().optional(),
-  checkOut: z.coerce.date().optional(),
-});
+const toDayStart = (value = new Date()) => {
+  const date = new Date(value);
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+};
 
-const _selfCheckInSchema = z.object({
-  status: z.enum(['PRESENT', 'LEAVE']).default('PRESENT'),
-  notes: z.string().max(300).optional(),
-});
+const getBaseWhere = async (req) => {
+  if (req.user.role === 'INTERN') return { userId: req.user.id };
 
-const todayDate = () => {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
+  if (req.user.role === 'MENTOR') {
+    const interns = await prisma.user.findMany({
+      where: { role: 'INTERN', internProfile: { mentorId: req.user.id } },
+      select: { id: true },
+    });
+    const internIds = interns.map((intern) => intern.id);
+
+    if (req.query.userId) {
+      return internIds.includes(req.query.userId) ? { userId: req.query.userId } : { userId: '__no_match__' };
+    }
+
+    return { userId: { in: internIds } };
+  }
+
+  return req.query.userId ? { userId: req.query.userId } : {};
+};
+
+const getTodayState = (record) => {
+  if (!record) return { label: 'Not Checked In', canCheckIn: true, canCheckOut: false };
+  if (record.status === 'LEAVE') return { label: 'Leave', canCheckIn: false, canCheckOut: false };
+  if (record.checkOut) return { label: 'Checked Out', canCheckIn: false, canCheckOut: false };
+  if (record.checkIn) return { label: 'Checked In', canCheckIn: false, canCheckOut: true };
+  if (record.status === 'PRESENT') return { label: 'Present', canCheckIn: true, canCheckOut: false };
+  return { label: record.status, canCheckIn: true, canCheckOut: false };
 };
 
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, sort = 'date', order } = req.validatedQuery;
-  const where = {};
-  // Intern sees only themselves
-  if (req.user.role === 'INTERN') where.userId = req.user.id;
-  else if (req.query.userId) where.userId = req.query.userId;
-  if (req.query.date) {
-    const d = new Date(req.query.date);
-    d.setUTCHours(0, 0, 0, 0);
-    where.date = d;
-  }
+  const where = await getBaseWhere(req);
+
+  if (req.query.date) where.date = toDayStart(req.query.date);
   if (req.query.status) where.status = req.query.status;
 
   const [items, total] = await Promise.all([
@@ -50,7 +58,21 @@ export const list = asyncHandler(async (req, res) => {
     }),
     prisma.attendance.count({ where }),
   ]);
+
   res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+});
+
+export const today = asyncHandler(async (req, res) => {
+  const where = await getBaseWhere(req);
+  const userId = where.userId && typeof where.userId === 'string'
+    ? where.userId
+    : req.user.id;
+
+  const attendance = await prisma.attendance.findUnique({
+    where: { userId_date: { userId, date: toDayStart() } },
+  });
+
+  res.json({ attendance, ...getTodayState(attendance) });
 });
 
 export const mark = asyncHandler(async (req, res) => {
@@ -58,42 +80,66 @@ export const mark = asyncHandler(async (req, res) => {
   const target = await prisma.user.findUnique({ where: { id: userId } });
   if (!target) throw ApiError.notFound('User not found');
 
-  const day = (date ?? new Date());
-  day.setUTCHours(0, 0, 0, 0);
-
+  const day = toDayStart(date ?? new Date());
   const record = await prisma.attendance.upsert({
     where: { userId_date: { userId, date: day } },
     update: { status, notes, checkIn, checkOut, markedById: req.user.id },
     create: { userId, date: day, status, notes, checkIn, checkOut, markedById: req.user.id },
   });
+
   await audit({ userId: req.user.id, action: 'attendance.mark', resource: 'attendance', resourceId: record.id, meta: { userId, status }, req });
   res.json({ attendance: record });
 });
 
 export const checkInOut = asyncHandler(async (req, res) => {
-  const { status, notes } = req.body;
-  const day = todayDate();
+  const { action, notes } = req.body;
+  const day = toDayStart();
   const now = new Date();
-  const record = await prisma.attendance.upsert({
+  const existing = await prisma.attendance.findUnique({
     where: { userId_date: { userId: req.user.id, date: day } },
-    update: {
-      status,
-      notes,
-      checkIn: now,
-    },
-    create: {
-      userId: req.user.id,
-      date: day,
-      status,
-      notes,
-      checkIn: now,
+  });
+
+  if (action === 'CHECK_IN') {
+    if (existing?.status === 'LEAVE') throw ApiError.badRequest('You are already marked on leave for today.');
+    if (existing?.checkIn) throw ApiError.badRequest('You have already checked in today.');
+
+    const attendance = await prisma.attendance.upsert({
+      where: { userId_date: { userId: req.user.id, date: day } },
+      update: {
+        status: 'PRESENT',
+        notes: notes ?? existing?.notes,
+        checkIn: now,
+      },
+      create: {
+        userId: req.user.id,
+        date: day,
+        status: 'PRESENT',
+        notes,
+        checkIn: now,
+      },
+    });
+
+    await audit({ userId: req.user.id, action: 'attendance.check_in', resource: 'attendance', resourceId: attendance.id, req });
+    return res.json({ attendance, ...getTodayState(attendance) });
+  }
+
+  if (!existing?.checkIn) throw ApiError.badRequest('Please check in before checking out.');
+  if (existing.checkOut) throw ApiError.badRequest('You have already checked out today.');
+
+  const attendance = await prisma.attendance.update({
+    where: { id: existing.id },
+    data: {
+      checkOut: now,
+      notes: notes ?? existing.notes,
     },
   });
-  res.json({ attendance: record });
+
+  await audit({ userId: req.user.id, action: 'attendance.check_out', resource: 'attendance', resourceId: attendance.id, req });
+  return res.json({ attendance, ...getTodayState(attendance) });
 });
 
 export const summary = asyncHandler(async (req, res) => {
-  const where = req.user.role === 'INTERN' ? { userId: req.user.id } : req.query.userId ? { userId: req.query.userId } : {};
+  const where = await getBaseWhere(req);
   const start = new Date();
   start.setDate(start.getDate() - 30);
   start.setUTCHours(0, 0, 0, 0);
@@ -104,7 +150,20 @@ export const summary = asyncHandler(async (req, res) => {
     prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'LEAVE' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
   ]);
-  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0 });
+
+  const rate = total ? Math.round(((present + leave) / total) * 100) : 0;
+  res.json({
+    present,
+    absent,
+    leave,
+    total,
+    rate,
+    presentDays: present,
+    absentDays: absent,
+    leaveDays: leave,
+    totalWorkingDays: total,
+    attendancePercentage: rate,
+  });
 });
 
-export default { list, mark, checkInOut, summary };
+export default { list, today, mark, checkInOut, summary };
