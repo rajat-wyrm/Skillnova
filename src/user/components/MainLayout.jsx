@@ -7,6 +7,7 @@ import Header from './Header';
 
 const PAGE_TITLES = {
   dashboard:      'Dashboard',
+  leaderboard:    'Leaderboard',
   knowledge:      'Knowledge Base',
   qa:             'Q&A Forum',
   project_flow:   'Project Flow',

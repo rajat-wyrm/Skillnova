@@ -2,6 +2,11 @@
 // Admin - pages/Reports.jsx
 import { useEffect, useState } from 'react';
 import { Eye, FileText, Loader2, RefreshCw } from 'lucide-react';
+// ════════════════════════════════════════════════════════════
+//  ADMIN — pages/Reports.jsx (API-driven)
+// ════════════════════════════════════════════════════════════
+import { useEffect, useState, useCallback } from 'react';
+import { FileText, Loader2, CheckCircle, Star } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
@@ -61,6 +66,14 @@ const AdminReports = () => {
       setDetailLoading(false);
     }
   };
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/reports', { params: { limit: 50, status: filter === 'ALL' ? undefined : filter } });
+      setReports(data.items);
+    } finally { setLoading(false); }
+  }, [filter]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const review = async () => {
     if (!reviewing) return;

@@ -18,6 +18,7 @@ import {
   toDateKey,
   toUtcDateOnly,
 } from '../utils/reports.js';
+import { recordActivity } from '../services/streak.service.js';
 
 const reportUserSelect = {
   id: true,
@@ -529,6 +530,20 @@ export const submit = asyncHandler(async (req, res) => {
     });
   }
   res.json({ report: responseWithSummary(updated) });
+  await recordActivity(req.user.id);
+  res.status(201).json({ report });
+});
+
+export const update = asyncHandler(async (req, res) => {
+  const id = req.validatedParams.id;
+  const existing = await prisma.report.findUnique({ where: { id } });
+  if (!existing) throw ApiError.notFound();
+  const canEdit = existing.userId === req.user.id && existing.status === 'DRAFT';
+  const canEditAny = ['SUPER_ADMIN', 'ADMIN'].includes(req.user.role);
+  if (!canEdit && !canEditAny) throw ApiError.forbidden('Cannot edit this report');
+  const report = await prisma.report.update({ where: { id }, data: req.body });
+  await audit({ userId: req.user.id, action: 'report.update', resource: 'report', resourceId: id, req });
+  res.json({ report });
 });
 
 export const review = asyncHandler(async (req, res) => {

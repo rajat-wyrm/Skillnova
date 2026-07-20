@@ -7,13 +7,14 @@ import {
   LayoutDashboard, Users, BookOpen, FileText,
   BarChart2, Megaphone, Settings, Shield,
   ChevronRight, ChevronLeft, LogOut, ScrollText,
-  LayoutGrid, Calendar, Folder, Bell, Webhook,
+  LayoutGrid, Calendar, Folder, Bell, Webhook, Trophy,
 } from "lucide-react";
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const ADMIN_MENU = [
   { id: "admin-dashboard",     label: "Overview",          icon: LayoutDashboard },
+  { id: "admin-leaderboard",   label: "Leaderboard",       icon: Trophy          },
   { id: "admin-users",         label: "User Management",   icon: Users           },
   { id: "admin-management",    label: "Intern Management", icon: Shield          },
   { id: "admin-knowledge",     label: "Knowledge Base",    icon: BookOpen        },

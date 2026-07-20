@@ -1,0 +1,38 @@
+// ════════════════════════════════════════════════════════════
+//  Audit Logging service
+// ════════════════════════════════════════════════════════════
+import prisma from '../utils/prisma.js';
+import { logger } from '../utils/logger.js';
+
+export async function audit({
+  userId,
+  action,
+  resource,
+  resourceId,
+  meta,
+  ip,
+  userAgent,
+  req,
+}) {
+  try {
+    if (req) {
+      ip = ip ?? req.headers?.['x-forwarded-for']?.split(',')[0]?.trim() ?? req.ip;
+      userAgent = userAgent ?? req.headers?.['user-agent'];
+    }
+    await prisma.auditLog.create({
+      data: {
+        userId: userId ?? null,
+        action,
+        resource,
+        resourceId,
+        meta: meta ?? undefined,
+        ip,
+        userAgent,
+      },
+    });
+  } catch (err) {
+    logger.warn({ err, action }, 'audit:log-failed');
+  }
+}
+
+export default audit;

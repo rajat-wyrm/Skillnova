@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Eye, FileText, Loader2, RefreshCw } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal, GreenButton } from '../../shared/components/UI';
+// Mentor — Reports review
+import { useEffect, useState, useCallback } from 'react';
+import { FileText, Loader2, CheckCircle, X } from 'lucide-react';
+import { Card, Badge, SectionHeader, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatDate, formatRelative } from '../../lib/utils';
@@ -57,6 +61,14 @@ const Reports = () => {
       setDetailLoading(false);
     }
   };
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/reports', { params: { limit: 50, status: filter === 'ALL' ? undefined : filter } });
+      setReports(data.items);
+    } finally { setLoading(false); }
+  }, [filter]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const submitReview = async () => {
     if (!reviewOpen) return;
