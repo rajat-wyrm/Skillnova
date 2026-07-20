@@ -1,0 +1,10 @@
+{
+  "name": "skillnova-root",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run start --prefix frontend",
+    "start": "npm run start --prefix frontend",
+    "setup": "npm run setup --prefix frontend"
+  }
+}

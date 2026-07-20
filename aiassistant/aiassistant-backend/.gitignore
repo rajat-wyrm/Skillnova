@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Secrets and runtime artefacts — must NEVER be committed
+.env
+.env.*
+!.env.example
+chat_logs.db
+chat_logs.db-journal
+
+# Logs
+logs/*.log
+*.log
+
+# Local indexes / caches
+.cache/
+faiss_index/
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/

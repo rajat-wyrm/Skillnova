@@ -1,0 +1,27 @@
+---
+source: Attendance_Policy.txt
+topic: Attendance
+importance: high
+last_updated: 2026-03-15
+author: HR Department
+---
+
+Attendance Policy
+
+Consistent attendance and active participation are essential for maximizing the value of your internship at UptoSkills.
+
+1. Working Hours
+- Standard Hours: Interns are expected to adhere to the agreed-upon standard working hours for their specific role and time zone.
+- Flexibility: If your internship offers flexible hours, ensure you overlap with your mentor's schedule for core collaboration periods.
+
+2. Reporting Attendance
+- Daily Log-in: Log in to the UptoSkills platform or the designated communication channel at the beginning of your workday.
+- Status Updates: Keep your status on communication channels updated (e.g., "Available," "In a Meeting," "Offline") so your team knows your availability.
+
+3. Leave Requests
+- Planned Leave: Submit requests for planned leave (e.g., exams, personal commitments) to your mentor and HR at least one week in advance.
+- Sick Leave: In case of illness or unforeseen emergencies, notify your mentor and HR as soon as possible before the start of your workday.
+- Unplanned Absences: Frequent unplanned absences may negatively impact your internship evaluation.
+
+4. Holidays
+- Interns are entitled to observe the national and regional public holidays as outlined in the company calendar. Please confirm your specific holiday schedule with your HR representative.

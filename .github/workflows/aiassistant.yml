@@ -1,0 +1,169 @@
+# ════════════════════════════════════════════════════════════════════
+#  AIAssistant — CI
+#
+#  Lints, tests, and builds ONLY the AIAssistant module under
+#  `aiassistant/`. Does not touch the existing SkillNova frontend or
+#  server jobs in `.github/workflows/ci.yml`.
+# ════════════════════════════════════════════════════════════════════
+name: AIAssistant CI
+
+on:
+  push:
+    branches: [main, feat/**, fix/**]
+    paths:
+      - 'aiassistant/**'
+      - '.github/workflows/aiassistant.yml'
+  pull_request:
+    branches: [main, feat/**, fix/**]
+    paths:
+      - 'aiassistant/**'
+      - '.github/workflows/aiassistant.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  aiassistant-backend-lint:
+    name: AIAssistant backend lint (ruff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiassistant/aiassistant-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: aiassistant/aiassistant-backend/requirements.txt
+      - run: pip install ruff
+      - run: ruff check .
+
+  aiassistant-backend-test:
+    name: AIAssistant backend tests (pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiassistant/aiassistant-backend
+    env:
+      # Stub out env vars so tests don't accidentally call real providers.
+      GROQ_API_KEY: ''
+      GEMINI_API_KEY: ''
+      DEEPSEEK_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: aiassistant/aiassistant-backend/requirements.txt
+      - name: Install CPU-only torch (needed by sentence-transformers)
+        run: pip install --extra-index-url https://download.pytorch.org/whl/cpu torch
+      - run: pip install -r requirements.txt
+      - run: pytest --maxfail=1 --tb=short
+
+  aiassistant-backend-import-check:
+    name: AIAssistant backend smoke import
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiassistant/aiassistant-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install minimal deps
+        run: |
+          pip install fastapi pydantic python-dotenv SQLAlchemy \
+                      langchain-core langchain langchain-community \
+                      langchain-text-splitters langchain-huggingface \
+                      langgraph pyyaml httpx requests
+      - name: Import every public module
+        run: |
+          python -c "
+          import importlib
+          for m in [
+              'database', 'cache', 'guardrails', 'logging_config',
+              'agent.state', 'agent.prompts', 'agent.nodes', 'agent.graph',
+              'retriever.vectorstore', 'tools.web_search',
+          ]:
+              importlib.import_module(m)
+              print('OK', m)
+          "
+
+  aiassistant-widget-lint:
+    name: AIAssistant widget lint (eslint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiassistant/aiassistant-widget
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: aiassistant/aiassistant-widget/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run lint
+
+  aiassistant-widget-build:
+    name: AIAssistant widget build (vite)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aiassistant/aiassistant-widget
+    env:
+      VITE_AIASSISTANT_URL: http://localhost:8000
+      VITE_APP_NAME: AIAssistant
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: aiassistant/aiassistant-widget/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run build
+
+  aiassistant-backend-docker:
+    name: AIAssistant backend docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: aiassistant/aiassistant-backend
+          file: aiassistant/aiassistant-backend/Dockerfile
+          push: false
+          tags: skillnova-aiassistant:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  all-checks:
+    name: All AIAssistant checks
+    needs:
+      - aiassistant-backend-lint
+      - aiassistant-backend-test
+      - aiassistant-backend-import-check
+      - aiassistant-widget-lint
+      - aiassistant-widget-build
+      - aiassistant-backend-docker
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          if [ "${{ needs.aiassistant-backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.aiassistant-backend-test.result }}" != "success" ] || \
+             [ "${{ needs.aiassistant-backend-import-check.result }}" != "success" ] || \
+             [ "${{ needs.aiassistant-widget-lint.result }}" != "success" ] || \
+             [ "${{ needs.aiassistant-widget-build.result }}" != "success" ] || \
+             [ "${{ needs.aiassistant-backend-docker.result }}" != "success" ]; then
+            echo "One or more AIAssistant jobs failed."
+            exit 1
+          fi
+          echo "All AIAssistant jobs passed."

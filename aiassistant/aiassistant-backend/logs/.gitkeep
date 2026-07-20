@@ -1,0 +1,2 @@
+# Keep the logs/ directory under version control.
+# Real log files are matched by *.log in .gitignore.

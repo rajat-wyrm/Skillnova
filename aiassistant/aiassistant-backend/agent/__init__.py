@@ -1,0 +1,1 @@
+"""SkillNova AIAssistant — agent package."""
