@@ -54,6 +54,62 @@ model User {
   reports            Report[]
   qaUpvotes          Upvote[]
   sessions           UserSession[]
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String?
+  googleId        String?       @unique
+  authProvider    String        @default("password")
+  name            String
+  role            UserRole      @default(INTERN)
+  status          UserStatus    @default(PENDING)
+  department      String?
+  college         String?
+  yearOfStudy     String?
+  dateOfBirth     DateTime?
+  linkedinUrl     String?
+  skills          String?       // comma-separated for simplicity, can migrate to table later
+  avatarUrl       String?
+  rating          Float         @default(0)
+  twoFactorSecret String?
+  twoFactorEnabled Boolean      @default(false)
+  emailVerified   Boolean       @default(false)
+  emailVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  lastLoginIp     String?
+  failedAttempts  Int           @default(0)
+  lockedUntil     DateTime?
+  currentStreak   Int           @default(0)
+  longestStreak   Int           @default(0)
+  lastActivityAt  DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  refreshTokens     RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  reports           Report[]
+  attendances       Attendance[]
+  projectTasks      ProjectTask[]
+  announcements     Announcement[]    @relation("AnnouncementAuthor")
+  announcementsReads AnnouncementRead[]
+  kbArticles        KnowledgeArticle[] @relation("ArticleAuthor")
+  kbVersions        KnowledgeArticleVersion[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  questions         Question[]
+  answers           Answer[]
+  chatSessions      ChatSession[]
+  qaUpvotes         Upvote[]
+  sessions          UserSession[]
+  internProfile     InternProfile?
+  mentorProfile     MentorProfile?
+  mentorOf          InternProfile[] @relation("MentorRelation")
+  organizedMeetings Meeting[]      @relation("OrganizedMeetings")
+  meetingAttendees  MeetingAttendee[]
+  flagsRaised     Flag[]   @relation("FlaggedByMentor")
+  flagsReceived   Flag[]   @relation("FlaggedIntern")
+  collaborativeTasksCreated CollaborativeTask[] @relation("TaskCreator")
+  collaborativeTasksAssigned CollaborativeTask[] @relation("TaskAssignees")
+  teams          Team[]              @relation("TeamMembers")
 
   @@index([role])
   @@index([status])
@@ -99,6 +155,19 @@ model RefreshToken {
   revokedAt DateTime?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -587,4 +656,67 @@ enum MeetingType {
   REVIEW
   TRAINING
   OTHER
+// ── Flags / Alerts ───────────────────────────────────────────
+enum FlagType {
+  ATTENDANCE_DROPPING
+  MISSED_DEADLINE
+  NEEDS_SUPPORT
+  BEHAVIOUR_CONCERN
+  OTHER
+}
+
+enum FlagStatus {
+  ACTIVE
+  RESOLVED
+}
+
+model Flag {
+  id          String     @id @default(cuid())
+  internId    String
+  intern      User       @relation("FlaggedIntern", fields: [internId], references: [id], onDelete: Cascade)
+  mentorId    String
+  mentor      User       @relation("FlaggedByMentor", fields: [mentorId], references: [id])
+  type        FlagType
+  reason      String?
+  status      FlagStatus @default(ACTIVE)
+  resolvedAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([internId])
+  @@index([mentorId])
+  @@index([status])
+}
+
+// ── Collaborative Task Models ────────────────────────────────
+
+model Team {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  members     User[]              @relation("TeamMembers")
+  tasks       CollaborativeTask[]
+}
+
+model CollaborativeTask {
+  id          String            @id @default(cuid())
+  teamId      String
+  team        Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus        @default(TODO)
+  creatorId   String
+  creator     User              @relation("TaskCreator", fields: [creatorId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Implicit many-to-many relation for multiple assignees
+  assignees   User[]            @relation("TaskAssignees")
+
+  @@index([teamId])
+  @@index([creatorId])
 }

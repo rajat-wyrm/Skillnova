@@ -5,13 +5,14 @@ import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
-  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target,
+  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
   { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'leaderboard',    label: 'Leaderboard',    icon: Trophy          },
   { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },
   { id: 'project_flow',   label: 'Project Flow',   icon: Activity        },
   { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },
