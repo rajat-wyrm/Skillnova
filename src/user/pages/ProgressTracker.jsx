@@ -649,62 +649,47 @@ function ProgressCard({
   title,
   percentage,
   details,
-  icon: Icon,
+  icon,
 }) {
+  const ProgressIcon = icon;
 
   return (
-
     <div className="bg-white rounded-xl p-5 shadow-sm">
-
       <div className="flex items-center justify-between mb-4">
-
         <div className="p-2 rounded-lg bg-orange-100">
-
-          <Icon
+          <ProgressIcon
             size={20}
             className="text-orange-500"
           />
-
         </div>
 
         <span className="text-xl font-bold">
-
           {percentage}%
-
         </span>
-
       </div>
 
       <h3 className="font-semibold">
-
         {title}
-
       </h3>
 
-      {/* Progress Bar */}
-
       <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden mt-3">
-
         <div
           className="h-full bg-orange-500 rounded-full transition-all duration-500"
           style={{
-            width:
-              `${percentage}%`,
+            width: `${percentage}%`,
           }}
         />
-
       </div>
 
       <p className="text-sm text-gray-500 mt-3">
-
         {details}
-
       </p>
-
     </div>
-
   );
 }
+
+  
+
 
 
 // ═══════════════════════════════════════════
