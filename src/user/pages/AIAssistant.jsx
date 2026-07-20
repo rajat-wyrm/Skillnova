@@ -95,6 +95,9 @@ const MessageBubble = ({ msg }) => {
 const AIAssistant = () => {
   const { user } = useAuthStore();
   const [messages, setMessages] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [selectedTask, setSelectedTask] = useState('');
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -105,18 +108,59 @@ const AIAssistant = () => {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Initial greeting + load sessions
+  //Initial greeting + load sessions
+  // useEffect(() => {
+  //   setMessages([
+  //     {
+  //       role: 'assistant',
+  //       content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. I'm grounded on the UptoSkills knowledge base, so ask me anything about reports, attendance, mentorship, the platform or your career.`,
+  //       createdAt: new Date().toISOString(),
+  //     },
+  //   ]);
+  //   api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
+  // }, [user]);
   useEffect(() => {
     setMessages([
       {
         role: 'assistant',
-        content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. I'm grounded on the UptoSkills knowledge base, so ask me anything about reports, attendance, mentorship, the platform or your career.`,
+        content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. Select one of your assigned tasks above and I'll recommend courses, documentation, learning resources and a step-by-step approach to complete it.`,
         createdAt: new Date().toISOString(),
       },
     ]);
-    api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
-  }, [user]);
 
+    api.get('/ai/sessions')
+      .then((r) => setSessions(r.data.items))
+      .catch(() => {});
+
+    api.get('/tasks', { params: { limit: 100 } })
+      .then((r) => {
+          setTasks(r.data.items || []);
+      })
+      .catch(() => {});
+//     setTasks([
+//   {
+//     id: "1",
+//     title: "Build Login Page",
+//     description: "Create login UI using React",
+//     priority: "HIGH",
+//     status: "TODO",
+//   },
+//   {
+//     id: "2",
+//     title: "Attendance Management API",
+//     description: "Develop attendance backend APIs",
+//     priority: "MEDIUM",
+//     status: "IN_PROGRESS",
+//   },
+//   {
+//     id: "3",
+//     title: "Integrate AI Assistant",
+//     description: "Connect frontend with AI backend",
+//     priority: "HIGH",
+//     status: "TODO",
+//   },
+// ]);
+}, [user]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
@@ -148,6 +192,51 @@ const AIAssistant = () => {
   const deleteSession = async (id) => {
     try { await api.delete(`/ai/sessions/${id}`); setSessions((s) => s.filter((x) => x.id !== id)); } catch { /* ignore */ }
   };
+
+  const recommendForTask = async () => {
+  if (!selectedTask) return;
+
+  const task = tasks.find((t) => t.id === selectedTask);
+
+  if (!task) return;
+
+  const prompt = `
+You are an AI mentor.
+
+My assigned internship task is:
+
+Title:
+${task.title}
+
+Description:
+${task.description || "No description provided"}
+
+Priority:
+${task.priority}
+
+Status:
+${task.status}
+
+Please provide:
+
+1. Explain what this task means.
+2. Skills required.
+3. Technologies required.
+4. Beginner-friendly YouTube tutorials.
+5. Official documentation.
+6. Step-by-step roadmap.
+7. Estimated completion time.
+8. Common mistakes.
+9. Best practices.
+10. End with some motivation.
+`;
+
+  setLoadingRecommendations(true);
+
+  await send(prompt);
+
+  setLoadingRecommendations(false);
+};
 
   const send = async (text) => {
     const msg = (text ?? input).trim();
@@ -293,7 +382,48 @@ const AIAssistant = () => {
               ))}
             </div>
           )}
+          //Change
+          {/* AI Task Recommendation */}
 
+<div
+  className="mx-5 mt-4 p-4 rounded-xl"
+  style={{
+    background: "var(--chat-ai-bg)",
+    border: "1px solid var(--chat-ai-border)"
+  }}
+>
+  <h3
+    className="text-sm font-semibold mb-3"
+    style={{ color: "var(--text)" }}
+  >
+    AI Learning Recommendation
+  </h3>
+
+  <div className="flex gap-2">
+    <select
+      className="flex-1 rounded-lg px-3 py-2 text-sm"
+      value={selectedTask}
+      onChange={(e) => setSelectedTask(e.target.value)}
+    >
+      <option value="">Select Assigned Task</option>
+
+      {tasks.map((task) => (
+        <option key={task.id} value={task.id}>
+          {task.title}
+        </option>
+      ))}
+    </select>
+
+    <button
+      onClick={recommendForTask}
+      disabled={!selectedTask || loadingRecommendations}
+      className="px-4 py-2 rounded-lg text-white"
+      style={{ background: "#2563EB" }}
+    >
+      {loadingRecommendations ? "Generating..." : "Recommend"}
+    </button>
+  </div>
+</div>
           <div className="flex-1 overflow-y-auto chat-scroll px-5 py-5 flex flex-col gap-5">
             {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
             {streamingText && (

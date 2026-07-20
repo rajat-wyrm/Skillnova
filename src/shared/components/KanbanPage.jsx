@@ -22,6 +22,7 @@ const KanbanPage = ({ canEdit = true }) => {
         setProjects(r.data.items);
         if (r.data.items[0]) setActive(r.data.items[0].id);
       })
+      
       .catch(() => notify.error('Failed to load projects.'))
       .finally(() => setLoading(false));
     /* eslint-enable react-hooks/set-state-in-effect */
