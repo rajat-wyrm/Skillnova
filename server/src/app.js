@@ -105,9 +105,14 @@ app.use(etagMiddleware());
 // Response time tracking header
 app.use((_req, res, next) => {
   const start = Date.now();
+
+  res.setHeader('X-Response-Time-Start', start.toString());
+
   res.on('finish', () => {
-    res.setHeader('X-Response-Time', `${Date.now() - start}ms`);
+    const duration = Date.now() - start;
+    console.log(`${_req.method} ${_req.originalUrl} - ${duration}ms`);
   });
+
   next();
 });
 

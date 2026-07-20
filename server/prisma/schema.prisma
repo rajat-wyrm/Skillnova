@@ -11,6 +11,8 @@ model User {
   id                 String                    @id @default(cuid())
   email              String                    @unique
   passwordHash       String?
+  googleId           String?                   @unique
+  authProvider       String                    @default("password")
   name               String
   role               UserRole                  @default(INTERN)
   status             UserStatus                @default(PENDING)
@@ -32,6 +34,30 @@ model User {
   lockedUntil        DateTime?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
+  announcements      Announcement[]            @relation("AnnouncementAuthor")
+  announcementsReads AnnouncementRead[]
+  answers            Answer[]
+  attendances        Attendance[]
+  auditLogs          AuditLog[]
+  chatSessions       ChatSession[]
+  reopenedDailyLogs  DailyWorkLog[]            @relation("DailyWorkLogReopenedBy")
+  dailyWorkLogs      DailyWorkLog[]
+  mentorOf           InternProfile[]           @relation("MentorRelation")
+  internProfile      InternProfile?
+  kbArticles         KnowledgeArticle[]        @relation("ArticleAuthor")
+  kbVersions         KnowledgeArticleVersion[]
+  organizedMeetings  Meeting[]                 @relation("OrganizedMeetings")
+  meetingAttendees   MeetingAttendee[]
+  mentorProfile      MentorProfile?
+  notifications      Notification[]
+  projectTasks       ProjectTask[]
+  questions          Question[]
+  refreshTokens      RefreshToken[]
+  reviewedReports    Report[]                  @relation("ReportReviewedBy")
+  reports            Report[]                  @relation("UserReports")
+  reportReviews      ReportReview[]            @relation("ReportReviewAuthor")
+  qaUpvotes          Upvote[]
+  sessions           UserSession[]
   authProvider       String                    @default("password")
   googleId           String?                   @unique
   announcements      Announcement[]            @relation("AnnouncementAuthor")
@@ -201,6 +227,27 @@ model OtpChallenge {
 }
 
 model Report {
+  id            String         @id @default(cuid())
+  userId        String
+  title         String
+  content       String?
+  fileUrl       String?
+  weekNumber    Int?
+  weekStartDate DateTime?      @db.Date
+  weekEndDate   DateTime?      @db.Date
+  generatedAt   DateTime?
+  status        ReportStatus   @default(DRAFT)
+  score         Float?
+  feedback      String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+  submittedAt   DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  dailyLogs     DailyWorkLog[]
+  reviewedBy    User?          @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
+  user          User           @relation("UserReports", fields: [userId], references: [id], onDelete: Cascade)
+  reviews       ReportReview[]
   id           String       @id @default(cuid())
   userId       String
   title        String
@@ -220,6 +267,48 @@ model Report {
   @@index([userId])
   @@index([status])
   @@index([submittedAt])
+  @@index([weekStartDate])
+}
+
+model DailyWorkLog {
+  id               String             @id @default(cuid())
+  reportId         String?
+  userId           String
+  date             DateTime           @db.Date
+  workDone         String
+  hoursWorked      Float
+  technologiesUsed String?
+  challenges       String?
+  tomorrowPlan     String?
+  status           DailyWorkLogStatus @default(OPEN)
+  reopenedById     String?
+  reopenedAt       DateTime?
+  lockedAt         DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  reopenedBy       User?              @relation("DailyWorkLogReopenedBy", fields: [reopenedById], references: [id])
+  report           Report?            @relation(fields: [reportId], references: [id])
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([reportId])
+  @@index([date])
+}
+
+model ReportReview {
+  id           String       @id @default(cuid())
+  reportId     String
+  reviewedById String
+  status       ReportStatus
+  rating       Int?
+  feedback     String?
+  createdAt    DateTime     @default(now())
+  report       Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reviewedBy   User         @relation("ReportReviewAuthor", fields: [reviewedById], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([reviewedById])
 }
 
 model Attendance {
@@ -602,9 +691,19 @@ enum UserStatus {
 
 enum ReportStatus {
   DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_REVISION
+  APPROVED
   PENDING
   REVIEWED
   REJECTED
+}
+
+enum DailyWorkLogStatus {
+  OPEN
+  LOCKED
+  REOPENED
 }
 
 enum AttendanceStatus {

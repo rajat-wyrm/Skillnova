@@ -54,7 +54,7 @@ export const platformStats = asyncHandler(async (req, res) => {
       prisma.knowledgeArticle.count({ where: { status: 'PUBLISHED' } }),
       prisma.knowledgeArticle.count({ where: { status: 'PUBLISHED', verified: true } }),
       prisma.report.count(),
-      prisma.report.count({ where: { status: 'PENDING' } }),
+      prisma.report.count({ where: { status: { in: ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_REVISION', 'PENDING'] } } }),
       prisma.question.count(),
       prisma.announcement.count(),
     ]);
@@ -103,7 +103,7 @@ export const internPerformance = asyncHandler(async (req, res) => {
       },
     });
     return interns.map((i) => {
-      const reviewed = i.reports.filter((r) => r.status === 'REVIEWED');
+      const reviewed = i.reports.filter((r) => ['REVIEWED', 'APPROVED'].includes(r.status));
       const avgScore = reviewed.length ? reviewed.reduce((s, r) => s + (r.score ?? 0), 0) / reviewed.length : 0;
       const completed = i.projectTasks.filter((t) => t.status === 'DONE').length;
       const present = i.attendances.filter((a) => a.status === 'PRESENT').length;
