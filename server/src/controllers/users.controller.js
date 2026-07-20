@@ -8,6 +8,8 @@ import { hashPassword } from '../utils/auth.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { lru } from '../utils/lru.js';
+import XLSX from 'xlsx';
+import fs from 'fs';
 
 const invalidateUser = (id) => {
   lru.del(`user:${id}`);
@@ -75,35 +77,108 @@ export const getById = asyncHandler(async (req, res) => {
 });
 
 export const create = asyncHandler(async (req, res) => {
-  const data = req.body;
-  const existing = await prisma.user.findUnique({ where: { email: data.email } });
-  if (existing) throw ApiError.conflict('Email already registered');
+  const { email, password, name, role, department } = req.body;
 
-  const user = await prisma.user.create({
-    data: {
-      ...data,
-      passwordHash: hashPassword(data.password),
-      emailVerified: false,
-    },
-    select: { id: true, email: true, name: true, role: true, status: true, department: true },
+  const existing = await prisma.user.findUnique({
+    where: { email }
   });
 
-  await audit({ userId: req.user.id, action: 'user.create', resource: 'user', resourceId: user.id, meta: { role: user.role }, req });
-  await notify(user.id, { type: 'welcome', title: `Welcome to SkillNova, ${user.name}!`, body: 'Your account is ready.' });
+  if (existing) {
+    throw ApiError.conflict('Email already registered');
+  }
+
+  const user = await prisma.$transaction(async (tx) => {
+
+  const createdUser = await tx.user.create({
+    data: {
+      email,
+      name,
+      role,
+      department,
+      passwordHash: hashPassword(password),
+      emailVerified: false,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      status: true,
+      department: true,
+    },
+  });
+
+  if (role === 'INTERN') {
+    await tx.internProfile.create({
+      data: {
+        userId: createdUser.id,
+        startDate: new Date(),
+      },
+    });
+  }
+
+  if (role === 'MENTOR') {
+    await tx.mentorProfile.create({
+      data: {
+        userId: createdUser.id,
+      },
+    });
+  }
+
+  return createdUser;
+});
+  await audit({
+    userId: req.user.id,
+    action: 'user.create',
+    resource: 'user',
+    resourceId: user.id,
+    meta: { role: user.role },
+    req,
+  });
+
+  await notify(user.id, {
+    type: 'welcome',
+    title: `Welcome to SkillNova, ${user.name}!`,
+    body: 'Your account is ready.',
+  });
 
   res.status(201).json({ user });
 });
 
 export const update = asyncHandler(async (req, res) => {
+
   const id = req.validatedParams.id;
+
+  // Intern can only edit self
+  if (
+    req.user.role === 'INTERN' &&
+    req.user.id !== id
+  ) {
+    throw ApiError.forbidden('Cannot update another user');
+  }
+
   const data = req.body;
-  // Self-update restriction
+
   if (req.user.id === id && (data.role || data.status)) {
     throw ApiError.forbidden('Cannot change your own role or status');
   }
-  const user = await prisma.user.update({ where: { id }, data });
+
+  const user = await prisma.user.update({
+    where: { id },
+    data
+  });
+
   invalidateUser(id);
-  await audit({ userId: req.user.id, action: 'user.update', resource: 'user', resourceId: id, meta: data, req });
+
+  await audit({
+    userId: req.user.id,
+    action: 'user.update',
+    resource: 'user',
+    resourceId: id,
+    meta: data,
+    req
+  });
+
   res.json({ user });
 });
 
@@ -163,5 +238,88 @@ export const stats = asyncHandler(async (req, res) => {
   ]);
   res.json({ total, byRole, byStatus });
 });
+export const importUsers = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw ApiError.badRequest('Excel file required');
+  }
 
-export default { list, getById, create, update, changeRole, changeStatus, remove, stats };
+  const workbook = XLSX.readFile(req.file.path);
+
+  const sheet =
+    workbook.Sheets[workbook.SheetNames[0]];
+
+  const rows =
+    XLSX.utils.sheet_to_json(sheet);
+
+  let created = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+
+  if (!row.email || !row.name || !row.password) {
+    skipped++;
+    continue;
+  }
+
+  const role =
+    String(row.role).toUpperCase();
+
+  if (!['INTERN', 'MENTOR'].includes(role)) {
+    skipped++;
+    continue;
+  }
+
+  const existing =
+    await prisma.user.findUnique({
+      where: { email: row.email },
+    });
+
+  if (existing) {
+    skipped++;
+    continue;
+  }
+
+  await prisma.$transaction(async (tx) => {
+
+    const user =
+      await tx.user.create({
+        data: {
+          name: row.name,
+          email: row.email,
+          role,
+          department: row.department,
+          passwordHash: hashPassword(row.password),
+        },
+      });
+
+    if (role === 'INTERN') {
+      await tx.internProfile.create({
+        data: {
+          userId: user.id,
+          startDate: new Date(),
+        },
+      });
+    }
+
+    if (role === 'MENTOR') {
+      await tx.mentorProfile.create({
+        data: {
+          userId: user.id,
+        },
+      });
+    }
+  });
+
+  created++;
+}
+
+  fs.unlinkSync(req.file.path);
+
+  res.json({
+    success: true,
+    created,
+    skipped,
+  });
+});
+
+export default { list, getById, create, update, changeRole, changeStatus, remove, stats,importUsers };

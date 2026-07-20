@@ -178,7 +178,7 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
     try {
       const [p, t] = await Promise.all([
         api.get(`/projects/${projectId}`).catch(() => null),
-        api.get('/tasks', { params: { projectId, limit: 200 } }),
+        api.get('/tasks', { params: { projectId, limit: 100 } }),
       ]);
       setProject(p?.data?.project);
       setTasks(t.data.items);
@@ -245,14 +245,22 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
   };
 
   const onSaveTask = async (task) => {
-    if (task._id) {
-      await api.post('/tasks', {
-        title: task.title, priority: task.priority, dueDate: task.dueDate, status: task.status, projectId: task.projectId,
-      });
-    }
-    fetch();
+  try {
+    await api.post('/tasks', {
+      title: task.title,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      status: task.status,
+      projectId: task.projectId,
+    });
+
+    await fetch();
     notify.success('Task created');
-  };
+  } catch (err) {
+    console.error(err);
+    notify.error(err.response?.data?.error || 'Failed to create task');
+  }
+};
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}><Loader2 size={20} className="animate-spin" style={{ display: 'inline-block', verticalAlign: 'middle' }} /></div>;
 

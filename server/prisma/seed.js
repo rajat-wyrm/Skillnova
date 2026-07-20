@@ -289,19 +289,15 @@ async function main() {
   }
 
   // ── Projects & Tasks ───────────────────────────────────
-  const project = await prisma.project.upsert({
-    where: { id: 'seed-project-1' },
-    update: {},
-    create: {
-      id: 'seed-project-1',
-      name: 'SkillNova Platform',
-      description: 'Internal intern management platform with realtime features and AI assistant.',
-      status: 'ACTIVE',
-      startDate: new Date('2026-01-15'),
-      createdById: admin.id,
-    },
-  });
-
+  const project = await prisma.project.create({
+  data: {
+    name: 'SkillNova Platform',
+    description: 'Internal intern management platform with realtime features and AI assistant.',
+    status: 'ACTIVE',
+    startDate: new Date('2026-01-15'),
+    createdById: admin.id,
+  },
+});
   const tasksData = [
     { title: 'Set up Postgres schema',           status: 'DONE',       priority: 'HIGH', assignee: interns[0] },
     { title: 'Build authentication endpoints',   status: 'DONE',       priority: 'HIGH', assignee: interns[1] },

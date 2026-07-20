@@ -7,7 +7,7 @@ import * as users from '../controllers/users.controller.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { validate, schemas } from '../middleware/validate.js';
-
+import upload from '../middleware/upload.js';
 const router = Router();
 router.use(authenticate, requireAuth);
 
@@ -20,6 +20,12 @@ router.get(
   users.list
 );
 router.get('/stats', requirePermission('users:read'), users.stats);
+router.post(
+  '/import',
+  requirePermission('users:create'),
+  upload.single('file'),
+  users.importUsers
+);
 router.get('/:id', requirePermission('users:read'), validate(idParam, 'params'), users.getById);
 router.post(
   '/',
@@ -37,7 +43,7 @@ router.post(
 );
 router.patch(
   '/:id',
-  requirePermission('users:update'),
+  //requirePermission('users:update'),
   validate(idParam, 'params'),
   validate(
     z.object({

@@ -20,6 +20,7 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', name: '', role: 'INTERN', department: '' });
 
   const fetch = async () => {
@@ -43,6 +44,41 @@ const AdminPanel = () => {
       notify.error(err.response?.data?.error || 'Failed to create user.');
     }
   };
+  const importUsers = async (e) => {
+  const file = e.target.files?.[0];
+
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    setImporting(true);
+
+    const { data } = await api.post(
+      '/users/import',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    notify.success(
+      `Imported ${data.created} users. Skipped ${data.skipped}.`
+    );
+
+    fetch();
+  } catch (err) {
+    notify.error(
+      err.response?.data?.error ||
+      'Import failed'
+    );
+  } finally {
+    setImporting(false);
+  }
+};
 
   const toggleRole = async (u) => {
     const next = u.role === 'INTERN' ? 'MENTOR' : 'INTERN';
@@ -69,10 +105,33 @@ const AdminPanel = () => {
     <div className="space-y-6">
       <SectionHeader title="User Management" subtitle="Manage intern roles, status and platform access"
         action={
-          <button onClick={() => setModalOpen(true)} className="w-full sm:w-auto justify-center flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium transition" style={{ background: '#ff6d34' }}>
-            <Plus size={15} /> Add User
-          </button>
-        } />
+  <div className="flex gap-2">
+
+    <label
+      className="cursor-pointer flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium"
+      style={{ background: '#059669' }}
+    >
+      {importing ? 'Uploading...' : 'Import Excel'}
+
+      <input
+        type="file"
+        accept=".xlsx,.xls"
+        hidden
+        onChange={importUsers}
+      />
+    </label>
+
+    <button
+      onClick={() => setModalOpen(true)}
+      className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium"
+      style={{ background: '#ff6d34' }}
+    >
+      <Plus size={15} />
+      Add User
+    </button>
+
+  </div>
+} />
 
       <div className="flex gap-3 flex-wrap">
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'rgba(37,99,235,0.12)', color: '#2563eb' }}>

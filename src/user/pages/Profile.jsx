@@ -25,6 +25,10 @@ const FormField = ({ field, value, editing, onChange, touched, error }) => {
   const [focused, setFocused] = useState(false);
   const hasError = touched && !!error;
   const hasSuccess = touched && !error && value;
+  const inputValue =
+  field.type === 'date'
+    ? (value || '')
+    : (value || '');
 
   const inputStyle = {
     width: '100%',
@@ -46,13 +50,18 @@ const FormField = ({ field, value, editing, onChange, touched, error }) => {
         {field.label}
         {field.required && editing && <span style={{ color: '#ff6d34' }}> *</span>}
       </label>
-      <input id={uid} type={field.type} value={value ? new Date(value).toISOString?.().slice(0, 10) === value.slice(0, 10) && field.type === 'date' ? value : value : ''} disabled={!editing || field.disabled}
-        onChange={onChange}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        maxLength={field.maxLen}
-        style={inputStyle}
-        aria-invalid={hasError ? 'true' : undefined}
-      />
+  <input
+  id={uid}
+  type={field.type}
+  value={value || ''}
+  disabled={!editing || field.disabled}
+  onChange={onChange}
+  onFocus={() => setFocused(true)}
+  onBlur={() => setFocused(false)}
+  maxLength={field.maxLen}
+  style={inputStyle}
+  aria-invalid={hasError ? 'true' : undefined}
+/>
       {hasError && <p style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>{error}</p>}
     </div>
   );
@@ -76,7 +85,11 @@ const Profile = () => {
       department: user.department ?? '',
       college: user.college ?? '',
       yearOfStudy: user.yearOfStudy ?? '',
-      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().slice(0, 10) : '',
+      dateOfBirth:
+  user.dateOfBirth &&
+  !isNaN(new Date(user.dateOfBirth))
+    ? new Date(user.dateOfBirth).toISOString().slice(0, 10)
+    : '',
       linkedinUrl: user.linkedinUrl ?? '',
       skills: user.skills ?? '',
     });
