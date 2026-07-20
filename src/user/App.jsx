@@ -22,11 +22,13 @@ const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 const SkillGapAnalyzer = lazy(() => import('./pages/SkillGapAnalyzer'));
+const CommunityDashboard = lazy(() => import('./pages/CommunityDashboard')); 
 
 const PAGES = {
   dashboard:      <Dashboard />,
   knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
   qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
+  community:      <Suspense fallback={<PageLoader />}><CommunityDashboard /></Suspense>,
   project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
   kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
   calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,

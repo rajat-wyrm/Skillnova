@@ -74,6 +74,16 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  
+  // Community Features
+  discussions       DiscussionPost[]       @relation("DiscussionAuthor")
+  discussionReplies DiscussionReply[]      @relation("DiscussionReply")
+  discussionUpvotes DiscussionUpvote[]     @relation("DiscussionUpvote")
+  projects          CommunityProject[]     @relation("ProjectAuthor")
+  projectLikes      CommunityProjectLike[] @relation("ProjectLike")
+  mentions          UserMention[]          @relation("UserMention")
+  badges            UserBadge[]            @relation("UserBadge")
+  communityStats    UserCommunityStats?    @relation("CommunityStats")
 
   @@index([role])
   @@index([status])
@@ -548,6 +558,229 @@ model Webhook {
   @@index([ownerId])
   @@index([enabled])
 }
+
+// ── COMMUNITY FEATURES ──────────────────────────────────────
+// Tags for discussions and projects
+model CommunityTag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  color       String?  // hex color for UI
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  discussions DiscussionPost[]
+  projects    CommunityProject[]
+  topics      CommunityTopic[]
+
+  @@index([name])
+}
+
+// Community topics/categories (React, UI/UX Design, Career & Jobs, etc.)
+model CommunityTopic {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  memberCount Int      @default(0)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tags        CommunityTag[]
+  discussions DiscussionPost[]
+
+  @@index([name])
+  @@index([order])
+}
+
+// Main discussion forum posts
+enum DiscussionType {
+  DISCUSSION    // Regular discussion
+  QUESTION      // Q&A style
+  FEEDBACK      // Code/project feedback
+  SHOWCASE      // Project showcase
+}
+
+model DiscussionPost {
+  id             String         @id @default(cuid())
+  title          String
+  body           String         // markdown/rich text
+  type           DiscussionType @default(DISCUSSION)
+  authorId       String
+  author         User           @relation("DiscussionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  topicId        String
+  topic          CommunityTopic @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  tagIds         String[]       // array of tag IDs
+  tags           CommunityTag[]
+  isHot          Boolean        @default(false)
+  isPinned       Boolean        @default(false)
+  views          Int            @default(0)
+  upvoteCount    Int            @default(0)
+  replyCount     Int            @default(0)
+  isAnswered     Boolean        @default(false)
+  acceptedReplyId String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  upvotes        DiscussionUpvote[]
+  replies        DiscussionReply[]
+
+  @@index([authorId])
+  @@index([topicId])
+  @@index([isHot])
+  @@index([isPinned])
+  @@index([createdAt])
+}
+
+// Replies/comments on discussion posts
+model DiscussionReply {
+  id           String         @id @default(cuid())
+  postId       String
+  post         DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User           @relation("DiscussionReply", fields: [authorId], references: [id], onDelete: Cascade)
+  body         String         // markdown/rich text
+  isAnswer     Boolean        @default(false)
+  upvoteCount  Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  upvotes      DiscussionUpvote[]
+  mentions     UserMention[]
+
+  @@index([postId])
+  @@index([authorId])
+  @@index([isAnswer])
+  @@index([createdAt])
+}
+
+// Upvotes/likes on posts and replies
+model DiscussionUpvote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("DiscussionUpvote", fields: [userId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      DiscussionPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  replyId   String?
+  reply     DiscussionReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@unique([userId, replyId])
+  @@index([userId])
+}
+
+// Community projects showcase
+model CommunityProject {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        String   // e.g., "Productivity app", "Travel platform"
+  authorId    String
+  author      User     @relation("ProjectAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  tagIds      String[]
+  tags        CommunityTag[]
+  gradient    String?  // linear-gradient for UI display
+  icon        String?  // emoji or icon representation
+  demoUrl     String?
+  repoUrl     String?
+  likeCount   Int      @default(0)
+  viewCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  likes       CommunityProjectLike[]
+
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+// Likes on community projects
+model CommunityProjectLike {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("ProjectLike", fields: [userId], references: [id], onDelete: Cascade)
+  projectId String
+  project   CommunityProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, projectId])
+}
+
+// User mentions in discussions/replies
+model UserMention {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation("UserMention", fields: [userId], references: [id], onDelete: Cascade)
+  replyId String
+  reply   DiscussionReply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, replyId])
+}
+
+// Community badges for user reputation
+model CommunityBadge {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  icon        String?  // emoji or image URL
+  color       String?
+  requirement String?  // criteria for earning badge
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userBadges  UserBadge[]
+
+  @@index([name])
+}
+
+// User badges earned
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserBadge", fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     CommunityBadge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// User community statistics and profile
+model UserCommunityStats {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation("CommunityStats", fields: [userId], references: [id], onDelete: Cascade)
+  discussionCount  Int      @default(0)
+  replyCount       Int      @default(0)
+  upvoteCount      Int      @default(0)
+  pointsEarned     Int      @default(0)
+  badgeCount       Int      @default(0)
+  helpfulCount     Int      @default(0)
+  lastActivityAt   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([pointsEarned])
+  @@index([lastActivityAt])
+}
+
+// Update User model to include community relations
+// (These need to be added to the User model above)
+// discussions      DiscussionPost[]      @relation("DiscussionAuthor")
+// discussionReplies DiscussionReply[]    @relation("DiscussionReply")
+// discussionUpvotes DiscussionUpvote[]   @relation("DiscussionUpvote")
+// projects         CommunityProject[]   @relation("ProjectAuthor")
+// projectLikes     CommunityProjectLike[] @relation("ProjectLike")
+// mentions         UserMention[]        @relation("UserMention")
+// badges           UserBadge[]          @relation("UserBadge")
+// communityStats   UserCommunityStats?  @relation("CommunityStats")
 
 model WebhookDelivery {
   id          String   @id @default(cuid())

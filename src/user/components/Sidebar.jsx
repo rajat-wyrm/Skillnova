@@ -5,7 +5,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
-  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target,
+  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target, Users,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
@@ -21,6 +21,7 @@ const MENU = [
   { id: 'files',          label: 'Files',          icon: Folder          },
   { id: 'ai',             label: 'AI Assistant',   icon: Bot             },
   { id: 'qa',             label: 'Q&A Forum',      icon: MessageSquare   },
+  { id: 'community',      label: 'Community',      icon: Users           },
   { id: 'notifications',  label: 'Notifications',  icon: Bell            },
   { id: 'announcements',  label: 'Announcements',  icon: Megaphone       },
   { id: 'analytics',      label: 'Analytics',      icon: BarChart2       },
