@@ -4,21 +4,27 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
-  CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
-  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target, Trophy,
+  CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity, Award,
+  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target,
+  Sparkles, Trophy
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
   { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'ai_insights',    label: 'AI Insights',    icon: Sparkles        },
   { id: 'leaderboard',    label: 'Leaderboard',    icon: Trophy          },
+  { id: 'achievements',   label: 'Achievements',   icon: Award           },
+  { id: 'goal_progress',  label: 'Goal Progress',  icon: Target          },
+  { id: 'productivity',   label: 'Productivity',   icon: Activity        },
   { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },
   { id: 'project_flow',   label: 'Project Flow',   icon: Activity        },
   { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },
   { id: 'reports',        label: 'My Reports',     icon: FileText        },
   { id: 'attendance',     label: 'Attendance',     icon: CalendarCheck   },
   { id: 'calendar',       label: 'Calendar',       icon: Calendar        },
+  { id: 'certificate',    label: 'Certificate',    icon: Award           },
   { id: 'files',          label: 'Files',          icon: Folder          },
   { id: 'ai',             label: 'AI Assistant',   icon: Bot             },
   { id: 'qa',             label: 'Q&A Forum',      icon: MessageSquare   },

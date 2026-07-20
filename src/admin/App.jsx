@@ -20,9 +20,13 @@ const FilesPage          = lazy(() => import('./pages/Files'));
 const Leaderboard        = lazy(() => import('../user/pages/Leaderboard'));
 const NotificationPrefs  = lazy(() => import('./pages/NotificationPreferences'));
 const WebhooksPage       = lazy(() => import('./pages/Webhooks'));
+const DepartmentAnalytics = lazy(() => import('./pages/DepartmentAnalytics'));
+const HealthRiskDashboard = lazy(() => import('./pages/HealthRiskDashboard'));
 
 const PAGES = {
   'admin-dashboard':     <Dashboard />,
+  'admin-dept-analytics': <Suspense fallback={<PageLoader />}><DepartmentAnalytics /></Suspense>,
+  'admin-health-risk':    <Suspense fallback={<PageLoader />}><HealthRiskDashboard /></Suspense>,
   'admin-leaderboard':   <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
   'admin-users':         <Suspense fallback={<PageLoader />}><AdminPanel /></Suspense>,
   'admin-management':    <Suspense fallback={<PageLoader />}><Management /></Suspense>,

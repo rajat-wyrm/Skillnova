@@ -3,24 +3,30 @@
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react';
 import {
-  LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Trophy,
+  LayoutDashboard, Users, FileText, Activity, ClipboardList,
+  ListChecks, BookOpen, MessageSquare,
+  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut,
+  CalendarCheck, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
-  { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
-  { id: 'leaderboard',   label: 'Leaderboard',    icon: Trophy          },
-  { id: 'interns',       label: 'My Interns',     icon: Users           },
-  { id: 'reports',       label: 'Report Reviews', icon: FileText        },
-  { id: 'projects',      label: 'Projects',       icon: Activity        },
-  { id: 'knowledge',     label: 'Knowledge Base', icon: BookOpen        },
-  { id: 'qa',            label: 'Q&A Forum',      icon: MessageSquare   },
-  { id: 'announcements', label: 'Announcements',  icon: Megaphone       },
-  { id: 'ai',            label: 'AI Assistant',   icon: Bot             },
-  { id: 'profile',       label: 'Profile',        icon: User            },
-  { id: 'settings',      label: 'Settings',       icon: Settings        },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+  { id: 'interns', label: 'My Interns', icon: Users },
+  { id: 'reports', label: 'Report Reviews', icon: FileText },
+  { id: 'projects', label: 'Projects', icon: Activity },
+  { id: 'assignments', label: 'Assignments', icon: ClipboardList },
+  { id: 'taskdashboard', label: 'Task Dashboard', icon: ListChecks },
+  { id: 'leave-approvals', label: 'Leave Approvals', icon: CalendarCheck },
+  { id: 'knowledge', label: 'Knowledge Base', icon: BookOpen },
+  { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+  { id: 'qa', label: 'Q&A Forum', icon: MessageSquare },
+  { id: 'announcements', label: 'Announcements', icon: Megaphone },
+  { id: 'ai', label: 'AI Assistant', icon: Bot },
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {

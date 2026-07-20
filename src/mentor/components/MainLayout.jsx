@@ -11,7 +11,11 @@ const PAGE_TITLES = {
   interns:        'My Interns',
   reports:        'Reports to Review',
   projects:       'Projects & Tasks',
+  assignments:    'Assignments',      // NEW
+  taskdashboard:  'Task Dashboard',   // NEW
+  'leave-approvals': 'Leave Approvals',
   knowledge:      'Knowledge Base',
+  feedback:       'Mentor Feedback',
   qa:             'Q&A Forum',
   announcements:  'Announcements',
   ai:             'AI Assistant',

@@ -17,21 +17,31 @@ const Profile          = lazy(() => import('./pages/Profile'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const ProjectFlow      = lazy(() => import('./pages/ProjectFlow'));
 const Attendance       = lazy(() => import('./pages/Attendance'));
+const Certificate      = lazy(() => import('./pages/Certificate'));
 const KanbanPage       = lazy(() => import('./pages/Kanban'));
 const Calendar         = lazy(() => import('./pages/Calendar'));
 const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 const SkillGapAnalyzer = lazy(() => import('./pages/SkillGapAnalyzer'));
+const AIInsightsPanel = lazy(() => import('./pages/AIInsightsPanel'));
+const LeaderboardSystem = lazy(() => import('./pages/LeaderboardSystem'));
+const GoalProgressKPI = lazy(() => import('./pages/GoalProgressKPI'));
+const ProductivityAnalytics = lazy(() => import('./pages/ProductivityAnalytics'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
+  ai_insights:    <Suspense fallback={<PageLoader />}><AIInsightsPanel /></Suspense>,
   leaderboard:    <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
+  achievements:   <Suspense fallback={<PageLoader />}><LeaderboardSystem /></Suspense>,
+  goal_progress:  <Suspense fallback={<PageLoader />}><GoalProgressKPI /></Suspense>,
+  productivity:   <Suspense fallback={<PageLoader />}><ProductivityAnalytics /></Suspense>,
   knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
   qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
   project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
   kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
   calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
+  certificate:    <Suspense fallback={<PageLoader />}><Certificate /></Suspense>,
   files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
