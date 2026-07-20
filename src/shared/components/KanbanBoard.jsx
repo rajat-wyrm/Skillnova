@@ -254,7 +254,7 @@ Please provide:
     });
 
     setAiResponse(data.reply);
-  } catch (err) {
+  } catch  {
     notify.error('Failed to get AI guidance.');
   } finally {
     setAiLoading(false);
