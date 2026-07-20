@@ -15,9 +15,11 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   hashToken,
+  hashPassword,
   generateOtp,
   verifyTotp,
   signCsrf,
+  randomToken,
   COOKIE_NAMES,
 } from '../utils/auth.js';
 import { config } from '../config/index.js';
@@ -65,6 +67,10 @@ const CSRF_COOKIE_OPTS = {
   domain: config.isProd ? undefined : 'localhost',
 };
 
+const MAX_FAILED = 5;
+const LOCK_MS = 15 * 60 * 1000;
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+
 // ── Helpers ──────────────────────────────────────────────
 function issueTokens(res, user, req, { rememberMe = true } = {}) {
   const sessionId = crypto.randomBytes(24).toString('hex');
@@ -102,6 +108,92 @@ function issuePendingSession(res, user) {
   memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, config.security.pendingSessionTtlSeconds);
   return sessionId;
 }
+
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body;
+  const normalizedEmail = email.toLowerCase();
+
+  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (existing) throw ApiError.conflict('Email is already registered');
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email: normalizedEmail,
+      passwordHash: hashPassword(password),
+      role,
+      status: 'ACTIVE',
+    },
+  });
+
+  await audit({ userId: user.id, action: 'auth.register', resource: 'user', resourceId: user.id, req });
+  res.status(201).json({ user: sanitize(user), message: 'Account created successfully' });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const normalizedEmail = email.toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+  if (!user) throw ApiError.notFound('No account found for this email');
+
+  const token = randomToken(32);
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    },
+  });
+
+  const resetUrl = `${req.headers.origin || config.corsOrigin[0] || 'http://localhost:5173'}/reset-password?token=${token}`;
+  logger.info({ email: user.email, resetUrl }, 'auth:password-reset-link');
+  await audit({ userId: user.id, action: 'auth.password_reset.requested', req });
+
+  res.json({
+    message: 'Password reset link generated. Check the server console in development.',
+    resetToken: config.isProd ? undefined : token,
+    resetUrl: config.isProd ? undefined : resetUrl,
+  });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: { user: true },
+  });
+
+  if (!resetToken || resetToken.usedAt || resetToken.expiresAt <= new Date()) {
+    throw ApiError.unauthorized('Invalid or expired reset token');
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: resetToken.userId },
+      data: {
+        passwordHash: hashPassword(password),
+        failedAttempts: 0,
+        lockedUntil: null,
+      },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: resetToken.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+
+  await audit({ userId: resetToken.userId, action: 'auth.password_reset.completed', req });
+  res.json({ message: 'Password has been reset successfully' });
+});
 
 // ── POST /auth/login ─────────────────────────────────────
 export const login = asyncHandler(async (req, res) => {

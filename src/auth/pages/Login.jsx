@@ -137,6 +137,9 @@ const Login = () => {
         </div>
         <h1 className="auth-title">Welcome Back</h1>
         <p className="auth-subtitle">Sign in to your SkillNova account to continue.</p>
+        <p className="auth-footer-text" style={{ marginTop: -12, marginBottom: 18 }}>
+          New to SkillNova? <a className="auth-link" href="/register">Create Account</a>
+        </p>
 
         <form id="main-form" onSubmit={handleSubmit} noValidate aria-label="Login form">
           <div className={`auth-form-group ${emailState === 'error' ? 'is-error' : emailState === 'success' ? 'is-success' : ''}`}>
@@ -168,9 +171,12 @@ const Login = () => {
           </div>
 
           <div className={`auth-form-group ${pwdState === 'error' ? 'is-error' : pwdState === 'success' ? 'is-success' : ''}`}>
-            <label className="auth-label" htmlFor={passwordId}>
-              Password <span className="auth-required" aria-label="required">*</span>
-            </label>
+            <div className="auth-label-row">
+              <label className="auth-label" htmlFor={passwordId}>
+                Password <span className="auth-required" aria-label="required">*</span>
+              </label>
+              <a className="auth-link auth-small-link" href="/forgot-password">Forgot Password?</a>
+            </div>
             <div className="auth-input-wrap has-icon">
               <span className="auth-input-icon"><Icon.Lock /></span>
               <input
