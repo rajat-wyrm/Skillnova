@@ -25,7 +25,7 @@ async function main() {
     ].map((c) =>
       prisma.knowledgeCategory.upsert({
         where: { slug: c.name.toLowerCase().replace(/\s+/g, '-') },
-      update: {},
+        update: {},
         create: {
           name: c.name,
           slug: c.name.toLowerCase().replace(/\s+/g, '-'),
@@ -96,22 +96,18 @@ async function main() {
   });
 
   const internData = [
-    { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5, currentStreak: 12, longestStreak: 15, lastActivityAt: new Date() },
-    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8, currentStreak: 8,  longestStreak: 10, lastActivityAt: new Date() },
-    { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0, currentStreak: 15, longestStreak: 20, lastActivityAt: new Date() },
-    { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2, currentStreak: 0,  longestStreak: 5,  lastActivityAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
-    { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8, currentStreak: 3,  longestStreak: 4,  lastActivityAt: new Date() },
+    { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5, currentStreak: 5, longestStreak: 8 },
+    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8, currentStreak: 3, longestStreak: 3 },
+    { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0, currentStreak: 15, longestStreak: 15 },
+    { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2, currentStreak: 0, longestStreak: 0 },
+    { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8, currentStreak: 8, longestStreak: 10 },
   ];
 
   const interns = [];
   for (const i of internData) {
     const user = await prisma.user.upsert({
       where: { email: i.email },
-      update: {
-        currentStreak: i.currentStreak,
-        longestStreak: i.longestStreak,
-        lastActivityAt: i.lastActivityAt,
-      },
+      update: {},
       create: {
         email: i.email,
         passwordHash: hash('User#2026'),
@@ -127,9 +123,6 @@ async function main() {
         dateOfBirth: new Date('2003-05-12'),
         linkedinUrl: `https://linkedin.com/in/${i.email.split('@')[0]}`,
         rating: i.rating,
-        currentStreak: i.currentStreak,
-        longestStreak: i.longestStreak,
-        lastActivityAt: i.lastActivityAt,
         internProfile: {
           create: {
             startDate: new Date('2026-01-15'),
@@ -140,74 +133,25 @@ async function main() {
         },
       },
     });
+    // Seed learning streak record
+    await prisma.learningStreak.upsert({
+      where: { internId: user.id },
+      update: {
+        currentStreak: i.currentStreak,
+        longestStreak: i.longestStreak,
+        lastCompletedDate: i.currentStreak > 0 ? new Date() : null,
+        streakStartedAt: i.currentStreak > 0 ? new Date(Date.now() - i.currentStreak * 24 * 60 * 60 * 1000) : null,
+      },
+      create: {
+        internId: user.id,
+        currentStreak: i.currentStreak,
+        longestStreak: i.longestStreak,
+        lastCompletedDate: i.currentStreak > 0 ? new Date() : null,
+        streakStartedAt: i.currentStreak > 0 ? new Date(Date.now() - i.currentStreak * 24 * 60 * 60 * 1000) : null,
+      }
+    });
     interns.push(user);
   }
-
-  // ── Teams ──────────────────────────────────────────────
-  console.log('👥  Seeding Teams…');
-  
-  // Clean up any old invalid team IDs
-  await prisma.team.deleteMany({
-    where: {
-      id: { in: ['seed-team-alpha', 'seed-team-beta'] },
-    },
-  });
-
-  const teamAlpha = await prisma.team.upsert({
-    where: { id: 'cseedteamalpha000000000001' },
-    update: {
-      members: {
-        set: [
-          { id: admin.id },
-          { id: mentor.id },
-          { id: interns[0].id }, // rahul
-          { id: interns[1].id }, // sneha
-          { id: interns[4].id }, // demo intern (user)
-        ],
-      },
-    },
-    create: {
-      id: 'cseedteamalpha000000000001',
-      name: 'Alpha Developers',
-      description: 'The core full-stack engineering team responsible for main platform features.',
-      members: {
-        connect: [
-          { id: admin.id },
-          { id: mentor.id },
-          { id: interns[0].id },
-          { id: interns[1].id },
-          { id: interns[4].id },
-        ],
-      },
-    },
-  });
-
-  const teamBeta = await prisma.team.upsert({
-    where: { id: 'cseedteambeta000000000002' },
-    update: {
-      members: {
-        set: [
-          { id: mentor.id },
-          { id: interns[2].id }, // kavya
-          { id: interns[3].id }, // arjun
-          { id: interns[4].id }, // demo intern (user)
-        ],
-      },
-    },
-    create: {
-      id: 'cseedteambeta000000000002',
-      name: 'Beta Testers & Analysts',
-      description: 'Quality assurance, platform testing, data analysis and user metrics tracking.',
-      members: {
-        connect: [
-          { id: mentor.id },
-          { id: interns[2].id },
-          { id: interns[3].id },
-          { id: interns[4].id },
-        ],
-      },
-    },
-  });
 
   // ── KB Articles ────────────────────────────────────────
   const articles = [
@@ -460,6 +404,95 @@ async function main() {
     create: { key: 'platform.registrationOpen', value: true },
   });
 
+  // ── Badges ──────────────────────────────────────────────
+  const badgeData = [
+    {
+      name: 'Beginner',
+      description: 'Awarded for maintaining a 3-Day Learning Streak',
+      icon: '🌱',
+      category: 'streak',
+      requirement: 3
+    },
+    {
+      name: 'Consistent Learner',
+      description: 'Awarded for maintaining a 7-Day Learning Streak',
+      icon: '🔥',
+      category: 'streak',
+      requirement: 7
+    },
+    {
+      name: 'Dedicated Intern',
+      description: 'Awarded for maintaining a 15-Day Learning Streak',
+      icon: '🥈',
+      category: 'streak',
+      requirement: 15
+    },
+    {
+      name: 'Learning Champion',
+      description: 'Awarded for maintaining a 30-Day Learning Streak',
+      icon: '🥇',
+      category: 'streak',
+      requirement: 30
+    },
+    {
+      name: 'Elite Performer',
+      description: 'Awarded for maintaining a 60-Day Learning Streak',
+      icon: '💎',
+      category: 'streak',
+      requirement: 60
+    },
+    {
+      name: 'Internship Legend',
+      description: 'Awarded for maintaining a 90-Day Learning Streak',
+      icon: '👑',
+      category: 'streak',
+      requirement: 90
+    }
+  ];
+
+  const dbBadges = [];
+  for (const b of badgeData) {
+    const badge = await prisma.badge.upsert({
+      where: { name: b.name },
+      update: {
+        description: b.description,
+        icon: b.icon,
+        category: b.category,
+        requirement: b.requirement
+      },
+      create: b
+    });
+    dbBadges.push(badge);
+  }
+
+  // Award badges to interns based on their streaks
+  console.log('🏆 Awarding badges to interns based on streaks…');
+  for (const intern of interns) {
+    const streak = await prisma.learningStreak.findUnique({
+      where: { internId: intern.id }
+    });
+    if (streak) {
+      const maxStreak = Math.max(streak.currentStreak, streak.longestStreak);
+      const eligibleBadges = dbBadges.filter(b => maxStreak >= b.requirement);
+      for (const badge of eligibleBadges) {
+        await prisma.userBadge.upsert({
+          where: {
+            internId_badgeId: {
+              internId: intern.id,
+              badgeId: badge.id
+            }
+          },
+          update: {},
+          create: {
+            internId: intern.id,
+            badgeId: badge.id,
+            earnedAt: new Date(Date.now() - (maxStreak - badge.requirement) * 24 * 60 * 60 * 1000)
+          }
+        });
+        console.log(`  Awarded badge '${badge.name}' to ${intern.name}`);
+      }
+    }
+  }
   console.log('\n✅  Seed complete!\n');
   console.log('Demo accounts (change passwords immediately in production):');
   console.log('  Super Admin : superadmin@skillnova.com / SuperAdmin#2026');
