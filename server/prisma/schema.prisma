@@ -74,6 +74,9 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  collaborativeTasksCreated CollaborativeTask[] @relation("TaskCreator")
+  collaborativeTasksAssigned CollaborativeTask[] @relation("TaskAssignees")
+  teams          Team[]              @relation("TeamMembers")
 
   @@index([role])
   @@index([status])
@@ -620,4 +623,37 @@ model MeetingAttendee {
 
   @@unique([meetingId, userId])
   @@index([userId])
+}
+
+// ── Collaborative Task Models ────────────────────────────────
+
+model Team {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  members     User[]              @relation("TeamMembers")
+  tasks       CollaborativeTask[]
+}
+
+model CollaborativeTask {
+  id          String            @id @default(cuid())
+  teamId      String
+  team        Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      TaskStatus        @default(TODO)
+  creatorId   String
+  creator     User              @relation("TaskCreator", fields: [creatorId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Implicit many-to-many relation for multiple assignees
+  assignees   User[]            @relation("TaskAssignees")
+
+  @@index([teamId])
+  @@index([creatorId])
 }

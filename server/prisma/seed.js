@@ -136,6 +136,72 @@ async function main() {
     interns.push(user);
   }
 
+  // ── Teams ──────────────────────────────────────────────
+  console.log('👥  Seeding Teams…');
+  
+  // Clean up any old invalid team IDs
+  await prisma.team.deleteMany({
+    where: {
+      id: { in: ['seed-team-alpha', 'seed-team-beta'] },
+    },
+  });
+
+  const teamAlpha = await prisma.team.upsert({
+    where: { id: 'cseedteamalpha000000000001' },
+    update: {
+      members: {
+        set: [
+          { id: admin.id },
+          { id: mentor.id },
+          { id: interns[0].id }, // rahul
+          { id: interns[1].id }, // sneha
+          { id: interns[4].id }, // demo intern (user)
+        ],
+      },
+    },
+    create: {
+      id: 'cseedteamalpha000000000001',
+      name: 'Alpha Developers',
+      description: 'The core full-stack engineering team responsible for main platform features.',
+      members: {
+        connect: [
+          { id: admin.id },
+          { id: mentor.id },
+          { id: interns[0].id },
+          { id: interns[1].id },
+          { id: interns[4].id },
+        ],
+      },
+    },
+  });
+
+  const teamBeta = await prisma.team.upsert({
+    where: { id: 'cseedteambeta000000000002' },
+    update: {
+      members: {
+        set: [
+          { id: mentor.id },
+          { id: interns[2].id }, // kavya
+          { id: interns[3].id }, // arjun
+          { id: interns[4].id }, // demo intern (user)
+        ],
+      },
+    },
+    create: {
+      id: 'cseedteambeta000000000002',
+      name: 'Beta Testers & Analysts',
+      description: 'Quality assurance, platform testing, data analysis and user metrics tracking.',
+      members: {
+        connect: [
+          { id: mentor.id },
+          { id: interns[2].id },
+          { id: interns[3].id },
+          { id: interns[4].id },
+        ],
+      },
+    },
+  });
+
   // ── KB Articles ────────────────────────────────────────
   const articles = [
     {

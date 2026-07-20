@@ -13,6 +13,7 @@ import * as notif from '../controllers/notifications.controller.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { validate, schemas } from '../middleware/validate.js';
+import collaborativeTasksRouter from './collaborativeTasks.routes.js';
 
 const api = Router();
 api.use(authenticate, requireAuth);
@@ -270,5 +271,8 @@ api.post('/notifications/read-all', notif.markAllRead);
 // ── Analytics ─────────────────────────────────────────────
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+
+// ── Collaborative Tasks ───────────────────────────────────
+api.use('/collab-tasks', collaborativeTasksRouter);
 
 export default api;
