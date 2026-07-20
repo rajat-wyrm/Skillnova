@@ -1,5 +1,5 @@
+
 {
-<<<<<<< HEAD
   "name": "skillnova",
   "private": true,
   "version": "2.0.0",
@@ -47,14 +47,5 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "vite": "^8.0.1"
-=======
-  "name": "skillnova-root",
-  "version": "2.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "npm run start --prefix frontend",
-    "start": "npm run start --prefix frontend",
-    "setup": "npm run setup --prefix frontend"
->>>>>>> pradeep/main
   }
 }
