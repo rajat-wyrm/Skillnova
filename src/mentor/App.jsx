@@ -15,6 +15,7 @@ const Announcements  = lazy(() => import('./pages/Announcements'));
 const AIAssistant    = lazy(() => import('./pages/AIAssistant'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Settings       = lazy(() => import('./pages/Settings'));
+const CalendarView   = lazy(() => import('../shared/components/CalendarView'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
@@ -22,6 +23,7 @@ const PAGES = {
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   projects:       <Suspense fallback={<PageLoader />}><Projects /></Suspense>,
   knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
+  calendar:       <Suspense fallback={<PageLoader />}><CalendarView /></Suspense>,
   qa:             <Suspense fallback={<PageLoader />}><QnA /></Suspense>,
   announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
   ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,

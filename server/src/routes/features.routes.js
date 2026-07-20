@@ -7,6 +7,7 @@ import * as files from '../controllers/files.controller.js';
 import * as webhooks from '../controllers/webhooks.controller.js';
 import * as preferences from '../controllers/preferences.controller.js';
 import * as exports from '../controllers/exports.controller.js';
+import * as minutes from '../controllers/minutes.controller.js';
 import { authenticate, requireAuth, csrfProtection } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { rateLimitMiddleware } from '../utils/cache.js';
@@ -144,6 +145,9 @@ api.delete('/meetings/:id', csrfProtection, validate(idParam, 'params'), asyncHa
   await prisma.meeting.delete({ where: { id } });
   res.json({ ok: true });
 }));
+
+api.post('/meetings/:id/minutes', csrfProtection, validate(idParam, 'params'), minutes.generateMinutes);
+api.post('/meetings/:id/minutes/sync', csrfProtection, validate(idParam, 'params'), minutes.syncMinutesTasks);
 
 export { publicApi, api };
 export default api;

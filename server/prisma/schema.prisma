@@ -605,6 +605,11 @@ model Meeting {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
+  minutesSummary       String?
+  minutesDecisions     String?
+  minutesRawTranscript String?
+  minutesTasks         Json?
+
   @@index([organizerId])
   @@index([startsAt])
 }

@@ -2,7 +2,7 @@
 //  CalendarView — month/week grid of meetings
 // ════════════════════════════════════════════════════════════
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, X, Plus, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, Users, X, Plus, Loader2, Sparkles, Check, FileText } from 'lucide-react';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, format,
   isSameMonth, isSameDay, parseISO,
@@ -23,6 +23,95 @@ const CalendarView = () => {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+
+  // AI Meeting Minutes States
+  const [interns, setInterns] = useState([]);
+  const [expandedMinutesId, setExpandedMinutesId] = useState(null);
+  const [activeTab, setActiveTab] = useState('transcript');
+  const [transcriptText, setTranscriptText] = useState('');
+  const [minutesSummary, setMinutesSummary] = useState('');
+  const [minutesDecisions, setMinutesDecisions] = useState('');
+  const [minutesTasks, setMinutesTasks] = useState([]);
+  const [generating, setGenerating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    api.get('/users', { params: { limit: 100, role: 'INTERN' } })
+      .then((r) => setInterns(r.data.items))
+      .catch(() => {});
+  }, []);
+
+  const handleOpenMinutes = (m) => {
+    setExpandedMinutesId(m.id === expandedMinutesId ? null : m.id);
+    setTranscriptText(m.minutesRawTranscript || '');
+    setMinutesSummary(m.minutesSummary || '');
+    setMinutesDecisions(m.minutesDecisions || '');
+    setMinutesTasks(m.minutesTasks || []);
+    setActiveTab(m.minutesSummary ? 'results' : 'transcript');
+  };
+
+  const handleGenerateMinutes = async (meetingId) => {
+    if (!transcriptText.trim()) return notify.error('Please enter notes or a transcript.');
+    setGenerating(true);
+    try {
+      const res = await api.post(`/meetings/${meetingId}/minutes`, { transcript: transcriptText });
+      setMinutesSummary(res.data.summary);
+      setMinutesDecisions(res.data.decisions);
+      setMinutesTasks(res.data.tasks || []);
+      
+      // Update local meeting object in state
+      setMeetings(prev => prev.map(m => m.id === meetingId ? {
+        ...m,
+        minutesRawTranscript: transcriptText,
+        minutesSummary: res.data.summary,
+        minutesDecisions: res.data.decisions,
+        minutesTasks: res.data.tasks
+      } : m));
+
+      notify.success('AI Meeting Minutes generated successfully!');
+      setActiveTab('results');
+    } catch (err) {
+      notify.error(err.response?.data?.error || 'Failed to extract minutes.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleToggleSelectTask = (idx, selected) => {
+    setMinutesTasks(prev => prev.map((t, i) => i === idx ? { ...t, selected } : t));
+  };
+
+  const handleTaskPropChange = (idx, prop, val) => {
+    setMinutesTasks(prev => prev.map((t, i) => i === idx ? { ...t, [prop]: val } : t));
+  };
+
+  const handleSyncTasks = async (meetingId) => {
+    const tasksToSync = minutesTasks.filter(t => t.selected !== false && !t.synced);
+    if (tasksToSync.length === 0) return notify.error('No tasks selected to sync.');
+    
+    setSyncing(true);
+    try {
+      await api.post(`/meetings/${meetingId}/minutes/sync`, { tasks: tasksToSync });
+      
+      // Mark as synced locally
+      const updatedTasks = minutesTasks.map(t => 
+        tasksToSync.some(tts => tts.title === t.title) ? { ...t, synced: true } : t
+      );
+      setMinutesTasks(updatedTasks);
+      
+      // Update local meeting object in state
+      setMeetings(prev => prev.map(m => m.id === meetingId ? {
+        ...m,
+        minutesTasks: updatedTasks
+      } : m));
+
+      notify.success('Action items successfully synced to task board!');
+    } catch (err) {
+      notify.error(err.response?.data?.error || 'Failed to sync tasks.');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -129,7 +218,7 @@ const CalendarView = () => {
         ) : (
           <div className="space-y-3">
             {dayMeetings.map((m) => (
-              <div key={m.id} className="p-4 rounded-xl" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+              <div key={m.id} className="p-4 rounded-xl flex flex-col" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
                 <div className="flex items-start gap-3">
                   <div className="w-1.5 h-full rounded-full flex-shrink-0 self-stretch" style={{ background: TYPE_COLORS[m.type] || '#94a3b8' }} />
                   <div className="flex-1 min-w-0">
@@ -141,8 +230,220 @@ const CalendarView = () => {
                       <span className="flex items-center gap-1"><Users size={11} /> {m.attendees?.length || 0} attendee{(m.attendees?.length || 0) !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ background: TYPE_COLORS[m.type] || '#94a3b8', color: '#fff' }}>{m.type}</span>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ background: TYPE_COLORS[m.type] || '#94a3b8', color: '#fff' }}>{m.type}</span>
+                    <button
+                      onClick={() => handleOpenMinutes(m)}
+                      className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-lg transition hover:scale-[1.03] select-none"
+                      style={{
+                        background: expandedMinutesId === m.id ? '#ff6d34' : 'rgba(255,109,52,0.1)',
+                        color: expandedMinutesId === m.id ? '#fff' : '#ff6d34',
+                        border: '1px solid #ff6d34',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Sparkles size={10} /> AI Minutes
+                    </button>
+                  </div>
                 </div>
+
+                {expandedMinutesId === m.id && (
+                  <div className="mt-4 pt-4 border-t border-dashed" style={{ borderColor: 'var(--border)' }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-xs font-bold uppercase tracking-wider flex items-center gap-1" style={{ color: '#ff6d34' }}>
+                        <Sparkles size={12} /> AI Meeting Minutes & Task Sync
+                      </h4>
+                      <button 
+                        onClick={() => setExpandedMinutesId(null)}
+                        className="text-xs font-medium px-2 py-1 rounded-lg" 
+                        style={{ background: 'rgba(0,0,0,0.05)', color: 'var(--text-soft)', cursor: 'pointer' }}
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    {/* Tab Selectors */}
+                    <div className="flex gap-2 mb-3">
+                      <button 
+                        onClick={() => setActiveTab('transcript')}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+                        style={{
+                          background: activeTab === 'transcript' ? '#ff6d34' : 'var(--bg-soft)',
+                          color: activeTab === 'transcript' ? '#white' : 'var(--text-soft)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        1. Notes & Transcript
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (minutesSummary || minutesTasks.length > 0) {
+                            setActiveTab('results');
+                          }
+                        }}
+                        disabled={!minutesSummary && minutesTasks.length === 0}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
+                        style={{
+                          background: activeTab === 'results' ? '#ff6d34' : 'var(--bg-soft)',
+                          color: activeTab === 'results' ? '#white' : 'var(--text-soft)',
+                          cursor: (!minutesSummary && minutesTasks.length === 0) ? 'not-allowed' : 'pointer'
+                        }}
+                      >
+                        2. AI Extraction
+                      </button>
+                    </div>
+
+                    {activeTab === 'transcript' ? (
+                      <div className="space-y-3">
+                        <textarea
+                          value={transcriptText}
+                          onChange={(e) => setTranscriptText(e.target.value)}
+                          placeholder="Paste the meeting raw transcript here or enter summary notes. (e.g. 'Rahul to write API documentation. Sneha will refactor auth and deploy to staging next week. Priority is high.')"
+                          rows={5}
+                          className="w-full p-3 rounded-lg text-xs"
+                          style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)', resize: 'none' }}
+                        />
+                        <button
+                          onClick={() => handleGenerateMinutes(m.id)}
+                          disabled={generating || transcriptText.trim().length < 10}
+                          className="w-full py-2.5 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          style={{ background: '#ff6d34', cursor: (generating || transcriptText.trim().length < 10) ? 'not-allowed' : 'pointer' }}
+                        >
+                          {generating ? (
+                            <>
+                              <Loader2 size={13} className="animate-spin" /> Extracting AI Minutes...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={13} /> Extract Summary & Tasks
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {/* Summary & Decisions */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="p-3 rounded-lg text-xs" style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
+                            <p className="font-bold mb-1.5 flex items-center gap-1" style={{ color: 'var(--text)' }}><FileText size={12} /> Discussion Summary</p>
+                            <div className="whitespace-pre-line text-xs" style={{ color: 'var(--text-soft)' }}>
+                              {minutesSummary || 'No summary generated.'}
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-lg text-xs" style={{ background: 'var(--bg-soft)', border: '1px solid var(--border)' }}>
+                            <p className="font-bold mb-1.5 flex items-center gap-1" style={{ color: 'var(--text)' }}><Check size={12} /> Decisions Made</p>
+                            <div className="whitespace-pre-line text-xs" style={{ color: 'var(--text-soft)' }}>
+                              {minutesDecisions || 'No decisions recorded.'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action Items List */}
+                        <div className="space-y-2">
+                          <p className="text-xs font-bold" style={{ color: 'var(--text)' }}>Action Items / Tasks to Sync:</p>
+                          {minutesTasks.length === 0 ? (
+                            <p className="text-xs text-center py-4" style={{ color: 'var(--muted)' }}>No action items extracted.</p>
+                          ) : (
+                            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                              {minutesTasks.map((t, idx) => (
+                                <div key={idx} className="p-3 rounded-lg border flex flex-col gap-2 relative" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-bold truncate" style={{ color: 'var(--text)' }}>{t.title}</p>
+                                      {t.description && <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>{t.description}</p>}
+                                    </div>
+                                    {t.synced ? (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,190,163,0.15)', color: '#00bea3' }}>Synced</span>
+                                    ) : (
+                                      <input 
+                                        type="checkbox" 
+                                        checked={t.selected !== false} 
+                                        onChange={(e) => handleToggleSelectTask(idx, e.target.checked)} 
+                                        className="rounded cursor-pointer"
+                                      />
+                                    )}
+                                  </div>
+
+                                  {!t.synced && (
+                                    <div className="grid grid-cols-3 gap-2 mt-1">
+                                      {/* Assignee */}
+                                      <div>
+                                        <label className="text-[9px] font-bold block mb-0.5" style={{ color: 'var(--muted)' }}>Assignee</label>
+                                        <select
+                                          value={t.assigneeId || ''}
+                                          onChange={(e) => handleTaskPropChange(idx, 'assigneeId', e.target.value)}
+                                          className="w-full p-1 rounded border text-[10px]"
+                                          style={{ background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                                        >
+                                          <option value="">Unassigned</option>
+                                          {interns.map(i => (
+                                            <option key={i.id} value={i.id}>{i.name}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      {/* Priority */}
+                                      <div>
+                                        <label className="text-[9px] font-bold block mb-0.5" style={{ color: 'var(--muted)' }}>Priority</label>
+                                        <select
+                                          value={t.priority}
+                                          onChange={(e) => handleTaskPropChange(idx, 'priority', e.target.value)}
+                                          className="w-full p-1 rounded border text-[10px]"
+                                          style={{ background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                                        >
+                                          <option value="LOW">Low</option>
+                                          <option value="MEDIUM">Medium</option>
+                                          <option value="HIGH">High</option>
+                                          <option value="URGENT">Urgent</option>
+                                        </select>
+                                      </div>
+
+                                      {/* Due Date */}
+                                      <div>
+                                        <label className="text-[9px] font-bold block mb-0.5" style={{ color: 'var(--muted)' }}>Due Date</label>
+                                        <input
+                                          type="date"
+                                          value={t.dueDate || ''}
+                                          onChange={(e) => handleTaskPropChange(idx, 'dueDate', e.target.value)}
+                                          className="w-full p-1 rounded border text-[10px]"
+                                          style={{ background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Sync Button */}
+                        {minutesTasks.some(t => !t.synced) ? (
+                          <button
+                            onClick={() => handleSyncTasks(m.id)}
+                            disabled={syncing || !minutesTasks.some(t => t.selected !== false && !t.synced)}
+                            className="w-full py-2.5 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            style={{ background: '#00bea3', cursor: (syncing || !minutesTasks.some(t => t.selected !== false && !t.synced)) ? 'not-allowed' : 'pointer' }}
+                          >
+                            {syncing ? (
+                              <>
+                                <Loader2 size={13} className="animate-spin" /> Syncing with Task Board...
+                              </>
+                            ) : (
+                              <>
+                                <Check size={13} /> Sync Tasks to Kanban Board
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="p-3 rounded-lg text-center text-xs font-bold" style={{ background: 'rgba(0,190,163,0.1)', color: '#00bea3', border: '1px solid rgba(0,190,163,0.2)' }}>
+                            ✓ All action items have been successfully synced to the Kanban Board!
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

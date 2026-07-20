@@ -11,6 +11,7 @@ const PAGE_TITLES = {
   reports:        'Reports to Review',
   projects:       'Projects & Tasks',
   knowledge:      'Knowledge Base',
+  calendar:       'Calendar',
   qa:             'Q&A Forum',
   announcements:  'Announcements',
   ai:             'AI Assistant',
