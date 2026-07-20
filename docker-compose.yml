@@ -6,12 +6,20 @@ version: '3.9'
 services:
   api:
     build:
+<<<<<<< HEAD
       context: ./server
+=======
+      context: ./backend
+>>>>>>> pradeep/main
       dockerfile: Dockerfile
     container_name: skillnova-api
     restart: unless-stopped
     env_file:
+<<<<<<< HEAD
       - ./server/.env
+=======
+      - ./backend/.env
+>>>>>>> pradeep/main
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -45,7 +53,11 @@ services:
 
   frontend:
     build:
+<<<<<<< HEAD
       context: .
+=======
+      context: ./frontend
+>>>>>>> pradeep/main
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: ${APP_URL}/api/v1
