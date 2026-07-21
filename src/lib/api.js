@@ -56,7 +56,6 @@ api.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  const csrf = getCookie('sn_csrf');
   const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE);
   if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
     config.headers[APP_CONSTANTS.CSRF_HEADER] = csrf;

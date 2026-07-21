@@ -112,7 +112,14 @@ const Management = () => {
             <button onClick={addIntern} className="px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ background: '#00bea3' }}>Create</button>
           </>
         }>
-        
+        <div className="space-y-4">
+          <Input label="Full name" placeholder="e.g. Rahul Sharma" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input label="Email" type="email" placeholder="rahul@skillnova.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Input label="Department" placeholder="e.g. AI / ML" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+          <Input label="Initial password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        </div>
+      </Modal>
+    </div>
   );
 };
 

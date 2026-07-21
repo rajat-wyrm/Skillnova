@@ -4,8 +4,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Flag,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Trophy,
+  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Flag, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { APP_CONSTANTS } from '../../shared/config/constants';
