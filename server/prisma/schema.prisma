@@ -21,7 +21,7 @@ model User {
   yearOfStudy        String?
   dateOfBirth        DateTime?
   linkedinUrl        String?
-  skills             String?
+  skills             String?                   // comma-separated for simplicity, can migrate to table later
   avatarUrl          String?
   rating             Float                     @default(0)
   twoFactorSecret    String?
@@ -32,110 +32,44 @@ model User {
   lastLoginIp        String?
   failedAttempts     Int                       @default(0)
   lockedUntil        DateTime?
+  currentStreak      Int                       @default(0)
+  longestStreak      Int                       @default(0)
+  lastActivityAt     DateTime?
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
-  announcements      Announcement[]            @relation("AnnouncementAuthor")
-  announcementsReads AnnouncementRead[]
-  answers            Answer[]
-  attendances        Attendance[]
-  auditLogs          AuditLog[]
-  chatSessions       ChatSession[]
-  reopenedDailyLogs  DailyWorkLog[]            @relation("DailyWorkLogReopenedBy")
-  dailyWorkLogs      DailyWorkLog[]
-  mentorOf           InternProfile[]           @relation("MentorRelation")
-  internProfile      InternProfile?
-  kbArticles         KnowledgeArticle[]        @relation("ArticleAuthor")
-  kbVersions         KnowledgeArticleVersion[]
-  organizedMeetings  Meeting[]                 @relation("OrganizedMeetings")
-  meetingAttendees   MeetingAttendee[]
-  mentorProfile      MentorProfile?
-  notifications      Notification[]
-  projectTasks       ProjectTask[]
-  questions          Question[]
-  refreshTokens      RefreshToken[]
-  reviewedReports    Report[]                  @relation("ReportReviewedBy")
-  reports            Report[]                  @relation("UserReports")
-  reportReviews      ReportReview[]            @relation("ReportReviewAuthor")
-  qaUpvotes          Upvote[]
-  sessions           UserSession[]
-  authProvider       String                    @default("password")
-  googleId           String?                   @unique
-  announcements      Announcement[]            @relation("AnnouncementAuthor")
-  announcementsReads AnnouncementRead[]
-  answers            Answer[]
-  attendances        Attendance[]
-  auditLogs          AuditLog[]
-  chatSessions       ChatSession[]
-  mentorOf           InternProfile[]           @relation("MentorRelation")
-  internProfile      InternProfile?
-  kbArticles         KnowledgeArticle[]        @relation("ArticleAuthor")
-  kbVersions         KnowledgeArticleVersion[]
-  organizedMeetings  Meeting[]                 @relation("OrganizedMeetings")
-  meetingAttendees   MeetingAttendee[]
-  mentorProfile      MentorProfile?
-  notifications      Notification[]
-  projectTasks       ProjectTask[]
-  questions          Question[]
-  refreshTokens      RefreshToken[]
-  reports            Report[]
-  qaUpvotes          Upvote[]
-  sessions           UserSession[]
-  id              String        @id @default(cuid())
-  email           String        @unique
-  passwordHash    String?
-  googleId        String?       @unique
-  authProvider    String        @default("password")
-  name            String
-  role            UserRole      @default(INTERN)
-  status          UserStatus    @default(PENDING)
-  department      String?
-  college         String?
-  yearOfStudy     String?
-  dateOfBirth     DateTime?
-  linkedinUrl     String?
-  skills          String?       // comma-separated for simplicity, can migrate to table later
-  avatarUrl       String?
-  rating          Float         @default(0)
-  twoFactorSecret String?
-  twoFactorEnabled Boolean      @default(false)
-  emailVerified   Boolean       @default(false)
-  emailVerifiedAt DateTime?
-  lastLoginAt     DateTime?
-  lastLoginIp     String?
-  failedAttempts  Int           @default(0)
-  lockedUntil     DateTime?
-  currentStreak   Int           @default(0)
-  longestStreak   Int           @default(0)
-  lastActivityAt  DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
 
-  refreshTokens     RefreshToken[]
+  refreshTokens      RefreshToken[]
   passwordResetTokens PasswordResetToken[]
-  reports           Report[]
-  attendances       Attendance[]
-  projectTasks      ProjectTask[]
-  announcements     Announcement[]    @relation("AnnouncementAuthor")
+  reports            Report[]                  @relation("UserReports")
+  attendances        Attendance[]
+  projectTasks       ProjectTask[]
+  announcements      Announcement[]            @relation("AnnouncementAuthor")
   announcementsReads AnnouncementRead[]
-  kbArticles        KnowledgeArticle[] @relation("ArticleAuthor")
-  kbVersions        KnowledgeArticleVersion[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  questions         Question[]
-  answers           Answer[]
-  chatSessions      ChatSession[]
-  qaUpvotes         Upvote[]
-  sessions          UserSession[]
-  internProfile     InternProfile?
-  mentorProfile     MentorProfile?
-  mentorOf          InternProfile[] @relation("MentorRelation")
-  organizedMeetings Meeting[]      @relation("OrganizedMeetings")
-  meetingAttendees  MeetingAttendee[]
-  flagsRaised     Flag[]   @relation("FlaggedByMentor")
-  flagsReceived   Flag[]   @relation("FlaggedIntern")
+  kbArticles         KnowledgeArticle[]        @relation("ArticleAuthor")
+  kbVersions         KnowledgeArticleVersion[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  questions          Question[]
+  answers            Answer[]
+  chatSessions       ChatSession[]
+  qaUpvotes          Upvote[]
+  sessions           UserSession[]
+  internProfile      InternProfile?
+  mentorProfile      MentorProfile?
+  mentorOf           InternProfile[]           @relation("MentorRelation")
+  organizedMeetings  Meeting[]                 @relation("OrganizedMeetings")
+  meetingAttendees   MeetingAttendee[]
+  flagsRaised        Flag[]                    @relation("FlaggedByMentor")
+  flagsReceived      Flag[]                    @relation("FlaggedIntern")
   collaborativeTasksCreated CollaborativeTask[] @relation("TaskCreator")
   collaborativeTasksAssigned CollaborativeTask[] @relation("TaskAssignees")
-  teams          Team[]              @relation("TeamMembers")
+  teams              Team[]                    @relation("TeamMembers")
+
+  // Relations from the first User model:
+  reopenedDailyLogs  DailyWorkLog[]            @relation("DailyWorkLogReopenedBy")
+  dailyWorkLogs      DailyWorkLog[]
+  reviewedReports    Report[]                  @relation("ReportReviewedBy")
+  reportReviews      ReportReview[]            @relation("ReportReviewAuthor")
 
   @@index([role])
   @@index([status])
@@ -248,21 +182,6 @@ model Report {
   reviewedBy    User?          @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
   user          User           @relation("UserReports", fields: [userId], references: [id], onDelete: Cascade)
   reviews       ReportReview[]
-  id           String       @id @default(cuid())
-  userId       String
-  title        String
-  content      String?
-  fileUrl      String?
-  weekNumber   Int?
-  status       ReportStatus @default(PENDING)
-  score        Float?
-  feedback     String?
-  reviewedById String?
-  reviewedAt   DateTime?
-  submittedAt  DateTime     @default(now())
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -755,6 +674,8 @@ enum MeetingType {
   REVIEW
   TRAINING
   OTHER
+}
+
 // ── Flags / Alerts ───────────────────────────────────────────
 enum FlagType {
   ATTENDANCE_DROPPING

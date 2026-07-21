@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------
-//  App.jsx ó Root component
+//  App.jsx - Root component
 //  Hydrates auth, mounts the right app (admin/mentor/intern)
 //  based on the authenticated user's role. Mounts the global
 //  AIAssistant widget so every logged-in user has access.
@@ -43,12 +43,12 @@ const App = () => {
     disconnectSocket();
   }, [accessToken, step, user?.id]);
 
-  // Google OAuth callback ó catch before AuthGate so no login flash
+  // Google OAuth callback - catch before AuthGate so no login flash
   if (window.location.pathname === '/auth/callback') {
     return <AuthCallback />;
   }
 
-  if (!hydrated) return <LoaderScreen label="Initialising SkillNovaÖ" />;
+  if (!hydrated) return <LoaderScreen label="Initialising SkillNova." />;
   if (!user || step !== 'authenticated') return <AuthGate />;
 
   return (
@@ -58,7 +58,7 @@ const App = () => {
           className="fixed top-0 left-0 right-0 z-[100] px-4 py-2 text-center text-sm font-medium text-white"
           style={{ background: '#dc2626' }}
         >
-          ?? You are offline. Some features may be unavailable.
+          ‚ö†Ô∏è You are offline. Some features may be unavailable.
         </div>
       )}
       {user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? (

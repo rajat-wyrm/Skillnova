@@ -130,6 +130,10 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
           <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'linear-gradient(135deg, #ff6d34, #00bea3)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {task.assignee.name?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+          </div>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{task.assignee.name}</span>
+        </div>
+      )}
 
       {task.description && (
         <p style={{
@@ -705,44 +709,27 @@ const KanbanBoard = ({ teamId, teams, canEdit = true }) => {
     if (!teamId) return;
     setLoading(true);
     try {
-      const [p, t] = await Promise.all([
-        api.get(`/projects/${projectId}`).catch(() => null),
-        api.get('/tasks', { params: { projectId, limit: 100 } }),
-      ]);
-      setProject(p?.data?.project);
-     setTasks(t.data.items);
-
-setTimeout(() => {
-  const upcoming = t.data.items.filter((task) => isDueSoon(task.dueDate));
-
-  if (upcoming.length > 0) {
-    notify.warning(
-      `⏰ ${upcoming.length} task${upcoming.length > 1 ? 's' : ''} deadline is near`
-    );
-  }
-}, 500);
-    } catch { /* ignore */ }
-    setLoading(false);
-  }, [projectId]);
-const checkDeadlineAlerts = () => {
-  const upcoming = tasks.filter((task) => isDueSoon(task.dueDate));
       const response = await api.get(`/collab-tasks/team/${teamId}`);
-      setTasks(response.data.tasks || []);
+      const fetchedTasks = response.data.tasks || [];
+      setTasks(fetchedTasks);
       const activeTeam = teams.find((t) => t.id === teamId);
       setTeam(activeTeam || null);
+
+      // Check for deadline alerts
+      setTimeout(() => {
+        const upcoming = fetchedTasks.filter((task) => isDueSoon(task.dueDate));
+        if (upcoming.length > 0) {
+          notify.warning(
+            `⏰ ${upcoming.length} task${upcoming.length > 1 ? 's' : ''} deadline is near`
+          );
+        }
+      }, 500);
     } catch {
       notify.error('Failed to load collaborative tasks.');
     } finally {
       setLoading(false);
     }
   }, [teamId, teams]);
-
-  if (upcoming.length > 0) {
-    notify.warning(
-      `⏰ ${upcoming.length} task${upcoming.length > 1 ? 's' : ''} deadline is near`
-    );
-  }
-};
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -879,54 +866,49 @@ const filteredTasks = tasks.filter((task) => {
           </button>
         </div>
       )}
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <div
-  style={{
-    marginBottom: 16,
-    display: 'flex',
-    gap: 10,
-    alignItems: 'center'
-  }}
->
+      <div
+        style={{
+          marginBottom: 16,
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center'
+        }}
+      >
+        <input
+          placeholder="🔍 Search tasks..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: 280,
+            padding: '9px 14px',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            background: 'var(--card)',
+            color: 'var(--text)',
+            fontSize: 13
+          }}
+        />
 
-<input
-  placeholder="🔍 Search tasks..."
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  style={{
-    width: 280,
-    padding: '9px 14px',
-    border: '1px solid var(--border)',
-    borderRadius: 10,
-    background: 'var(--card)',
-    color: 'var(--text)',
-    fontSize: 13
-  }}
-/>
-
-<select
-  value={priorityFilter}
-  onChange={(e) => setPriorityFilter(e.target.value)}
-  style={{
-    padding: '9px 14px',
-    border: '1px solid var(--border)',
-    borderRadius: 10,
-    background: 'var(--card)',
-    color: 'var(--text)',
-    fontSize: 13,
-    cursor: 'pointer'
-  }}
->
-  <option value="ALL">All Priority</option>
-  <option value="LOW">Low</option>
-  <option value="MEDIUM">Medium</option>
-  <option value="HIGH">High</option>
-  <option value="URGENT">Urgent</option>
-</select>
-
-</div>
-
-<div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          style={{
+            padding: '9px 14px',
+            border: '1px solid var(--border)',
+            borderRadius: 10,
+            background: 'var(--card)',
+            color: 'var(--text)',
+            fontSize: 13,
+            cursor: 'pointer'
+          }}
+        >
+          <option value="ALL">All Priority</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+          <option value="URGENT">Urgent</option>
+        </select>
+      </div>
 
       <DndContext
         sensors={sensors}
