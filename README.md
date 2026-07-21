@@ -1,7 +1,29 @@
+<<<<<<< HEAD
+<div align="center">
+
+# SkillNova
+
+[![CI](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml/badge.svg)](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![GitHub stars](https://img.shields.io/github/stars/rajat-wyrm/Skillnova?style=social)](https://github.com/rajat-wyrm/Skillnova/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/rajat-wyrm/Skillnova?style=social)](https://github.com/rajat-wyrm/Skillnova/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/pulls)
+[![Code size](https://img.shields.io/github/languages/code-size/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova)
+[![Last commit](https://img.shields.io/github/last-commit/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/commits/main)
+[![Contributors](https://img.shields.io/github/contributors/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/graphs/contributors)
+
+A production-grade intern management platform for UptoSkills. Real-time, RBAC-protected, AI-grounded, and engineered for the operational needs of an internship program: onboarding, knowledge base, daily reports, attendance, projects, reviews, announcements, and analytics.
+
+</div>
+
+=======
 # SkillNova
 
 A production-grade intern management platform for UptoSkills. Real-time, RBAC-protected, AI-grounded, and engineered for the operational needs of an internship program: onboarding, knowledge base, daily reports, attendance, projects, reviews, announcements, and analytics.
 
+>>>>>>> pradeep/main
 ---
 
 ## Why SkillNova
@@ -25,7 +47,11 @@ A production-grade intern management platform for UptoSkills. Real-time, RBAC-pr
 | ORM / DB | Prisma 5 on PostgreSQL (Neon-compatible) |
 | Realtime | Socket.io 4 |
 | Cache | In-memory LRU + Upstash Redis (graceful in-memory fallback) |
+<<<<<<< HEAD
+| Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA, Google OAuth |
+=======
 | Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA |
+>>>>>>> pradeep/main
 | Validation | Zod + Joi (per-endpoint) |
 | AI | Groq (`llama-3.1-8b-instant` / `llama-3.1-70b-versatile`) |
 | Logging | Pino (structured JSON in prod, pretty in dev) |
@@ -55,7 +81,11 @@ A production-grade intern management platform for UptoSkills. Real-time, RBAC-pr
 
 ```
 skillnova/
+<<<<<<< HEAD
 ├── server/                              Express + Prisma + Socket.io + Groq
+=======
+├── backend/                             Express + Prisma + Socket.io + Groq
+>>>>>>> pradeep/main
 │   ├── prisma/
 │   │   ├── schema.prisma                Full data model
 │   │   └── seed.js                      Demo data + demo accounts
@@ -84,6 +114,7 @@ skillnova/
 │   ├── shared/                          Reusable components, hooks
 │   ├── lib/                             api, socket, auth store, utils
 │   └── App.jsx                          Role router
+<<<<<<< HEAD
 ├── public/                              Static assets
 ├── scripts/                             Helper scripts
 ├── .github/workflows/ci.yml             CI: lint, test, build
@@ -97,6 +128,21 @@ skillnova/
 ├── vite.config.js                       Vite + manual vendor chunks
 ├── package.json                         Frontend scripts
 ├── server/package.json                  Backend scripts
+=======
+├── frontend/                            React + Vite frontend
+├── backend/                             Express + Prisma + Socket.io + Groq backend
+├── aiassistant/                         Optional AI assistant microservice
+├── public/                              Static assets
+├── scripts/                             Helper scripts
+├── .github/workflows/ci.yml             CI: lint, test, build
+├── frontend/.env.example                Frontend env template
+├── frontend/Dockerfile.frontend         Frontend container
+├── backend/.env.example                 Server env template
+├── backend/Dockerfile                   Backend container
+├── nginx.conf                           Reverse proxy
+├── frontend/package.json                Frontend scripts
+├── backend/package.json                 Backend scripts
+>>>>>>> pradeep/main
 └── README.md
 ```
 
@@ -111,10 +157,16 @@ skillnova/
 - Optional: an Upstash Redis REST URL and token
 - Optional: a Groq API key for the AI assistant
 
+<<<<<<< HEAD
+> **Windows users:** Use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) or [Git Bash](https://git-scm.com/downloads/win) to run shell commands. All subsequent commands assume a POSIX-compatible shell.
+
+=======
+>>>>>>> pradeep/main
 ### Bootstrap
 
 ```bash
 # 1. Install dependencies for both workspaces
+<<<<<<< HEAD
 npm install
 npm run server:install
 
@@ -125,7 +177,20 @@ cp server/.env.example server/.env
 
 # 3. Push the Prisma schema and seed demo data
 cd server
+=======
+cd frontend && npm install
+cd ../backend && npm install
+
+# 2. Copy and fill the env templates
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+# Edit backend/.env with DATABASE_URL, JWT_*, CSRF_SECRET, etc.
+
+# 3. Push the Prisma schema and seed demo data
+cd backend
+>>>>>>> pradeep/main
 npm run prisma:generate
+npm run prisma:migrate
 npm run prisma:push
 npm run seed
 cd ..
@@ -157,7 +222,11 @@ In development, the OTP code is returned in the login response (`devCode`) and s
 
 ## Configuration
 
+<<<<<<< HEAD
 All runtime configuration is loaded from environment variables. The server validates required values at boot and refuses to start if any production-only secret is missing. See `server/.env.example` for the full list with defaults and comments.
+=======
+All runtime configuration is loaded from environment variables. The server validates required values at boot and refuses to start if any production-only secret is missing. See `backend/.env.example` for the full list with defaults and comments.
+>>>>>>> pradeep/main
 
 Key variables:
 
@@ -189,7 +258,11 @@ Key variables:
 
 ## RBAC matrix
 
+<<<<<<< HEAD
 The full canonical list lives in `server/src/middleware/rbac.js`. Highlights:
+=======
+The full canonical list lives in `backend/src/middleware/rbac.js`. Highlights:
+>>>>>>> pradeep/main
 
 | Permission | Super | Admin | Mentor | Intern |
 | --- | :-: | :-: | :-: | :-: |
@@ -350,11 +423,118 @@ All routes (except `/auth/login`, `/auth/verify-otp`, `/auth/refresh`, `/healthz
 
 ---
 
+<<<<<<< HEAD
+## API Reference
+
+Complete listing of all API endpoints. Base URL: `http://localhost:4000/api/v1`
+
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| POST | `/auth/login` | none | Authenticate user; returns tokens or OTP challenge |
+| POST | `/auth/verify-otp` | none | Verify OTP/TOTP code and receive tokens |
+| POST | `/auth/refresh` | cookie | Rotate access and refresh tokens |
+| POST | `/auth/logout` | bearer | Revoke current session |
+| POST | `/auth/logout-all` | bearer | Revoke all user sessions |
+| GET | `/auth/me` | bearer | Get current user profile and permissions |
+| POST | `/auth/2fa/setup` | bearer | Initiate TOTP enrollment |
+| POST | `/auth/2fa/enable` | bearer | Confirm TOTP enrollment with 6-digit code |
+| GET | `/users` | `users:read` | List users with pagination and filters |
+| GET | `/users/stats` | `users:read` | User counts grouped by role and status |
+| GET | `/users/:id` | `users:read` | Get single user with relations |
+| POST | `/users` | `users:create` | Create a new user |
+| PATCH | `/users/:id` | `users:update` | Update user fields |
+| PATCH | `/users/:id/role` | `users:role:change` | Change user role (super admin only) |
+| PATCH | `/users/:id/status` | `users:update` | Change user status |
+| DELETE | `/users/:id` | `users:delete` | Delete user (super admin only) |
+| GET | `/kb/categories` | `kb:read` | List knowledge base categories |
+| POST | `/kb/categories` | `kb:create` | Create a new KB category |
+| GET | `/kb/articles` | `kb:read` | List KB articles with pagination (cached 30s) |
+| GET | `/kb/articles/:id` | `kb:read` | Get article by ID or slug |
+| POST | `/kb/articles` | `kb:create` | Create article with first version |
+| PATCH | `/kb/articles/:id` | `kb:update` | Update article (creates new version) |
+| PATCH | `/kb/articles/:id/verify` | `kb:verify` | Mark article as verified |
+| DELETE | `/kb/articles/:id` | `kb:delete` | Delete article |
+| POST | `/kb/articles/:id/feedback` | `kb:read` | Submit article feedback |
+| GET | `/reports` | `reports:read` | List reports (role-scoped) |
+| GET | `/reports/:id` | `reports:read` | Get single report |
+| GET | `/reports/stats` | `reports:read` | Aggregated report statistics |
+| POST | `/reports` | `reports:create` | Submit a new report |
+| PATCH | `/reports/:id/review` | `reports:review` | Mentor/admin review of report |
+| DELETE | `/reports/:id` | `reports:delete` | Delete report |
+| GET | `/announcements` | `announcements:read` | List announcements (cached 20s) |
+| GET | `/announcements/:id` | `announcements:read` | Get single announcement |
+| POST | `/announcements` | `announcements:create` | Create and broadcast announcement |
+| PATCH | `/announcements/:id` | `announcements:update` | Edit announcement |
+| PATCH | `/announcements/:id/pin` | `announcements:update` | Toggle pinned status |
+| DELETE | `/announcements/:id` | `announcements:delete` | Delete announcement |
+| GET | `/attendance` | bearer | List attendance rows (role-scoped) |
+| GET | `/attendance/summary` | bearer | Attendance summary for interns/mentors |
+| POST | `/attendance/mark` | bearer | Mark attendance for user |
+| POST | `/attendance/check` | bearer | Self check-in / check-out |
+| GET | `/qa/questions` | bearer | List Q&A questions |
+| POST | `/qa/questions` | bearer | Ask a new question |
+| GET | `/qa/questions/:id` | bearer | Get question with answers |
+| POST | `/qa/questions/:id/answers` | bearer | Post answer to question |
+| POST | `/qa/answers/:id/accept` | bearer | Accept answer (asker only) |
+| POST | `/qa/upvote` | bearer | Upvote question or answer |
+| GET | `/projects` | bearer | List projects |
+| POST | `/projects` | bearer | Create project |
+| GET | `/projects/:id` | bearer | Get single project |
+| PATCH | `/projects/:id` | bearer | Update project |
+| DELETE | `/projects/:id` | bearer | Delete project |
+| GET | `/tasks` | bearer | List tasks |
+| POST | `/tasks` | bearer | Create task |
+| PATCH | `/tasks/:id` | bearer | Update task |
+| DELETE | `/tasks/:id` | bearer | Delete task |
+| POST | `/ai/chat` | bearer | Non-streaming AI chat completion |
+| POST | `/ai/chat/stream` | bearer | SSE-streamed AI chat |
+| GET | `/ai/sessions` | bearer | List AI chat sessions |
+| GET | `/ai/sessions/:id` | bearer | Get single chat session |
+| DELETE | `/ai/sessions/:id` | bearer | Delete chat session |
+| POST | `/files` | bearer | Upload file (multipart, 25 MB limit) |
+| GET | `/files` | bearer | List user's files |
+| GET | `/files/:id` | bearer | Get file metadata |
+| GET | `/files/:id/download` | none | Signed-URL redirect download |
+| GET | `/files/:id/url` | bearer | Get short-lived signed URL |
+| DELETE | `/files/:id` | bearer | Delete file (owner or admin) |
+| GET | `/notifications` | bearer | Paginated notification inbox |
+| POST | `/notifications/:id/read` | bearer | Mark notification as read |
+| POST | `/notifications/read-all` | bearer | Mark all notifications as read |
+| GET | `/preferences/notifications` | bearer | Get notification preferences |
+| PATCH | `/preferences/notifications` | bearer | Update notification preferences |
+| GET | `/webhooks` | `webhooks:manage` | List configured webhooks |
+| POST | `/webhooks` | `webhooks:manage` | Create webhook |
+| PATCH | `/webhooks/:id` | `webhooks:manage` | Update webhook |
+| DELETE | `/webhooks/:id` | `webhooks:manage` | Delete webhook |
+| GET | `/webhooks/:id/deliveries` | `webhooks:manage` | Webhook delivery log |
+| GET | `/webhooks/events` | `webhooks:manage` | List available webhook events |
+| GET | `/meetings` | bearer | List calendar meetings |
+| POST | `/meetings` | bearer | Create meeting |
+| PATCH | `/meetings/:id` | bearer | Update meeting |
+| DELETE | `/meetings/:id` | bearer | Delete meeting |
+| GET | `/analytics/platform` | `analytics:read` | Platform-wide metrics (cached 60s) |
+| GET | `/analytics/interns` | `analytics:read` | Per-intern performance (cached 30s) |
+| GET | `/exports/users` | `analytics:read` | Export users as CSV/JSON |
+| GET | `/exports/reports` | `analytics:read` | Export reports as CSV/JSON |
+| GET | `/exports/attendance` | `analytics:read` | Export attendance as CSV/JSON |
+| GET | `/healthz` | none | Backwards-compatible process check |
+| GET | `/healthz/live` | none | Liveness probe |
+| GET | `/healthz/ready` | none | Readiness probe (DB + Redis) |
+| GET | `/api/v1/meta` | none | Service name and version |
+
+---
+
+=======
+>>>>>>> pradeep/main
 ## Performance
 
 | Layer | Mechanism |
 | --- | --- |
+<<<<<<< HEAD
 | Hot reads | Two-tier cache: in-memory LRU (L1, sub-ms) backed by Redis (L2, distributed). See `server/src/utils/cache.js` and `server/src/utils/lru.js`. |
+=======
+| Hot reads | Two-tier cache: in-memory LRU (L1, sub-ms) backed by Redis (L2, distributed). See `backend/src/utils/cache.js` and `backend/src/utils/lru.js`. |
+>>>>>>> pradeep/main
 | Auth middleware | User-by-id lookup is cached for 60 s; cache is invalidated on profile, role, or status mutation. |
 | `/auth/me` | Full payload (with `internProfile` and `mentorProfile`) is cached for 30 s. |
 | Analytics | `/analytics/platform` cached 60 s, `/analytics/interns` cached 30 s. |
@@ -398,7 +578,11 @@ Rooms: `user:<id>` (personal), `role:<role>` (broadcast by role).
 
 The assistant at `/api/v1/ai/chat` (non-streaming) and `/api/v1/ai/chat/stream` (SSE) is grounded on three sources, in priority order:
 
+<<<<<<< HEAD
 1. The curated **UptoSkills Knowledge Base** (`server/src/ai/uptoskills.kb.js`) — onboarding, reports, attendance, mentorship, code of conduct, FAQs, glossary.
+=======
+1. The curated **UptoSkills Knowledge Base** (`backend/src/ai/uptoskills.kb.js`) — onboarding, reports, attendance, mentorship, code of conduct, FAQs, glossary.
+>>>>>>> pradeep/main
 2. **Live platform data** — recent KB articles, current announcements, and the user's own reports.
 3. General model knowledge, used only when neither of the above applies.
 
@@ -412,8 +596,13 @@ The default model is `llama-3.1-8b-instant` for low latency. Override with `GROQ
 
 | Concern | Where |
 | --- | --- |
+<<<<<<< HEAD
 | Structured logs | Pino (JSON in prod, pretty in dev) at `server/src/utils/logger.js` |
 | Request IDs | Every response carries `x-request-id`; surfaced in 5xx bodies (`server/src/middleware/requestId.js`) |
+=======
+| Structured logs | Pino (JSON in prod, pretty in dev) at `backend/src/utils/logger.js` |
+| Request IDs | Every response carries `x-request-id`; surfaced in 5xx bodies (`backend/src/middleware/requestId.js`) |
+>>>>>>> pradeep/main
 | Health checks | `/healthz/live` and `/healthz/ready` (Postgres + Redis ping) |
 | Audit log | `prisma.auditLog` records every privileged action with user, IP, user-agent, and a JSON `meta` blob |
 | Rate-limit telemetry | Every rate-limited response carries `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After` |
@@ -428,14 +617,22 @@ The default model is `llama-3.1-8b-instant` for low latency. Override with `GROQ
 - JWTs are short-lived (15 min default) with separate access and refresh secrets.
 - File downloads use HMAC-signed URLs with TTL.
 - Webhook deliveries are HMAC-signed and retried with exponential backoff.
+<<<<<<< HEAD
 - All secrets required by `server/src/config/index.js` are enforced at boot in production; in development and test, missing values are substituted with loud warnings so unit tests can run without a populated `.env`.
+=======
+- All secrets required by `backend/src/config/index.js` are enforced at boot in production; in development and test, missing values are substituted with loud warnings so unit tests can run without a populated `.env`.
+>>>>>>> pradeep/main
 
 ---
 
 ## Testing
 
 ```bash
+<<<<<<< HEAD
 cd server
+=======
+cd backend
+>>>>>>> pradeep/main
 npm test
 ```
 
@@ -449,6 +646,7 @@ Suite: 26 tests across 5 files.
 | `lru.test.js` | In-memory LRU (TTL eviction, wrap coalescing, refresh-after-expiry) |
 | `rbac.test.js` | Permission matrix for every role |
 
+<<<<<<< HEAD
 The server lints with ESLint flat config; the frontend lints with the project-wide ESLint setup.
 
 ```bash
@@ -457,6 +655,16 @@ cd server && npm run lint && npm test
 
 # Frontend
 npm run lint && npm run build
+=======
+The backend lints with ESLint flat config; the frontend lints with the project-wide ESLint setup.
+
+```bash
+# Backend
+cd backend && npm run lint && npm test
+
+# Frontend
+cd frontend && npm run lint && npm run build
+>>>>>>> pradeep/main
 ```
 
 ---
@@ -467,8 +675,13 @@ npm run lint && npm run build
 
 | Job | Command |
 | --- | --- |
+<<<<<<< HEAD
 | `server-lint` | `cd server && npm run lint` |
 | `server-test` | `cd server && npm test` |
+=======
+| `backend-lint` | `cd backend && npm run lint` |
+| `backend-test` | `cd backend && npm test` |
+>>>>>>> pradeep/main
 | `frontend-lint` | `npm run lint` |
 | `frontend-build` | `npm run build` |
 | `full-check` | Aggregator; fails if any upstream job failed |
@@ -493,7 +706,11 @@ The frontend container is a static build served by nginx with SPA fallback to `i
 
 **Tests fail with "Missing required env var"**
 
+<<<<<<< HEAD
 The server validates production-required env vars at boot. In CI the `fix(server): make config tolerant of missing env vars outside production` change substitutes random placeholders with a warning. If you see this in development, copy `server/.env.example` to `server/.env` and fill the required values.
+=======
+The backend validates production-required env vars at boot. In CI the `fix(backend): make config tolerant of missing env vars outside production` change substitutes random placeholders with a warning. If you see this in development, copy `backend/.env.example` to `backend/.env` and fill the required values.
+>>>>>>> pradeep/main
 
 **Login returns `step: 'otp_required'` but you never set up 2FA**
 
@@ -511,4 +728,8 @@ Either `GROQ_API_KEY` is missing / invalid, or the curated KB has no relevant se
 
 ## License
 
+<<<<<<< HEAD
 Internal. UptoSkills / SkillNova.
+=======
+Internal. UptoSkills / SkillNova.
+>>>>>>> pradeep/main

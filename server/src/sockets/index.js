@@ -8,6 +8,8 @@ import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 let io = null;
+const MAX_CONNECTIONS_PER_IP = 10;
+const connectionsPerIp = new Map();
 
 export function createSocketServer(httpServer) {
   io = new Server(httpServer, {
@@ -44,6 +46,16 @@ export function createSocketServer(httpServer) {
   });
 
   io.on('connection', (socket) => {
+    const clientIp = socket.handshake.headers['x-forwarded-for']?.split(',')[0]?.trim() || socket.handshake.address;
+    const count = (connectionsPerIp.get(clientIp) || 0) + 1;
+    if (count > MAX_CONNECTIONS_PER_IP) {
+      connectionsPerIp.set(clientIp, count);
+      logger.warn({ clientIp, count }, 'socket:rate-limited');
+      socket.disconnect(true);
+      return;
+    }
+    connectionsPerIp.set(clientIp, count);
+
     const { sub, role } = socket.data.user || {};
     if (sub) {
       socket.join(`user:${sub}`);
@@ -51,9 +63,24 @@ export function createSocketServer(httpServer) {
       logger.info({ sub, role, sid: socket.id }, 'socket:connected');
     }
 
+    socket.on('join:project', (projectId) => {
+      socket.join(`project:${projectId}`);
+    });
+
+    socket.on('join:qa', (questionId) => {
+      socket.join(`qa:${questionId}`);
+    });
+
+    socket.on('leave:qa', (questionId) => {
+      socket.leave(`qa:${questionId}`);
+    });
+
     socket.on('ping', (cb) => cb?.('pong'));
 
     socket.on('disconnect', (reason) => {
+      const c = (connectionsPerIp.get(clientIp) || 1) - 1;
+      if (c <= 0) connectionsPerIp.delete(clientIp);
+      else connectionsPerIp.set(clientIp, c);
       logger.debug({ sub, reason }, 'socket:disconnect');
     });
   });
@@ -69,4 +96,8 @@ export function getIO() {
   return io;
 }
 
-export default { createSocketServer, getIO };
+export function emitToRoom(room, event, data) {
+  io?.to(room).emit(event, data);
+}
+
+export default { createSocketServer, getIO, emitToRoom };

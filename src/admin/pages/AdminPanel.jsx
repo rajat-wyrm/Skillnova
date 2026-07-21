@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/AdminPanel.jsx (User Management, API)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
-import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, UserX, Loader2 } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, Loader2 } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal, Input } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
@@ -22,14 +22,14 @@ const AdminPanel = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', name: '', role: 'INTERN', department: '' });
 
-  const fetch = async () => {
+  const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/users', { params: { limit: 100, search: search || undefined, role: roleFilter || undefined, status: statusFilter || undefined } });
       setUsers(data.items);
     } finally { setLoading(false); }
-  };
-  useEffect(() => { fetch(); }, [search, roleFilter, statusFilter]);
+  }, [search, roleFilter, statusFilter]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const add = async () => {
     if (!form.email || !form.password || !form.name) return notify.error('Fill all required fields.');

@@ -7,6 +7,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { emitToRoom } from '../sockets/index.js';
 
 // Question/answer schemas — duplicated in routes for validation
 const _questionSchema = z.object({
@@ -89,6 +90,7 @@ export const createAnswer = asyncHandler(async (req, res) => {
     });
   }
   await audit({ userId: req.user.id, action: 'qa.answer.create', resource: 'answer', resourceId: a.id, req });
+  emitToRoom(`qa:${qid}`, 'qa:answer', { questionId: qid, answer: a });
   res.status(201).json({ answer: a });
 });
 

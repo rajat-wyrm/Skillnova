@@ -7,6 +7,7 @@ export class ApiError extends Error {
     this.status = status;
     this.details = details;
     this.name = 'ApiError';
+    this.timestamp = new Date().toISOString();
   }
 
   static badRequest(msg = 'Bad request', details) {
@@ -27,8 +28,36 @@ export class ApiError extends Error {
   static rateLimit(msg = 'Too many requests') {
     return new ApiError(429, msg);
   }
+  static serviceUnavailable(msg = 'Service unavailable') {
+    return new ApiError(503, msg);
+  }
   static internal(msg = 'Internal server error') {
     return new ApiError(500, msg);
+  }
+
+  static ok(data) {
+    return { success: true, data };
+  }
+
+  static paginated(items, total, page, limit) {
+    return { success: true, data: items, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  static payloadTooLarge(msg = 'Payload too large') {
+    return new ApiError(413, msg);
+  }
+
+  static unsupportedMediaType(msg = 'Unsupported media type') {
+    return new ApiError(415, msg);
+  }
+
+  toJSON() {
+    return {
+      status: this.status,
+      message: this.message,
+      details: this.details,
+      timestamp: this.timestamp,
+    };
   }
 }
 

@@ -1,11 +1,16 @@
 // ════════════════════════════════════════════════════════════
 // Mentor — Interns page
+ sneha-new-ui
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState, useMemo } from 'react';
 import { 
   Loader2, Users, Search, Filter, Mail, 
   Star, Briefcase, ChevronRight, CheckCircle, AlertCircle, X, FileCheck
 } from 'lucide-react';
+
+import { useEffect, useState } from 'react';
+import { Loader2, Flame } from 'lucide-react';
+ main
 import { Card } from '../../shared/components/UI';
 import api from '../../lib/api';
 
@@ -67,6 +72,7 @@ const Interns = () => {
   }
 
   return (
+ sneha-new-ui
     <div className="space-y-6 bg-[#F7FAFC] min-h-screen pb-10 relative">
       
       {/* --- PAGE HEADER & CONTROLS --- */}
@@ -193,6 +199,35 @@ const Interns = () => {
               </div>
             );
           })}
+
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>My Interns ({interns.length})</h2>
+      <Card className="overflow-hidden p-0">
+        <div className="sn-table-scroll">
+          <table className="w-full text-sm min-w-[40rem]">
+            <thead><tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+              {['Name', 'Email', 'Department', 'Rating', 'Streak', 'Status'].map((h) => (
+                <th key={h} className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-left" style={{ color: 'var(--muted)' }}>{h}</th>
+              ))}
+            </tr></thead>
+            <tbody>
+              {interns.map((i) => (
+                <tr key={i.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="px-5 py-4 font-medium" style={{ color: 'var(--text)' }}>{i.name}</td>
+                  <td className="px-5 py-4 text-xs" style={{ color: 'var(--muted)' }}>{i.email}</td>
+                  <td className="px-5 py-4" style={{ color: 'var(--muted)' }}>{i.department}</td>
+                  <td className="px-5 py-4"><span className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">⭐ {i.rating}</span></td>
+                  <td className="px-5 py-4 font-bold">
+                    <span className="flex items-center gap-1">
+                      {i.currentStreak ?? 0} <Flame size={14} fill={(i.currentStreak ?? 0) > 0 ? '#ff6d34' : 'transparent'} color={(i.currentStreak ?? 0) > 0 ? '#ff6d34' : 'var(--muted)'} />
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-xs">{i.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+ main
         </div>
       ) : (
         <Card className="flex flex-col items-center justify-center py-20 px-6 text-center shadow-sm border border-[#A0AEC0]/30 bg-white rounded-2xl">

@@ -7,6 +7,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { emitToRoom } from '../sockets/index.js';
+import { recordActivity } from '../services/streak.service.js';
 
 // Local schemas (validators live in routes; kept here for documentation & reuse)
 const _projectSchema = z.object({
@@ -142,6 +144,13 @@ export const updateTask = asyncHandler(async (req, res) => {
   }
   const updated = await prisma.projectTask.update({ where: { id }, data: update });
   await audit({ userId: req.user.id, action: 'task.update', resource: 'task', resourceId: id, meta: req.body, req });
+  emitToRoom(`project:${updated.projectId}`, 'task:updated', { projectId: updated.projectId, taskId: updated.id, task: updated });
+  emitToRoom(`role:MENTOR`, 'dashboard:refresh', {});
+  emitToRoom(`role:ADMIN`, 'dashboard:refresh', {});
+  emitToRoom(`role:SUPER_ADMIN`, 'dashboard:refresh', {});
+  if (req.body.status === 'DONE' && task.status !== 'DONE' && updated.assigneeId) {
+    await recordActivity(updated.assigneeId);
+  }
   res.json({ task: updated });
 });
 

@@ -5,12 +5,14 @@ import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
-  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut,
+  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
+import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
   { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'leaderboard',    label: 'Leaderboard',    icon: Trophy          },
   { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },
   { id: 'project_flow',   label: 'Project Flow',   icon: Activity        },
   { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },
@@ -24,6 +26,7 @@ const MENU = [
   { id: 'announcements',  label: 'Announcements',  icon: Megaphone       },
   { id: 'analytics',      label: 'Analytics',      icon: BarChart2       },
   { id: 'exports',        label: 'Data Export',    icon: Download        },
+  { id: 'skill_gap',      label: 'Skill Gap',      icon: Target          },
   { id: 'profile',        label: 'Profile',        icon: User            },
   { id: 'settings',       label: 'Settings',       icon: Settings        },
 ];
@@ -33,6 +36,25 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
   const isCollapsed = forceMobileExpanded ? false : collapsed;
   const logout = useAuthStore((s) => s.logout);
 
+  const handleKeyDown = (e, index) => {
+    let nextIndex = index;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      nextIndex = (index + 1) % MENU.length;
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      nextIndex = (index - 1 + MENU.length) % MENU.length;
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onNavigate(MENU[index].id);
+      return;
+    } else {
+      return;
+    }
+    const buttons = e.currentTarget.parentElement?.querySelectorAll('button');
+    if (buttons?.[nextIndex]) buttons[nextIndex].focus();
+  };
+
   return (
     <aside
       className={`h-screen flex flex-col flex-shrink-0 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-60'}`}
@@ -40,7 +62,7 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
     >
       <div className={`h-20 flex items-center gap-3 flex-shrink-0 ${isCollapsed ? 'px-3 justify-center' : 'px-4'}`} style={{ borderBottom: '1px solid #3d4446' }}>
         {!isCollapsed && (
-          <img src="/logo.png" alt="SkillNova" style={{ height: 48, mixBlendMode: 'lighten', filter: 'brightness(1.1) contrast(1.05)' }} />
+          <img src={APP_CONSTANTS.LOGO_PATH} alt="SkillNova" loading="lazy" style={{ height: 48, mixBlendMode: 'lighten', filter: 'brightness(1.1) contrast(1.05)' }} />
         )}
         {isCollapsed && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
@@ -53,14 +75,17 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 no-scrollbar">
-        {MENU.map((item) => {
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 no-scrollbar" role="navigation" aria-label="Main menu">
+        {MENU.map((item, index) => {
           const Icon = item.icon;
           const isActive = active === item.id;
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              tabIndex={0}
+              role="menuitem"
               title={isCollapsed ? item.label : undefined}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group"
               style={{

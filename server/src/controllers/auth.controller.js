@@ -15,9 +15,11 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   hashToken,
+  hashPassword,
   generateOtp,
   verifyTotp,
   signCsrf,
+  randomToken,
   COOKIE_NAMES,
 } from '../utils/auth.js';
 import { config } from '../config/index.js';
@@ -27,13 +29,24 @@ import { audit } from '../services/audit.service.js';
 import { logger } from '../utils/logger.js';
 import { notify } from '../services/notification.service.js';
 
+function parseDurationToMs(val) {
+  if (typeof val === 'number') return val;
+  const match = String(val).match(/^(\d+)(s|m|h|d)$/);
+  if (!match) return 600000;
+  const n = Number(match[1]);
+  const unit = match[2];
+  const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
+  return n * multipliers[unit];
+}
+
 // ── Cookie options ───────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
   sameSite: 'lax',
   secure: config.isProd,
   path: '/api/v1/auth',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: config.security.refreshCookieMaxAge,
+  domain: config.isProd ? undefined : 'localhost',
 };
 
 const ACCESS_COOKIE_OPTS = {
@@ -41,7 +54,8 @@ const ACCESS_COOKIE_OPTS = {
   sameSite: 'lax',
   secure: config.isProd,
   path: '/',
-  maxAge: 15 * 60 * 1000,
+  maxAge: config.security.accessCookieMaxAge,
+  domain: config.isProd ? undefined : 'localhost',
 };
 
 const CSRF_COOKIE_OPTS = {
@@ -49,11 +63,13 @@ const CSRF_COOKIE_OPTS = {
   sameSite: 'lax',
   secure: config.isProd,
   path: '/',
-  maxAge: 24 * 60 * 60 * 1000,
+  maxAge: config.security.csrfCookieMaxAge,
+  domain: config.isProd ? undefined : 'localhost',
 };
 
 const MAX_FAILED = 5;
 const LOCK_MS = 15 * 60 * 1000;
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 
 // ── Helpers ──────────────────────────────────────────────
 function issueTokens(res, user, req, { rememberMe = true } = {}) {
@@ -70,7 +86,7 @@ function issueTokens(res, user, req, { rememberMe = true } = {}) {
         device: req.headers?.['x-device-id'] ?? null,
         ip: getClientIp(req),
         userAgent: getUserAgent(req).slice(0, 250),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + config.security.refreshCookieMaxAge),
       },
     })
     .catch((err) => logger.warn({ err }, 'auth:refreshToken-save-failed'));
@@ -80,7 +96,7 @@ function issueTokens(res, user, req, { rememberMe = true } = {}) {
   res.cookie(COOKIE_NAMES.session + '_sid', sessionId, { ...ACCESS_COOKIE_OPTS, httpOnly: true });
   res.cookie(COOKIE_NAMES.csrf, signCsrf(sessionId), CSRF_COOKIE_OPTS);
 
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role }, 7 * 24 * 60 * 60);
+  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role }, config.security.refreshCookieMaxAge / 1000);
   return { accessToken, refreshToken, sessionId };
 }
 
@@ -89,9 +105,95 @@ function issuePendingSession(res, user) {
   const sessionId = crypto.randomBytes(16).toString('hex');
   res.cookie(COOKIE_NAMES.session + '_sid', sessionId, { ...ACCESS_COOKIE_OPTS, httpOnly: true });
   res.cookie(COOKIE_NAMES.csrf, signCsrf(sessionId), CSRF_COOKIE_OPTS);
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, 15 * 60);
+  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, config.security.pendingSessionTtlSeconds);
   return sessionId;
 }
+
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, password, role } = req.body;
+  const normalizedEmail = email.toLowerCase();
+
+  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+  if (existing) throw ApiError.conflict('Email is already registered');
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email: normalizedEmail,
+      passwordHash: hashPassword(password),
+      role,
+      status: 'ACTIVE',
+    },
+  });
+
+  await audit({ userId: user.id, action: 'auth.register', resource: 'user', resourceId: user.id, req });
+  res.status(201).json({ user: sanitize(user), message: 'Account created successfully' });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const normalizedEmail = email.toLowerCase();
+  const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+  if (!user) throw ApiError.notFound('No account found for this email');
+
+  const token = randomToken(32);
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    },
+  });
+
+  const resetUrl = `${req.headers.origin || config.corsOrigin[0] || 'http://localhost:5173'}/reset-password?token=${token}`;
+  logger.info({ email: user.email, resetUrl }, 'auth:password-reset-link');
+  await audit({ userId: user.id, action: 'auth.password_reset.requested', req });
+
+  res.json({
+    message: 'Password reset link generated. Check the server console in development.',
+    resetToken: config.isProd ? undefined : token,
+    resetUrl: config.isProd ? undefined : resetUrl,
+  });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+    include: { user: true },
+  });
+
+  if (!resetToken || resetToken.usedAt || resetToken.expiresAt <= new Date()) {
+    throw ApiError.unauthorized('Invalid or expired reset token');
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: resetToken.userId },
+      data: {
+        passwordHash: hashPassword(password),
+        failedAttempts: 0,
+        lockedUntil: null,
+      },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: resetToken.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+
+  await audit({ userId: resetToken.userId, action: 'auth.password_reset.completed', req });
+  res.json({ message: 'Password has been reset successfully' });
+});
 
 // ── POST /auth/login ─────────────────────────────────────
 export const login = asyncHandler(async (req, res) => {
@@ -105,11 +207,15 @@ export const login = asyncHandler(async (req, res) => {
 
   if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
   if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
-
+console.log({
+  emailReceived: email,
+  passwordReceived: password,
+  dbEmail: user.email
+});
   const ok = verifyPassword(password, user.passwordHash);
   if (!ok) {
     const failed = user.failedAttempts + 1;
-    const lockedUntil = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MS) : null;
+    const lockedUntil = failed >= config.security.maxFailedAttempts ? new Date(Date.now() + config.security.lockDurationMs) : null;
     await prisma.user.update({
       where: { id: user.id },
       data: { failedAttempts: failed, lockedUntil },
@@ -137,8 +243,8 @@ export const login = asyncHandler(async (req, res) => {
       data: {
         email: user.email,
         purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
-        codeHash: await bcrypt.hash(code, 8),
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        codeHash: await bcrypt.hash(code, config.security.otpHashRounds),
+        expiresAt: new Date(Date.now() + parseDurationToMs(config.jwt.otpTtl)),
       },
     });
 
@@ -239,9 +345,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 });
 
 // ── POST /auth/refresh ───────────────────────────────────
+const recentlyRefreshed = new Set();
+const REFRESH_DEDUP_TTL = 5000;
+
 export const refresh = asyncHandler(async (req, res) => {
   const token = req.cookies?.[COOKIE_NAMES.refresh] ?? req.body.refreshToken;
   if (!token) throw ApiError.unauthorized('No refresh token');
+
+  const tokenHash = hashToken(token);
+  if (recentlyRefreshed.has(tokenHash)) {
+    throw ApiError.unauthorized('Refresh token already used');
+  }
 
   let payload;
   try {
@@ -250,7 +364,6 @@ export const refresh = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized('Invalid refresh token');
   }
 
-  const tokenHash = hashToken(token);
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
   if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
     throw ApiError.unauthorized('Refresh token revoked or expired');
@@ -267,6 +380,8 @@ export const refresh = asyncHandler(async (req, res) => {
   });
 
   const { accessToken, refreshToken: newRefresh } = issueTokens(res, user, req);
+  recentlyRefreshed.add(tokenHash);
+  setTimeout(() => recentlyRefreshed.delete(tokenHash), REFRESH_DEDUP_TTL);
   await audit({ userId: user.id, action: 'auth.refresh', req });
 
   res.json({ user: sanitize(user), accessToken, refreshToken: newRefresh });

@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  USER — pages/KnowledgeBase.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Search, BookOpen, Eye, ThumbsUp, ChevronRight, ChevronLeft, Clock, User, CheckCircle, Loader2,
 } from 'lucide-react';
@@ -56,6 +56,8 @@ const ArticleDetail = ({ article, onBack, onFeedback }) => (
 
 const KnowledgeBase = () => {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debounceRef = useRef(null);
   const [category, setCategory] = useState('all');
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -79,9 +81,15 @@ const KnowledgeBase = () => {
     })();
   }, []);
 
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [search]);
+
   const filtered = articles.filter((a) =>
     (category === 'all' || a.categoryId === category) &&
-    (!search || a.title.toLowerCase().includes(search.toLowerCase()))
+    (!debouncedSearch || a.title.toLowerCase().includes(debouncedSearch.toLowerCase()))
   );
 
   const onFeedback = async (id, helpful) => {

@@ -10,11 +10,15 @@ import {
   Cell
 } from "recharts";
 import { useEffect, useState } from 'react';
+ sneha-new-ui
 // 🚨 HATA DIYA: react-router-dom ka koi import nahi hai ab yahan!
 import { 
   Users, FileText, AlertTriangle, TrendingUp, 
   Search, AlertCircle, BookOpen, Sparkles, Activity, CheckCircle, ChevronRight
 } from 'lucide-react';
+
+import { Users, FileText, AlertTriangle, Loader2, TrendingUp, Flame } from 'lucide-react';
+ main
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
@@ -94,6 +98,7 @@ const MentorDashboard = ({ onNavigate }) => { // 👈 SIRF onNavigate PROP USE K
   );
 
   return (
+ sneha-new-ui
     <div className="space-y-6 bg-[#F7FAFC] min-h-screen pb-10">
       
       {/* --- PRO HERO SECTION --- */}
@@ -152,6 +157,12 @@ const MentorDashboard = ({ onNavigate }) => { // 👈 SIRF onNavigate PROP USE K
             ))}
           </div>
         </div>
+    <div className="space-y-6">
+      <div className="rounded-xl p-5 sm:p-8 text-white" style={{ background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)' }}>
+        <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: '#A78BFA' }}>Captain Overview</p>
+        <h1 className="text-2xl sm:text-3xl font-bold">Good day, {user?.name?.split(' ')[0]} 👋</h1>
+        <p className="opacity-80 mt-2 text-sm">You have {interns.length} intern{interns.length !== 1 ? 's' : ''} and {reports.length} report{reports.length !== 1 ? 's' : ''} pending review.</p>
+ main
       </div>
 
       {/* --- QUICK ACTIONS --- */}
@@ -267,9 +278,15 @@ const MentorDashboard = ({ onNavigate }) => { // 👈 SIRF onNavigate PROP USE K
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[50rem]">
             <thead>
+            sneha-new-ui
               <tr className="bg-[#F7FAFC]">
                 {['Intern Details', 'Department', 'Current Score', 'Tasks', 'Status'].map((h) => (
                   <th key={h} className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-left text-[#A0AEC0]">{h}</th>
+
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
+                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance', 'Streak'].map((h) => (
+                  <th key={h} className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-left" style={{ color: 'var(--muted)' }}>{h}</th>
+ main
                 ))}
               </tr>
             </thead>
@@ -301,6 +318,12 @@ const MentorDashboard = ({ onNavigate }) => { // 👈 SIRF onNavigate PROP USE K
                     <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${i.attendanceRate >= 90 ? 'bg-teal-50 text-teal-700 border border-teal-100' : i.attendanceRate >= 75 ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                       {i.attendanceRate >= 90 ? <CheckCircle size={14}/> : <AlertCircle size={14}/>}
                       {i.attendanceRate}%
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-semibold">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      style={{ background: i.currentStreak > 0 ? 'rgba(255,109,52,0.12)' : 'rgba(148,163,184,0.12)', color: i.currentStreak > 0 ? '#ff6d34' : 'var(--muted)' }}>
+                      {i.currentStreak ?? 0} <Flame size={12} fill={i.currentStreak > 0 ? '#ff6d34' : 'transparent'} />
                     </span>
                   </td>
                 </tr>

@@ -87,6 +87,9 @@ export const cache = {
     await this.set(key, fresh, ttl);
     return { hit: false, value: fresh };
   },
+  stats() {
+    return { l1Size: lru.size(), l2Size: l2Fallback.size };
+  },
 };
 
 // ── Sliding-window rate limiter (Redis) ─────────────────

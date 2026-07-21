@@ -83,12 +83,23 @@ export const memoryStore = {
 
 export async function connectRedis() {
   if (!config.redis.url) {
-    logger.warn('⚠️  Redis not configured — using in-memory store');
+    logger.warn('Redis not configured (UPSTASH_REDIS_REST_URL not set) — using in-memory store. Data will NOT persist across restarts.');
     return;
   }
-  const pong = await redis.ping();
-  if (pong === 'PONG') logger.info('✅  Redis connected');
-  else logger.warn('⚠️  Redis ping returned unexpected result, continuing with in-memory fallback');
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY_MS = 2000;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const pong = await redis.ping();
+    if (pong === 'PONG') {
+      logger.info('Redis connected');
+      return;
+    }
+    logger.warn({ attempt }, 'redis:ping-failed — retrying');
+    if (attempt < MAX_RETRIES) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    }
+  }
+  logger.warn('Redis unreachable after max retries — using in-memory fallback. Data will NOT persist across restarts.');
 }
 
 export default redis;

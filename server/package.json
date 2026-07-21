@@ -51,5 +51,10 @@
     "globals": "^15.14.0",
     "prettier": "^3.4.2",
     "prisma": "^5.22.0"
+  },
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "prisma@5.22.0": true
   }
 }

@@ -38,7 +38,7 @@ export const upload = multer({
       'text/plain', 'text/csv', 'text/markdown',
       'application/json',
     ];
-    if (!allowed.includes(file.mimetype)) return cb(new Error('Unsupported file type'));
+    if (!allowed.includes(file.mimetype)) return cb(new Error(`Unsupported file type: ${file.mimetype}`));
     cb(null, true);
   },
 });

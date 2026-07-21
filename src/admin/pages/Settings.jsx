@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/Settings.jsx (API-driven system settings)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, Toggle, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -12,17 +12,16 @@ const Settings = () => {
   const [platformName, setPlatformName] = useState('SkillNova');
   const [maxInterns, setMaxInterns] = useState('50');
   const [twoFactor, setTwoFactor] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    api.get('/auth/me').catch(() => null);
-    api.get('/analytics/platform').catch(() => null);
-    setLoading(false);
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  const persist = async (_key, _value) => { /* demo */ };
+  const persist = async (key, value) => {
+    try {
+      await api.patch('/users/me', { preferences: { [key]: value } });
+      notify.success('Settings saved.');
+    } catch {
+      notify.error('Failed to save settings.');
+    }
+  };
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin" size={28} style={{ color: 'var(--muted)' }} /></div>;
 

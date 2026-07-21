@@ -7,6 +7,7 @@ import Header from './Header';
 
 const PAGE_TITLES = {
   dashboard:      'Mentor Dashboard',
+  leaderboard:    'Leaderboard',
   interns:        'My Interns',
   reports:        'Reports to Review',
   projects:       'Projects & Tasks',
@@ -30,11 +31,6 @@ const MainLayout = ({ page, onNavigate, children }) => {
     return () => window.removeEventListener('resize', onResize);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>

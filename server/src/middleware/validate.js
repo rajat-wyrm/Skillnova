@@ -24,6 +24,9 @@ export function validate(schema, source = 'body') {
   };
 }
 
+export const validateQuery = (schema) => validate(schema, 'query');
+export const validateParams = (schema) => validate(schema, 'params');
+
 // ── Reusable schemas ──────────────────────────────────────
 export const schemas = {
   email: z.string().trim().toLowerCase().email().max(254),

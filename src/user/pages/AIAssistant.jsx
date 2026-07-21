@@ -7,6 +7,7 @@ import { Card } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 import { formatRelative } from '../../lib/utils';
+import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const SUGGESTIONS = [
   'How do I submit my weekly report?',
@@ -166,7 +167,7 @@ const AIAssistant = () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/ai/chat/stream`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('sn_csrf') || '' },
+        headers: { 'Content-Type': 'application/json', [APP_CONSTANTS.CSRF_HEADER]: getCookie(APP_CONSTANTS.CSRF_COOKIE) || '' },
         body: JSON.stringify({ message: msg, sessionId: sessionId ?? undefined }),
         signal: ctrl.signal,
       });

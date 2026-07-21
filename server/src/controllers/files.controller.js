@@ -9,9 +9,12 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { UPLOAD_DIR_PATH, UPLOAD_MAX_BYTES } from '../utils/upload.js';
+import { config } from '../config/index.js';
 
-// Signed-URL HMAC: short-lived, scoped to file + user
-const SIGN_SECRET = process.env.FILE_SIGN_SECRET || crypto.randomBytes(32).toString('hex');
+const SIGN_SECRET = config.security.fileSignSecret;
+if (!SIGN_SECRET && config.isProd) {
+  throw new Error('FILE_SIGN_SECRET is required in production');
+}
 
 function sign(payload) {
   const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -85,8 +88,13 @@ export const downloadFile = asyncHandler(async (req, res) => {
   const fullPath = path.join(UPLOAD_DIR_PATH, f.path);
   if (!fs.existsSync(fullPath)) throw ApiError.notFound('File missing on disk');
 
-  res.setHeader('Content-Type', f.mimeType);
-  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(f.originalName)}"`);
+  const contentType = f.mimeType || 'application/octet-stream';
+  const disposition = contentType.startsWith('text/') || contentType === 'application/json'
+    ? `inline; filename="${encodeURIComponent(f.originalName)}"`
+    : `attachment; filename="${encodeURIComponent(f.originalName)}"`;
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', disposition);
   res.setHeader('Content-Length', f.size);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   fs.createReadStream(fullPath).pipe(res);
