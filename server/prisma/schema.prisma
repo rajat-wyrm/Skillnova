@@ -53,10 +53,13 @@ model User {
   lockedUntil     DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  
 
   refreshTokens     RefreshToken[]
   reports           Report[]
   attendances       Attendance[]
+  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
+  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
   projectTasks      ProjectTask[]
   announcements     Announcement[]    @relation("AnnouncementAuthor")
   announcementsReads AnnouncementRead[]
@@ -74,6 +77,8 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  internRatingsReceived InternRating[] @relation("InternRatings")
+  internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
 
   @@index([role])
   @@index([status])
@@ -93,8 +98,11 @@ model InternProfile {
   project       Project? @relation(fields: [projectId], references: [id])
   totalTasks    Int      @default(0)
   completedTasks Int    @default(0)
+  isTL          Boolean  @default(false) // Team Lead flag for managing interns
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([isTL])
 }
 
 model MentorProfile {
@@ -151,6 +159,19 @@ model OtpChallenge {
 
   @@index([email, purpose])
   @@index([expiresAt])
+}
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  role        UserRole  @default(INTERN)
+  createdById String
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id])
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id])
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([code])
 }
 
 // ── Reports ─────────────────────────────────────────────────
@@ -217,6 +238,22 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
+}
+
+model InternRating {
+  id        String   @id @default(cuid())
+  internId  String
+  intern    User     @relation("InternRatings", fields: [internId], references: [id], onDelete: Cascade)
+  mentorId  String
+  mentor    User     @relation("MentorRatingsGiven", fields: [mentorId], references: [id])
+  weekStart DateTime @db.Date // Monday of the week this rating covers
+  score     Float
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([internId, weekStart])
+  @@index([internId])
 }
 
 model Project {
