@@ -40,6 +40,29 @@ const loginSchema = z.object({
     }),
 });
 
+const registerSchema = z.object({
+  name: z.string().trim().min(2, 'Full name is required').max(120),
+  email: schemas.email,
+  password: schemas.password,
+  confirmPassword: z.string().min(1, 'Confirm password is required'),
+  role: z.enum(['INTERN', 'MENTOR', 'ADMIN', 'SUPER_ADMIN']),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match',
+});
+
+const forgotPasswordSchema = z.object({
+  email: schemas.email,
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().min(32, 'Reset token is required').max(256),
+  password: schemas.password,
+  confirmPassword: z.string().min(1, 'Confirm password is required'),
+}).refine((data) => data.password === data.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match',
+});
 /**
  * @swagger
  * /auth/login:

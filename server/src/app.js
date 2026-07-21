@@ -217,6 +217,7 @@ app.use((err, req, res, _next) => {
       details: err.details,
     });
   }
+  app.use('/api/flags', flagRoutes);
 
   // CORS error from upstream
   if (err.message?.startsWith("CORS")) {

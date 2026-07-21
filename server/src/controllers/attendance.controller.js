@@ -120,6 +120,9 @@ export const checkInOut = asyncHandler(async (req, res) => {
       checkIn: now,
     },
   });
+  if (['PRESENT', 'LATE', 'HALF_DAY'].includes(status)) {
+    await recordActivity(req.user.id);
+  }
   res.json({ attendance: record });
 });
 
@@ -145,6 +148,10 @@ export const summary = asyncHandler(async (req, res) => {
       where: { ...where, date: { gte: start }, status: "LEAVE" },
     }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
+    prisma.attendance.findUnique({
+      where: { userId_date: { userId: targetUserId, date: today } },
+      select: { status: true },
+    }),
   ]);
   res.json({
     present,

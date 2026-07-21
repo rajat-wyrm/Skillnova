@@ -21,7 +21,8 @@ api.use(authenticate, requireAuth);
 const internIdParam = z.object({ internId: z.string().cuid() });
 const idParam = z.object({ id: z.string().cuid() });
 
-// ── Reports ───────────────────────────────────────────────
+
+// ?? Reports ???????????????????????????????????????????????
 api.get(
   "/reports",
   requirePermission("reports:read"),
@@ -62,6 +63,7 @@ api.patch(
   ),
   reports.update,
 );
+api.post('/reports/:id/submit', requirePermission('reports:create'), validate(idParam, 'params'), reports.submit);
 api.patch(
   "/reports/:id/review",
   requirePermission("reports:review"),

@@ -56,6 +56,7 @@
     0 8px 20px -10px rgba(15, 23, 42, 0.1);
   position: relative;
 }
+.auth-card-wide { max-width: 560px; }
 .dark .auth-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -239,6 +240,16 @@
   margin-top: 12px;
 }
 
+.auth-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #047857;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
 .auth-button {
   width: 100%;
   padding: 13px 16px;
@@ -352,6 +363,40 @@
 }
 .auth-link:hover {
   text-decoration: underline;
+}
+
+.auth-small-link {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.auth-nav-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.auth-footer-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 18px;
+}
+
+.auth-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-dev-link {
+  display: block;
+  color: #ff6d34;
+  font-size: 13px;
+  font-weight: 600;
+  margin: -4px 0 14px;
+  overflow-wrap: anywhere;
 }
 
 /* OTP cells */
