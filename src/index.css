@@ -258,3 +258,164 @@ button:disabled { opacity: 0.55; cursor: not-allowed !important; }
   outline: 2px solid var(--brand-orange);
   outline-offset: 2px;
 }
+
+/* ===========================================================
+   PREMIUM UI ENHANCEMENTS (Mentor Dashboard)
+   =========================================================== */
+
+.page-enter {
+  animation: pageFade .45s ease;
+}
+
+@keyframes pageFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Premium Cards */
+
+.sn-card-hover {
+  transition: all .3s ease;
+}
+
+.sn-card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow:
+      0 20px 40px rgba(0,0,0,.08),
+      0 8px 18px rgba(255,109,52,.12);
+}
+
+/* Table */
+
+.sn-table tbody tr{
+  transition:.25s;
+}
+
+.sn-table tbody tr:hover{
+  background:rgba(255,109,52,.04);
+}
+
+/* Hero Gradient */
+
+.dashboard-hero{
+    background:
+    linear-gradient(
+      135deg,
+      #1f2937 0%,
+      #2d3748 40%,
+      #374151 100%
+    );
+    position:relative;
+    overflow:hidden;
+}
+
+.dashboard-hero::after{
+    content:'';
+    position:absolute;
+    width:320px;
+    height:320px;
+    right:-80px;
+    top:-80px;
+    border-radius:50%;
+    background:rgba(255,255,255,.05);
+}
+
+.dashboard-hero::before{
+    content:'';
+    position:absolute;
+    width:180px;
+    height:180px;
+    left:-40px;
+    bottom:-40px;
+    border-radius:50%;
+    background:rgba(255,109,52,.10);
+}
+
+/* Quick Action Cards */
+
+.quick-card{
+    transition:.3s;
+    cursor:pointer;
+}
+
+.quick-card:hover{
+    transform:translateY(-5px);
+    border-color:var(--brand-orange);
+}
+
+/* Empty State */
+
+.empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:70px 20px;
+    text-align:center;
+}
+
+.empty-state svg{
+    opacity:.45;
+    margin-bottom:18px;
+}
+
+.empty-state h3{
+    font-size:22px;
+    font-weight:700;
+    margin-bottom:10px;
+}
+
+.empty-state p{
+    color:var(--muted);
+    max-width:430px;
+}
+
+/* Stat Cards */
+
+.stat-card{
+    transition:.3s;
+}
+
+.stat-card:hover{
+    transform:translateY(-5px) scale(1.02);
+}
+
+/* Buttons */
+
+.primary-glow:hover{
+    box-shadow:0 12px 30px rgba(255,109,52,.35);
+}
+
+/* Scrollbar */
+
+.sn-table-scroll::-webkit-scrollbar{
+    height:8px;
+}
+
+.sn-table-scroll::-webkit-scrollbar-thumb{
+    background:rgba(255,109,52,.35);
+    border-radius:20px;
+}
+
+/* Dashboard Fade */
+
+.dashboard-section{
+    animation:fadeUp .4s ease;
+}
+
+@keyframes fadeUp{
+    from{
+        opacity:0;
+        transform:translateY(20px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}

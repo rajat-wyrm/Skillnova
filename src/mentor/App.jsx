@@ -18,6 +18,8 @@ const Profile        = lazy(() => import('./pages/Profile'));
 const Settings       = lazy(() => import('./pages/Settings'));
 const Flags          = lazy(() => import('./pages/Flags'));
 
+sneha-new-ui
+
 const PAGES = {
   dashboard:      <Dashboard />,
   leaderboard:    <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
@@ -33,8 +35,24 @@ const PAGES = {
   flags:          <Suspense fallback={<PageLoader />}><Flags /></Suspense>,
 };
 
+ main
 const MentorApp = () => {
   const [page, setPage] = useState('dashboard');
+
+  // ✨ MOVED INSIDE: Taaki hum Dashboard ko setPage bhej sakein
+  const PAGES = {
+    dashboard:      <Dashboard onNavigate={setPage} />, // 👈 Passed navigation prop here
+    interns:        <Suspense fallback={<PageLoader />}><Interns /></Suspense>,
+    reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
+    projects:       <Suspense fallback={<PageLoader />}><Projects /></Suspense>,
+    knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
+    qa:             <Suspense fallback={<PageLoader />}><QnA /></Suspense>,
+    announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
+    ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
+    profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
+    settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
+  };
+
   return (
     <MainLayout page={page} onNavigate={setPage}>
       {PAGES[page]}
