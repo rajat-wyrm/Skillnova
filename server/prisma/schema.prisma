@@ -109,11 +109,14 @@ model User {
   lastActivityAt  DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  
 
   refreshTokens     RefreshToken[]
   passwordResetTokens PasswordResetToken[]
   reports           Report[]
   attendances       Attendance[]
+  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
+  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
   projectTasks      ProjectTask[]
   announcements     Announcement[]    @relation("AnnouncementAuthor")
   announcementsReads AnnouncementRead[]
@@ -131,11 +134,8 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
-  flagsRaised     Flag[]   @relation("FlaggedByMentor")
-  flagsReceived   Flag[]   @relation("FlaggedIntern")
-  collaborativeTasksCreated CollaborativeTask[] @relation("TaskCreator")
-  collaborativeTasksAssigned CollaborativeTask[] @relation("TaskAssignees")
-  teams          Team[]              @relation("TeamMembers")
+  internRatingsReceived InternRating[] @relation("InternRatings")
+  internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
 
   @@index([role])
   @@index([status])
@@ -143,20 +143,23 @@ model User {
 }
 
 model InternProfile {
-  id             String    @id @default(cuid())
-  userId         String    @unique
-  mentorId       String?
-  startDate      DateTime
-  endDate        DateTime?
-  stipend        Float?
-  projectId      String?
-  totalTasks     Int       @default(0)
-  completedTasks Int       @default(0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  mentor         User?     @relation("MentorRelation", fields: [mentorId], references: [id])
-  project        Project?  @relation(fields: [projectId], references: [id])
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorId      String?
+  mentor        User?    @relation("MentorRelation", fields: [mentorId], references: [id])
+  startDate     DateTime
+  endDate       DateTime?
+  stipend       Float?
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  totalTasks    Int      @default(0)
+  completedTasks Int    @default(0)
+  isTL          Boolean  @default(false) // Team Lead flag for managing interns
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isTL])
 }
 
 model MentorProfile {
@@ -224,6 +227,19 @@ model OtpChallenge {
 
   @@index([email, purpose])
   @@index([expiresAt])
+}
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  role        UserRole  @default(INTERN)
+  createdById String
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id])
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id])
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([code])
 }
 
 model Report {
@@ -327,6 +343,31 @@ model Attendance {
   @@unique([userId, date])
   @@index([date])
   @@index([status])
+}
+
+// ── Projects & Tasks ───────────────────────────────────────
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+model InternRating {
+  id        String   @id @default(cuid())
+  internId  String
+  intern    User     @relation("InternRatings", fields: [internId], references: [id], onDelete: Cascade)
+  mentorId  String
+  mentor    User     @relation("MentorRatingsGiven", fields: [mentorId], references: [id])
+  weekStart DateTime @db.Date // Monday of the week this rating covers
+  score     Float
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([internId, weekStart])
+  @@index([internId])
 }
 
 model Project {

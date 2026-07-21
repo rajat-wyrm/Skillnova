@@ -1,318 +1,415 @@
 // ════════════════════════════════════════════════════════════
 //  Reports, Announcements, Q&A, Attendance, Projects, AI
 // ════════════════════════════════════════════════════════════
-import { Router } from 'express';
-import { z } from 'zod';
-import * as reports from '../controllers/reports.controller.js';
-import * as announcements from '../controllers/announcements.controller.js';
-import * as qa from '../controllers/qa.controller.js';
-import * as attendance from '../controllers/attendance.controller.js';
-import * as projects from '../controllers/projects.controller.js';
-import * as ai from '../controllers/ai.controller.js';
-import * as notif from '../controllers/notifications.controller.js';
-import { authenticate, requireAuth } from '../middleware/auth.js';
-import { requirePermission } from '../middleware/rbac.js';
-import { validate, schemas } from '../middleware/validate.js';
-import collaborativeTasksRouter from './collaborativeTasks.routes.js';
+import { Router } from "express";
+import { z } from "zod";
+import * as reports from "../controllers/reports.controller.js";
+import * as announcements from "../controllers/announcements.controller.js";
+import * as qa from "../controllers/qa.controller.js";
+import * as attendance from "../controllers/attendance.controller.js";
+import * as ratings from "../controllers/ratings.controller.js";
+import * as projects from "../controllers/projects.controller.js";
+import * as ai from "../controllers/ai.controller.js";
+import * as notif from "../controllers/notifications.controller.js";
+import { authenticate, requireAuth } from "../middleware/auth.js";
+import { requirePermission } from "../middleware/rbac.js";
+import { validate, schemas } from "../middleware/validate.js";
 
 const api = Router();
 api.use(authenticate, requireAuth);
 
+const internIdParam = z.object({ internId: z.string().cuid() });
 const idParam = z.object({ id: z.string().cuid() });
 
 
 // ?? Reports ???????????????????????????????????????????????
 api.get(
-  '/reports',
-  requirePermission('reports:read'),
-  validate(schemas.pagination, 'query'),
-  reports.list
+  "/reports",
+  requirePermission("reports:read"),
+  validate(schemas.pagination, "query"),
+  reports.list,
 );
-api.get('/reports/current-week', requirePermission('reports:read'), reports.currentWeek);
-api.get('/reports/stats', requirePermission('reports:read'), reports.stats);
-api.get('/reports/daily-logs', requirePermission('reports:read'), reports.listDailyLogs);
+api.get("/reports/stats", requirePermission("reports:read"), reports.stats);
+api.get(
+  "/reports/:id",
+  requirePermission("reports:read"),
+  validate(idParam, "params"),
+  reports.getById,
+);
 api.post(
-  '/reports/daily-logs',
-  requirePermission('reports:create'),
-  validate(
-    z.object({
-      date: z.coerce.date().optional(),
-      workDone: z.string().trim().min(1),
-      hoursWorked: z.coerce.number().min(0).max(24),
-      technologiesUsed: z.string().trim().max(1000).optional().nullable(),
-      challenges: z.string().trim().max(2000).optional().nullable(),
-      tomorrowPlan: z.string().trim().max(2000).optional().nullable(),
-    })
-  ),
-  reports.createDailyLog
-);
-api.put(
-  '/reports/daily-logs/:id',
-  requirePermission('reports:update'),
-  validate(z.object({ id: z.string().cuid() }), 'params'),
-  validate(
-    z.object({
-      date: z.coerce.date().optional(),
-      workDone: z.string().trim().min(1),
-      hoursWorked: z.coerce.number().min(0).max(24),
-      technologiesUsed: z.string().trim().max(1000).optional().nullable(),
-      challenges: z.string().trim().max(2000).optional().nullable(),
-      tomorrowPlan: z.string().trim().max(2000).optional().nullable(),
-    })
-  ),
-  reports.updateDailyLog
-);
-api.post('/reports/daily-logs/:id/reopen', requirePermission('reports:review'), validate(z.object({ id: z.string().cuid() }), 'params'), reports.reopenDailyLog);
-api.post('/reports/generate-weekly', requirePermission('reports:create'), reports.generateWeekly);
-api.get('/reports/:id', requirePermission('reports:read'), validate(idParam, 'params'), reports.getById);
-api.get('/reports/:id/history', requirePermission('reports:read'), validate(idParam, 'params'), reports.history);
-api.post(
-  '/reports',
-  requirePermission('reports:create'),
+  "/reports",
+  requirePermission("reports:create"),
   validate(
     z.object({
       title: z.string().min(3).max(200),
       content: z.string().min(1).optional(),
       fileUrl: z.string().url().optional(),
       weekNumber: z.number().int().min(1).max(104).optional(),
-      status: z.enum(['DRAFT', 'SUBMITTED']).optional(),
-    })
+    }),
   ),
-  reports.create
+  reports.create,
 );
 api.patch(
-  '/reports/:id',
-  requirePermission('reports:update'),
-  validate(idParam, 'params'),
+  "/reports/:id",
+  requirePermission("reports:update"),
+  validate(idParam, "params"),
   validate(
     z.object({
       title: z.string().min(3).max(200).optional(),
       content: z.string().optional(),
       fileUrl: z.string().url().optional().nullable(),
       weekNumber: z.number().int().min(1).max(104).optional(),
-    })
+    }),
   ),
-  reports.update
+  reports.update,
 );
 api.post('/reports/:id/submit', requirePermission('reports:create'), validate(idParam, 'params'), reports.submit);
 api.patch(
-  '/reports/:id/review',
-  requirePermission('reports:review'),
-  validate(idParam, 'params'),
+  "/reports/:id/review",
+  requirePermission("reports:review"),
+  validate(idParam, "params"),
   validate(
     z.object({
-      status: z.enum(['UNDER_REVIEW', 'REVIEWED', 'NEEDS_REVISION', 'APPROVED', 'REJECTED']),
-      rating: z.coerce.number().int().min(1).max(5).optional(),
+      status: z.enum(["PENDING", "REVIEWED", "REJECTED"]).default("REVIEWED"),
+      score: z.number().min(0).max(10).optional(),
       feedback: z.string().max(2000).optional(),
-    })
+    }),
   ),
-  reports.review
+  reports.review,
 );
-api.delete('/reports/:id', requirePermission('reports:delete'), validate(idParam, 'params'), reports.remove);
+api.delete(
+  "/reports/:id",
+  requirePermission("reports:delete"),
+  validate(idParam, "params"),
+  reports.remove,
+);
 
 // ── Announcements ─────────────────────────────────────────
 api.get(
-  '/announcements',
-  requirePermission('announcements:read'),
-  validate(schemas.pagination, 'query'),
-  announcements.list
+  "/announcements",
+  requirePermission("announcements:read"),
+  validate(schemas.pagination, "query"),
+  announcements.list,
 );
-api.get('/announcements/:id', requirePermission('announcements:read'), validate(idParam, 'params'), announcements.getById);
+api.get(
+  "/announcements/:id",
+  requirePermission("announcements:read"),
+  validate(idParam, "params"),
+  announcements.getById,
+);
 api.post(
-  '/announcements',
-  requirePermission('announcements:create'),
+  "/announcements",
+  requirePermission("announcements:create"),
   validate(
     z.object({
       title: z.string().min(3).max(200),
       body: z.string().min(1).max(5000),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).default('MEDIUM'),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
       pinned: z.boolean().default(false),
       expiresAt: z.coerce.date().optional(),
-    })
+    }),
   ),
-  announcements.create
+  announcements.create,
 );
 api.patch(
-  '/announcements/:id',
-  requirePermission('announcements:update'),
-  validate(idParam, 'params'),
+  "/announcements/:id",
+  requirePermission("announcements:update"),
+  validate(idParam, "params"),
   validate(
     z.object({
       title: z.string().min(3).max(200).optional(),
       body: z.string().min(1).max(5000).optional(),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
       pinned: z.boolean().optional(),
       expiresAt: z.coerce.date().optional(),
-    })
+    }),
   ),
-  announcements.update
+  announcements.update,
 );
-api.patch('/announcements/:id/pin', requirePermission('announcements:update'), validate(idParam, 'params'), announcements.togglePin);
-api.post('/announcements/:id/read', requirePermission('announcements:read'), validate(idParam, 'params'), announcements.markRead);
-api.delete('/announcements/:id', requirePermission('announcements:delete'), validate(idParam, 'params'), announcements.remove);
+api.patch(
+  "/announcements/:id/pin",
+  requirePermission("announcements:update"),
+  validate(idParam, "params"),
+  announcements.togglePin,
+);
+api.post(
+  "/announcements/:id/read",
+  requirePermission("announcements:read"),
+  validate(idParam, "params"),
+  announcements.markRead,
+);
+api.delete(
+  "/announcements/:id",
+  requirePermission("announcements:delete"),
+  validate(idParam, "params"),
+  announcements.remove,
+);
 
 // ── Q&A ───────────────────────────────────────────────────
-api.get('/qa/questions', requirePermission('qa:read'), validate(schemas.pagination, 'query'), qa.listQuestions);
-api.get('/qa/questions/:id', requirePermission('qa:read'), validate(idParam, 'params'), qa.getQuestion);
+api.get(
+  "/qa/questions",
+  requirePermission("qa:read"),
+  validate(schemas.pagination, "query"),
+  qa.listQuestions,
+);
+api.get(
+  "/qa/questions/:id",
+  requirePermission("qa:read"),
+  validate(idParam, "params"),
+  qa.getQuestion,
+);
 api.post(
-  '/qa/questions',
-  requirePermission('qa:create'),
+  "/qa/questions",
+  requirePermission("qa:create"),
   validate(
     z.object({
       title: z.string().min(8).max(200),
       body: z.string().min(10).max(8000),
       category: z.string().max(40).optional(),
-    })
+    }),
   ),
-  qa.createQuestion
+  qa.createQuestion,
 );
 api.post(
-  '/qa/questions/:id/answers',
-  requirePermission('qa:create'),
-  validate(idParam, 'params'),
+  "/qa/questions/:id/answers",
+  requirePermission("qa:create"),
+  validate(idParam, "params"),
   validate(z.object({ body: z.string().min(2).max(8000) })),
-  qa.createAnswer
+  qa.createAnswer,
 );
 api.post(
-  '/qa/upvote',
-  requirePermission('qa:create'),
-  validate(z.object({ type: z.enum(['question', 'answer']), id: z.string().cuid() })),
-  qa.upvote
+  "/qa/upvote",
+  requirePermission("qa:create"),
+  validate(
+    z.object({ type: z.enum(["question", "answer"]), id: z.string().cuid() }),
+  ),
+  qa.upvote,
 );
-api.post('/qa/answers/:id/accept', requirePermission('qa:update'), validate(idParam, 'params'), qa.acceptAnswer);
+api.post(
+  "/qa/answers/:id/accept",
+  requirePermission("qa:update"),
+  validate(idParam, "params"),
+  qa.acceptAnswer,
+);
 
 // ── Attendance ────────────────────────────────────────────
-api.get('/attendance', requirePermission('attendance:read'), validate(schemas.pagination, 'query'), attendance.list);
-api.get('/attendance/summary', requirePermission('attendance:self'), attendance.summary);
+api.get(
+  "/attendance",
+  requirePermission("attendance:read"),
+  validate(schemas.pagination, "query"),
+  attendance.list,
+);
+api.get(
+  "/attendance/summary",
+  requirePermission("attendance:self"),
+  attendance.summary,
+);
+api.get(
+  "/attendance/streak",
+  requirePermission("attendance:self"),
+  attendance.streak,
+);
 api.post(
-  '/attendance/mark',
-  requirePermission('attendance:mark'),
+  "/attendance/leave",
+  requirePermission("attendance:self"),
+  validate(
+    z.object({
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date(),
+      reason: z.string().min(3).max(300),
+    }),
+  ),
+  attendance.requestLeave,
+);
+api.post(
+  "/attendance/mark",
+  requirePermission("attendance:mark"),
   validate(
     z.object({
       userId: z.string().cuid(),
       date: z.coerce.date().optional(),
-      status: z.enum(['PRESENT', 'ABSENT', 'LEAVE', 'HALF_DAY', 'LATE']).default('PRESENT'),
+      status: z
+        .enum(["PRESENT", "ABSENT", "LEAVE", "HALF_DAY", "LATE"])
+        .default("PRESENT"),
       notes: z.string().max(300).optional(),
       checkIn: z.coerce.date().optional(),
       checkOut: z.coerce.date().optional(),
-    })
+    }),
   ),
-  attendance.mark
-);
-api.post(
-  '/attendance/check',
-  requirePermission('attendance:self'),
-  validate(z.object({ status: z.enum(['PRESENT', 'LEAVE']).default('PRESENT'), notes: z.string().max(300).optional() })),
-  attendance.checkInOut
+  attendance.mark,
 );
 
 // ── Projects ──────────────────────────────────────────────
-api.get('/projects', requirePermission('projects:read'), validate(schemas.pagination, 'query'), projects.listProjects);
-api.get('/projects/:id', requirePermission('projects:read'), validate(idParam, 'params'), projects.getProject);
+api.get(
+  "/projects",
+  requirePermission("projects:read"),
+  validate(schemas.pagination, "query"),
+  projects.listProjects,
+);
+api.get(
+  "/projects/:id",
+  requirePermission("projects:read"),
+  validate(idParam, "params"),
+  projects.getProject,
+);
 api.post(
-  '/projects',
-  requirePermission('projects:create'),
+  "/projects",
+  requirePermission("projects:create"),
   validate(
     z.object({
       name: z.string().min(3).max(120),
       description: z.string().max(2000).optional(),
-      status: z.enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED']).default('ACTIVE'),
+      status: z
+        .enum(["PLANNING", "ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"])
+        .default("ACTIVE"),
       startDate: z.coerce.date().optional(),
       endDate: z.coerce.date().optional(),
-    })
+    }),
   ),
-  projects.createProject
+  projects.createProject,
 );
 api.patch(
-  '/projects/:id',
-  requirePermission('projects:update'),
-  validate(idParam, 'params'),
+  "/projects/:id",
+  requirePermission("projects:update"),
+  validate(idParam, "params"),
   validate(
     z.object({
       name: z.string().min(3).max(120).optional(),
       description: z.string().max(2000).optional(),
-      status: z.enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED']).optional(),
+      status: z
+        .enum(["PLANNING", "ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"])
+        .optional(),
       startDate: z.coerce.date().optional(),
       endDate: z.coerce.date().optional(),
-    })
+    }),
   ),
-  projects.updateProject
+  projects.updateProject,
 );
-api.delete('/projects/:id', requirePermission('projects:delete'), validate(idParam, 'params'), projects.deleteProject);
+api.delete(
+  "/projects/:id",
+  requirePermission("projects:delete"),
+  validate(idParam, "params"),
+  projects.deleteProject,
+);
 
-api.get('/tasks', requirePermission('tasks:read'), validate(schemas.pagination, 'query'), projects.listTasks);
+api.get(
+  "/tasks",
+  requirePermission("tasks:read"),
+  validate(schemas.pagination, "query"),
+  projects.listTasks,
+);
 api.post(
-  '/tasks',
-  requirePermission('tasks:create'),
+  "/tasks",
+  requirePermission("tasks:create"),
   validate(
     z.object({
       projectId: z.string().cuid(),
       assigneeId: z.string().cuid().optional().nullable(),
       title: z.string().min(3).max(200),
       description: z.string().max(2000).optional(),
-      status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).default('TODO'),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+      status: z
+        .enum(["TODO", "IN_PROGRESS", "REVIEW", "DONE", "BLOCKED"])
+        .default("TODO"),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
       dueDate: z.coerce.date().optional(),
-    })
+    }),
   ),
-  projects.createTask
+  projects.createTask,
 );
 api.patch(
-  '/tasks/:id',
-  requirePermission('tasks:update'),
-  validate(idParam, 'params'),
+  "/tasks/:id",
+  requirePermission("tasks:update"),
+  validate(idParam, "params"),
   validate(
     z.object({
       title: z.string().min(3).max(200).optional(),
       description: z.string().max(2000).optional(),
-      status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).optional(),
-      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+      status: z
+        .enum(["TODO", "IN_PROGRESS", "REVIEW", "DONE", "BLOCKED"])
+        .optional(),
+      priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
       dueDate: z.coerce.date().optional(),
       assigneeId: z.string().cuid().nullable().optional(),
-    })
+    }),
   ),
-  projects.updateTask
+  projects.updateTask,
 );
-api.delete('/tasks/:id', requirePermission('tasks:delete'), validate(idParam, 'params'), projects.deleteTask);
+api.delete(
+  "/tasks/:id",
+  requirePermission("tasks:delete"),
+  validate(idParam, "params"),
+  projects.deleteTask,
+);
 
 // ── AI Assistant ──────────────────────────────────────────
 api.post(
-  '/ai/chat',
-  requirePermission('ai:use'),
+  "/ai/chat",
+  requirePermission("ai:use"),
   validate(
     z.object({
       message: z.string().min(1).max(4000),
       sessionId: z.string().cuid().optional(),
-    })
+    }),
   ),
-  ai.chat
+  ai.chat,
 );
 api.post(
-  '/ai/chat/stream',
-  requirePermission('ai:use'),
+  "/ai/chat/stream",
+  requirePermission("ai:use"),
   validate(
     z.object({
       message: z.string().min(1).max(4000),
       sessionId: z.string().cuid().optional(),
-    })
+    }),
   ),
-  ai.streamChat
+  ai.streamChat,
 );
-api.get('/ai/sessions', requirePermission('ai:use'), ai.listSessions);
-api.get('/ai/sessions/:id', requirePermission('ai:use'), validate(idParam, 'params'), ai.getSession);
-api.delete('/ai/sessions/:id', requirePermission('ai:use'), validate(idParam, 'params'), ai.deleteSession);
+api.get("/ai/sessions", requirePermission("ai:use"), ai.listSessions);
+api.get(
+  "/ai/sessions/:id",
+  requirePermission("ai:use"),
+  validate(idParam, "params"),
+  ai.getSession,
+);
+api.delete(
+  "/ai/sessions/:id",
+  requirePermission("ai:use"),
+  validate(idParam, "params"),
+  ai.deleteSession,
+);
 
 // ── Notifications ─────────────────────────────────────────
-api.get('/notifications', validate(schemas.pagination, 'query'), notif.list);
-api.post('/notifications/:id/read', validate(idParam, 'params'), notif.markRead);
-api.post('/notifications/read-all', notif.markAllRead);
+api.get("/notifications", validate(schemas.pagination, "query"), notif.list);
+api.post(
+  "/notifications/:id/read",
+  validate(idParam, "params"),
+  notif.markRead,
+);
+api.post("/notifications/read-all", notif.markAllRead);
 
 // ── Analytics ─────────────────────────────────────────────
-api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
-api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
-api.get('/analytics/leaderboard', notif.leaderboard);
-
-// ── Collaborative Tasks ───────────────────────────────────
-api.use('/collab-tasks', collaborativeTasksRouter);
+api.get(
+  "/analytics/platform",
+  requirePermission("users:read"),
+  notif.platformStats,
+);
+api.get(
+  "/analytics/interns",
+  requirePermission("users:read"),
+  notif.internPerformance,
+);
+// ── Ratings ───────────────────────────────────────────────
+api.post(
+  "/interns/:internId/rating",
+  requirePermission("ratings:manage"),
+  validate(internIdParam, "params"),
+  validate(ratings.rateSchema),
+  ratings.giveRating,
+);
+api.get(
+  "/interns/:internId/ratings",
+  validate(internIdParam, "params"),
+  ratings.listRatings,
+);
 
 export default api;
