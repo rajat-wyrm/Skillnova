@@ -73,6 +73,12 @@ model User {
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
 
+  // Phase 1: Learning / Badges / Completion
+  roadmapAssignments RoadmapAssignment[]
+  milestoneProgress  MilestoneProgress[]
+  badgeAwards        BadgeAward[]
+  internshipProgress InternshipProgress?
+
   @@index([role])
   @@index([status])
   @@index([department])
@@ -618,4 +624,131 @@ model MeetingAttendee {
 
   @@unique([meetingId, userId])
   @@index([userId])
+}
+
+// ════════════════════════════════════════════════════════════
+//  PHASE 1 — Learning Roadmap, Achievement Badges,
+//  Internship Completion Tracker
+// ════════════════════════════════════════════════════════════
+
+enum RoadmapStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  skillTags   String[]
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  milestones  LearningMilestone[]
+  assignments RoadmapAssignment[]
+
+  @@index([createdById])
+}
+
+model LearningMilestone {
+  id          String   @id @default(cuid())
+  pathId      String
+  path        LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  resourceUrl String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress    MilestoneProgress[]
+
+  @@index([pathId])
+}
+
+model RoadmapAssignment {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pathId       String
+  path         LearningPath  @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  assignedById String
+  mentorGoal   String?
+  status       RoadmapStatus @default(NOT_STARTED)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@index([status])
+}
+
+model MilestoneProgress {
+  id          String    @id @default(cuid())
+  milestoneId String
+  milestone   LearningMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([milestoneId, userId])
+  @@index([userId])
+}
+
+enum BadgeType {
+  ATTENDANCE
+  PROJECT_COMPLETION
+  SKILL_MASTERY
+  TOP_PERFORMER
+  CUSTOM
+}
+
+model Badge {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  icon        String?   // icon key from public/icons.svg, or emoji fallback
+  type        BadgeType
+  criteria    Json?     // rule definition evaluated by badge.service.js, e.g. {"metric":"attendancePct","gte":95}
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  awards      BadgeAward[]
+
+  @@index([type])
+}
+
+model BadgeAward {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+  showcase  Boolean  @default(true)
+  note      String?
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model InternshipProgress {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskPct       Float     @default(0)
+  attendancePct Float     @default(0)
+  learningPct   Float     @default(0)
+  mentorEvalPct Float     @default(0)
+  overallPct    Float     @default(0)
+  finalStatus   String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED | TERMINATED
+  computedAt    DateTime  @updatedAt
+
+  @@index([finalStatus])
 }

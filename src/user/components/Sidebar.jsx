@@ -6,6 +6,7 @@ import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
   LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut,
+  Map, Award,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
@@ -16,6 +17,8 @@ const MENU = [
   { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },
   { id: 'reports',        label: 'My Reports',     icon: FileText        },
   { id: 'attendance',     label: 'Attendance',     icon: CalendarCheck   },
+  { id: 'roadmap',        label: 'Learning Roadmap', icon: Map           },
+  { id: 'badges',         label: 'Badges',         icon: Award           },
   { id: 'calendar',       label: 'Calendar',       icon: Calendar        },
   { id: 'files',          label: 'Files',          icon: Folder          },
   { id: 'ai',             label: 'AI Assistant',   icon: Bot             },
