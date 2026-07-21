@@ -23,6 +23,9 @@
     "setup": "npm install && npm run prisma:generate && npm run prisma:push && npm run seed",
     "health": "node -e \"import('./src/utils/healthcheck.js').then(m=>m.run())\""
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
@@ -40,6 +43,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "nanoid": "^5.0.9",
+    "node-cron": "^4.6.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "socket.io": "^4.8.1",
@@ -51,10 +55,5 @@
     "globals": "^15.14.0",
     "prettier": "^3.4.2",
     "prisma": "^5.22.0"
-  },
-  "allowScripts": {
-    "@prisma/client@5.22.0": true,
-    "@prisma/engines@5.22.0": true,
-    "prisma@5.22.0": true
   }
 }
