@@ -194,6 +194,15 @@ const Login = () => {
             </div>
             {pwdState === 'error' && <p id={`${passwordId}-error`} className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
           </div>
+          <div className="flex justify-end" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+            <a 
+              href="/forgot-password" 
+              className="text-sm hover:underline"
+              style={{ color: '#ff6d34', fontSize: '13px' }}
+            >
+              Forgot Password?
+            </a>
+          </div>
 
           {formError && (
             <div className="auth-error" role="alert"><Icon.Alert /><span>{formError}</span></div>

@@ -25,7 +25,7 @@ export const chat = asyncHandler(async (req, res) => {
         userId: req.user.id,
         title: message.slice(0, 60),
       },
-    });
+});
   }
 
   const history = await prisma.chatMessage.findMany({

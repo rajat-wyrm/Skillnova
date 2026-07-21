@@ -1,9 +1,5 @@
-// ════════════════════════════════════════════════════════════
-//  App.jsx — Root component
-//  Hydrates auth, mounts the right app (admin/mentor/intern)
-//  based on the authenticated user's role. Mounts the global
-//  AIAssistant widget so every logged-in user has access.
-// ════════════════════════════════════════════════════════════
+import ForgotPassword from './auth/pages/ForgotPassword';
+import ResetPassword from './auth/pages/ResetPassword';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
@@ -39,17 +35,24 @@ const App = () => {
       connectSocket(useAuthStore.getState().accessToken);
     }
     return () => {
-      if (step !== 'authenticated') disconnectSocket();
+      if (step!== 'authenticated') disconnectSocket();
     };
   }, [user, step]);
 
-  // Google OAuth callback — catch before AuthGate so no login flash
-  if (window.location.pathname === '/auth/callback') {
+  const path = window.location.pathname;
+  
+  if (path === '/forgot-password') {
+    return <ForgotPassword />;
+  }
+  if (path.startsWith('/reset-password/')) {
+    return <ResetPassword />;
+  }
+  if (path === '/auth/callback') {
     return <AuthCallback />;
   }
 
   if (!hydrated) return <LoaderScreen label="Initialising SkillNova…" />;
-  if (!user || step !== 'authenticated') return <AuthGate />;
+  if (!user || step!== 'authenticated') return <AuthGate />;
 
   return (
     <>
@@ -59,9 +62,9 @@ const App = () => {
           ⚠️ You are offline. Some features may be unavailable.
         </div>
       )}
-      {user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? (
+      {user.role === 'SUPER_ADMIN' || user.role === 'ADMIN'? (
         <AdminApp />
-      ) : user.role === 'MENTOR' ? (
+      ) : user.role === 'MENTOR'? (
         <MentorApp />
       ) : (
         <UserApp />

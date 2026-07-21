@@ -47,6 +47,8 @@ model User {
   twoFactorEnabled Boolean      @default(false)
   emailVerified   Boolean       @default(false)
   emailVerifiedAt DateTime?
+  resetPasswordToken String?
+  resetPasswordExpire DateTime?
   lastLoginAt     DateTime?
   lastLoginIp     String?
   failedAttempts  Int           @default(0)

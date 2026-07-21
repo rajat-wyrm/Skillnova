@@ -22,6 +22,7 @@ import {
 } from '../utils/auth.js';
 import { config } from '../config/index.js';
 import { memoryStore } from '../utils/redis.js';
+import { sendEmail } from '../services/email.services.js';
 import { getClientIp, getUserAgent } from '../middleware/auth.js';
 import { audit } from '../services/audit.service.js';
 import { logger } from '../utils/logger.js';
@@ -375,4 +376,67 @@ export const enableTotp = asyncHandler(async (req, res) => {
   });
   await audit({ userId: req.user.id, action: 'auth.2fa.enabled', req });
   res.json({ ok: true });
+});
+// @desc    Forgot Password - sends email
+// @route   POST /api/auth/forgot-password
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw ApiError.badRequest('Email is required');
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw ApiError.notFound('User not found');
+
+  // 1. Generate token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  // 2. Save to DB with 15 min expiry
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { 
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000)
+    }
+  });
+
+  // 3. Send email
+  const resetLink = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+  const html = `
+    <h2>Reset Your SkillNova Password</h2>
+    <p>Hi ${user.name},</p>
+    <a href="${resetLink}">Click here to reset</a>
+    <p>This link expires in 15 minutes</p>
+  `;
+  await sendEmail(user.email, "Reset Your SkillNova Password", html);
+
+  res.json({ message: 'Password reset email sent' });
+});
+
+// @desc    Reset Password with token
+// @route   POST /api/auth/reset-password/:token
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await prisma.user.findFirst({
+    where: { 
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { gt: new Date() }
+    }
+  });
+
+  if (!user) throw ApiError.badRequest('Invalid or expired token');
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { 
+      passwordHash: hashedPassword,
+      resetPasswordToken: null,
+      resetPasswordExpire: null
+    }
+  });
+
+  res.json({ message: 'Password reset successful' });
 });
