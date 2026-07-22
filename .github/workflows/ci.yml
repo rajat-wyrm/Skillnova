@@ -16,22 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-<<<<<<< HEAD
         working-directory: server
-=======
-        working-directory: backend
->>>>>>> pradeep/main
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-<<<<<<< HEAD
           cache-dependency-path: server/package-lock.json
-=======
-          cache-dependency-path: backend/package-lock.json
->>>>>>> pradeep/main
       - run: npm ci
       - run: npm run lint
 
@@ -40,22 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-<<<<<<< HEAD
         working-directory: server
-=======
-        working-directory: backend
->>>>>>> pradeep/main
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-<<<<<<< HEAD
           cache-dependency-path: server/package-lock.json
-=======
-          cache-dependency-path: backend/package-lock.json
->>>>>>> pradeep/main
       - run: npm ci
       - run: npm test
 
@@ -68,15 +52,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-<<<<<<< HEAD
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run lint
-=======
-          cache-dependency-path: frontend/package-lock.json
-      - run: cd frontend && npm ci
-      - run: cd frontend && npm run lint
->>>>>>> pradeep/main
 
   frontend-build:
     name: Frontend build
@@ -93,15 +71,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-<<<<<<< HEAD
           cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run build
-=======
-          cache-dependency-path: frontend/package-lock.json
-      - run: cd frontend && npm ci
-      - run: cd frontend && npm run build
->>>>>>> pradeep/main
 
   full-check:
     name: All checks

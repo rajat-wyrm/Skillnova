@@ -39,17 +39,7 @@ export const chat = asyncHandler(async (req, res) => {
     data: { sessionId: session.id, role: 'user', content: message },
   });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
-  let result;
-  try {
-    result = await Promise.race([
-      chatCompletion({ user: req.user, history, userMessage: message }),
-      new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('AI request timed out')))),
-    ]);
-  } finally {
-    clearTimeout(timeout);
-  }
+  const result = await chatCompletion({ user: req.user, history, userMessage: message });
   const assistantMsg = await prisma.chatMessage.create({
     data: {
       sessionId: session.id,
@@ -98,8 +88,6 @@ export const streamChat = asyncHandler(async (req, res) => {
   res.flushHeaders?.();
 
   let full = '';
-  const streamController = new AbortController();
-  const streamTimeout = setTimeout(() => streamController.abort(), 30_000);
   try {
     for await (const chunk of chatCompletionStream({ user: req.user, history, userMessage: message })) {
       full += chunk;
@@ -112,7 +100,6 @@ export const streamChat = asyncHandler(async (req, res) => {
   } catch (err) {
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
   } finally {
-    clearTimeout(streamTimeout);
     res.end();
   }
 });

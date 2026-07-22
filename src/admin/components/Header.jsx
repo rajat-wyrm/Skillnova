@@ -6,18 +6,16 @@ import { Bell, Search, Shield, Sun, Moon, Menu } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { useNotifications } from '../../shared/hooks/useNotifications';
 import { formatRelative, initials } from '../../lib/utils';
-import { APP_CONSTANTS } from '../../shared/config/constants';
-import { getRoleLabel } from '../../shared/config/roleLabels';
 
 const Header = ({ title, onMenuToggle }) => {
   const { user } = useAuthStore();
   const [showNotif, setShowNotif] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem(APP_CONSTANTS.THEME_STORAGE_KEY) === 'dark');
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const { items, unreadCount, markRead, markAllRead } = useNotifications();
 
   useEffect(() => {
-    if (dark) { document.documentElement.classList.add('dark'); localStorage.setItem(APP_CONSTANTS.THEME_STORAGE_KEY, 'dark'); }
-    else { document.documentElement.classList.remove('dark'); localStorage.setItem(APP_CONSTANTS.THEME_STORAGE_KEY, 'light'); }
+    if (dark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
+    else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
   }, [dark]);
 
   return (
@@ -42,9 +40,7 @@ const Header = ({ title, onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-1 relative">
-        <button onClick={() => setDark(!dark)} className="p-2 rounded-lg" style={{ color: 'var(--muted)' }}
-          aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-          aria-pressed={dark}>
+        <button onClick={() => setDark(!dark)} className="p-2 rounded-lg" style={{ color: 'var(--muted)' }}>
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
         <button onClick={() => setShowNotif(!showNotif)} className="relative p-2 rounded-lg" style={{ color: 'var(--muted)' }}>
@@ -82,7 +78,7 @@ const Header = ({ title, onMenuToggle }) => {
         </div>
         <div className="hidden md:block">
           <p className="text-xs font-semibold leading-none" style={{ color: 'var(--text)' }}>{user?.name}</p>
-          <p className="text-xs mt-0.5 font-medium" style={{ color: '#ff6d34' }}>{getRoleLabel(user?.role)}</p>
+          <p className="text-xs mt-0.5 font-medium" style={{ color: '#ff6d34' }}>{user?.role}</p>
         </div>
       </div>
     </header>

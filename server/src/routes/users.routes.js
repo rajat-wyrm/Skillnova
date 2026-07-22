@@ -48,6 +48,8 @@ router.patch(
       dateOfBirth: z.coerce.date().optional().nullable(),
       linkedinUrl: z.string().url().optional().nullable(),
       skills: z.string().max(500).optional().nullable(),
+      educationJson: z.string().max(8000).optional().nullable(),
+      experienceJson: z.string().max(8000).optional().nullable(),
       avatarUrl: z.string().url().optional().nullable(),
       rating: z.coerce.number().min(0).max(10).optional(),
     })

@@ -1,10 +1,9 @@
 // ════════════════════════════════════════════════════════════
 //  AUTH — Login.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
-import { useState, useId, useEffect } from 'react';
+import { useState, useId } from 'react';
 import { useAuthStore } from '../../lib/auth';
 import notify from '../../lib/toast';
-import { APP_CONSTANTS } from '../../shared/config/constants';
 import '../auth.css';
 
 const Icon = {
@@ -45,15 +44,6 @@ const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 const Login = () => {
   const uid = useId();
-  const [demoAccounts, setDemoAccounts] = useState([]);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/demo-accounts`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => setDemoAccounts(Array.isArray(d.accounts) ? d.accounts : []))
-      .catch(() => setDemoAccounts([]));
-  }, []);
-
   const emailId = `${uid}-email`;
   const passwordId = `${uid}-password`;
 
@@ -63,15 +53,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
-  const [formError, setFormError] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const error = params.get('error');
-    if (error) {
-      window.history.replaceState({}, '', window.location.pathname);
-      return decodeURIComponent(error);
-    }
-    return '';
-  });
+  const [formError, setFormError] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false });
   const [fieldError, setFieldError] = useState({ email: '', password: '' });
 
@@ -120,10 +102,10 @@ const Login = () => {
     }
   };
 
-  const emailState = touched.email && !formError
+  const emailState = touched.email
     ? (fieldError.email ? 'error' : email ? 'success' : '')
     : '';
-  const pwdState = touched.password && !formError
+  const pwdState = touched.password
     ? (fieldError.password ? 'error' : password ? 'success' : '')
     : '';
 
@@ -133,13 +115,10 @@ const Login = () => {
 
       <div className="auth-card" role="main" aria-label="Sign in to SkillNova">
         <div className="flex justify-center mb-3">
-          <img src={APP_CONSTANTS.LOGO_PATH} alt="SkillNova" style={{ height: 44, mixBlendMode: 'multiply' }} />
+          <img src="/logo.png" alt="SkillNova" style={{ height: 44, mixBlendMode: 'multiply' }} />
         </div>
         <h1 className="auth-title">Welcome Back</h1>
         <p className="auth-subtitle">Sign in to your SkillNova account to continue.</p>
-        <p className="auth-footer-text" style={{ marginTop: -12, marginBottom: 18 }}>
-          New to SkillNova? <a className="auth-link" href="/register">Create Account</a>
-        </p>
 
         <form id="main-form" onSubmit={handleSubmit} noValidate aria-label="Login form">
           <div className={`auth-form-group ${emailState === 'error' ? 'is-error' : emailState === 'success' ? 'is-success' : ''}`}>
@@ -157,8 +136,6 @@ const Login = () => {
                 value={email}
                 autoComplete="email"
                 aria-required="true"
-                aria-label="Email address"
-                aria-describedby={`${emailId}-error`}
                 aria-invalid={emailState === 'error' ? 'true' : undefined}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -166,17 +143,14 @@ const Login = () => {
               {emailState === 'success' && <span className="auth-input-status"><Icon.Check /></span>}
               {emailState === 'error' && <span className="auth-input-status"><Icon.X /></span>}
             </div>
-            {emailState === 'error' && <p id={`${emailId}-error`} className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.email}</p>}
+            {emailState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.email}</p>}
             {emailState === 'success' && <p className="auth-msg auth-msg-success"><Icon.Check /> Email looks good.</p>}
           </div>
 
           <div className={`auth-form-group ${pwdState === 'error' ? 'is-error' : pwdState === 'success' ? 'is-success' : ''}`}>
-            <div className="auth-label-row">
-              <label className="auth-label" htmlFor={passwordId}>
-                Password <span className="auth-required" aria-label="required">*</span>
-              </label>
-              <a className="auth-link auth-small-link" href="/forgot-password">Forgot Password?</a>
-            </div>
+            <label className="auth-label" htmlFor={passwordId}>
+              Password <span className="auth-required" aria-label="required">*</span>
+            </label>
             <div className="auth-input-wrap has-icon">
               <span className="auth-input-icon"><Icon.Lock /></span>
               <input
@@ -188,8 +162,6 @@ const Login = () => {
                 value={password}
                 autoComplete="current-password"
                 aria-required="true"
-                aria-label="Password"
-                aria-describedby={`${passwordId}-error`}
                 style={{ paddingRight: '42px' }}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -198,7 +170,7 @@ const Login = () => {
                 <Icon.Eye open={showPwd} />
               </button>
             </div>
-            {pwdState === 'error' && <p id={`${passwordId}-error`} className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
+            {pwdState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
           </div>
 
           {formError && (
@@ -210,12 +182,15 @@ const Login = () => {
           </button>
         </form>
 
-        <GoogleSignInButton />
-
         <div className="auth-divider"><span>Demo Accounts</span></div>
 
         <div className="auth-demo-grid">
-          {demoAccounts.map((d) => (
+          {[
+            { label: 'Super Admin', email: 'superadmin@skillnova.com', pwd: 'SuperAdmin#2026', color: '#7C3AED' },
+            { label: 'Admin',       email: 'admin@skillnova.com',      pwd: 'Admin#2026',      color: '#ff6d34' },
+            { label: 'Mentor',      email: 'mentor@skillnova.com',     pwd: 'Mentor#2026',     color: '#7C3AED' },
+            { label: 'Intern',      email: 'rahul@skillnova.com',      pwd: 'User#2026',       color: '#00bea3' },
+          ].map((d) => (
             <button
               key={d.email}
               type="button"
@@ -238,49 +213,6 @@ const Login = () => {
         </p>
       </div>
     </div>
-  );
-};
-
-// ── Google Sign-In Button ────────────────────────────────
-const GoogleSignInButton = () => {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google/status`)
-      .then((r) => r.json())
-      .then((d) => setEnabled(d.enabled))
-      .catch(() => {});
-  }, []);
-
-  if (!enabled) return null;
-
-  return (
-    <button
-      type="button"
-      className="auth-button"
-      style={{
-        marginTop: 14,
-        background: '#fff',
-        border: '1px solid #dadce0',
-        color: '#3c4043',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        fontWeight: 500,
-      }}
-      onClick={() => {
-        window.location.href = `${import.meta.env.VITE_API_URL || '/api/v1'}/auth/google?returnTo=/`;
-      }}
-    >
-      <svg width="18" height="18" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      </svg>
-      Continue with Google
-    </button>
   );
 };
 
