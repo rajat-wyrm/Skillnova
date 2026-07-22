@@ -3,11 +3,12 @@
 // ════════════════════════════════════════════════════════════
 import { create } from 'zustand';
 import api, { getErrorMessage } from './api';
-import { APP_CONSTANTS } from '../shared/config/constants';
+
+const STORAGE_KEY = 'skillnova.auth';
 
 const loadFromStorage = () => {
   try {
-    const raw = localStorage.getItem(APP_CONSTANTS.AUTH_STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -18,11 +19,11 @@ const persist = (state) => {
   try {
     if (state.user && state.accessToken) {
       localStorage.setItem(
-        APP_CONSTANTS.AUTH_STORAGE_KEY,
+        STORAGE_KEY,
         JSON.stringify({ user: state.user, accessToken: state.accessToken })
       );
     } else {
-      localStorage.removeItem(APP_CONSTANTS.AUTH_STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
     }
   } catch {
     /* ignore */
@@ -42,24 +43,17 @@ export const useAuthStore = create((set, get) => ({
 
   hydrate: async () => {
     if (get().hydrated) return;
-    // Always try /auth/me first — validates httpOnly cookies (Google OAuth uses these)
-    try {
-      const { data } = await api.get('/auth/me');
-      set({
-        user: data.user,
-        permissions: data.permissions ?? derivePermissions(data.user.role),
-        step: 'authenticated',
-        hydrated: true,
-      });
-      persist(get());
-      return;
-    } catch {
-      // No valid cookie — fall back to localStorage
-    }
     const persisted = loadFromStorage();
     if (persisted?.user && persisted?.accessToken) {
       set({ user: persisted.user, accessToken: persisted.accessToken, hydrated: true });
-      persist(get());
+      try {
+        const { data } = await api.get('/auth/me');
+        set({ user: data.user, permissions: data.permissions, hydrated: true });
+        persist(get());
+      } catch {
+        set({ user: null, accessToken: null, hydrated: true });
+        persist(get());
+      }
     } else {
       set({ hydrated: true });
     }

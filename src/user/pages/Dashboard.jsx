@@ -102,14 +102,14 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </MotionDiv>
 
-      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Reports"   value={stats?.total ?? 0}    icon={ClipboardList} color="#ff6d34" />
         <StatCard title="Reviewed"        value={stats?.reviewed ?? 0} icon={CheckCircle}   color="#00bea3" />
         <StatCard title="Attendance Rate" value={`${attendance?.rate ?? 0}%`} icon={CalendarCheck} color="#ff6d34" />
         <StatCard title="Avg Score"       value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
       </div>
 
-      <div className="grid grid-cols-1 min-[640px]:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>
           {myTasksByStatus.length === 0 ? (

@@ -80,6 +80,42 @@ const MentorDashboard = () => {
           </table>
         </div>
       </Card>
+      <Card className="p-5">
+  <SectionHeader
+    title="⚡ Quick Actions"
+    subtitle="Frequently used mentor actions"
+  />
+
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#ff6d34" }}
+    >
+      📝 Review Reports
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#00bea3" }}
+    >
+      📋 Assign Tasks
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#7C3AED" }}
+    >
+      📅 Attendance
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#2563eb" }}
+    >
+      📊 View Analytics
+    </button>
+  </div>
+</Card>
     </div>
   );
 };

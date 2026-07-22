@@ -2,20 +2,21 @@
 //  Socket.io client with auth + auto-reconnect
 // ════════════════════════════════════════════════════════════
 import { io } from 'socket.io-client';
-import { APP_CONSTANTS } from '../shared/config/constants';
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 let socket = null;
 
 export function connectSocket(token) {
   if (socket?.connected) return socket;
   if (socket) socket.disconnect();
-  socket = io('/', {
+  socket = io(SOCKET_URL || '/', {
     transports: ['websocket', 'polling'],
     auth: { token },
     withCredentials: true,
     reconnection: true,
-    reconnectionDelay: APP_CONSTANTS.SOCKET_RECONNECT_DELAY,
-    reconnectionDelayMax: APP_CONSTANTS.SOCKET_RECONNECT_DELAY_MAX,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 10000,
     reconnectionAttempts: Infinity,
   });
 
@@ -42,3 +43,5 @@ export function disconnectSocket() {
 export function getSocket() {
   return socket;
 }
+
+export default { connectSocket, disconnectSocket, getSocket };

@@ -14,7 +14,6 @@ import { Plus, AlertCircle, Clock, CheckCircle, Loader2, GripVertical } from 'lu
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
-import { getSocket } from '../../lib/socket';
 
 const COLUMNS = [
   { id: 'TODO',        title: 'To do',         color: '#94a3b8' },
@@ -188,21 +187,6 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
 
   useEffect(() => {
     fetch();
-    const socket = getSocket();
-    if (!socket) return undefined;
-    const onTaskUpdated = (data) => {
-      if (data.projectId === projectId) {
-        setTasks((arr) => arr.map((t) => (t.id === data.taskId ? { ...t, ...data.task } : t)));
-      }
-    };
-    const onDashboardRefresh = () => { fetch(); };
-    socket.emit('join:project', projectId);
-    socket.on('task:updated', onTaskUpdated);
-    socket.on('dashboard:refresh', onDashboardRefresh);
-    return () => {
-      socket.off('task:updated', onTaskUpdated);
-      socket.off('dashboard:refresh', onDashboardRefresh);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
