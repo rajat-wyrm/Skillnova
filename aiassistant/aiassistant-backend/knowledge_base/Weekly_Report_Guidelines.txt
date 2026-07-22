@@ -1,0 +1,44 @@
+---
+source: Weekly_Report_Guidelines.txt
+topic: Reports
+importance: high
+last_updated: 2026-03-22
+author: HR Department
+---
+
+Weekly Report Submission Guidelines
+
+All interns are required to submit a weekly progress report documenting their work, learnings, and challenges.
+
+1. Submission Schedule
+- Reports must be submitted every Friday before 6:00 PM IST.
+- Late submissions will be flagged and may affect your performance rating.
+- If you will be absent on Friday, submit your report on Thursday.
+
+2. Report Structure
+Your weekly report should include the following sections:
+- Summary: Brief overview of what you accomplished this week (2-3 sentences).
+- Tasks Completed: List of specific tasks you finished, with descriptions.
+- Tasks In Progress: Work that is ongoing and expected completion date.
+- Challenges Faced: Any blockers or difficulties encountered.
+- Learnings: Key technical or soft skills you developed this week.
+- Plan for Next Week: What you intend to work on in the coming week.
+
+3. How to Submit
+- Navigate to "My Reports" from the sidebar.
+- Click the "New Report" button.
+- Fill in all required fields.
+- Click "Submit" — you will receive a confirmation notification.
+- You can view past reports and their review status in the same section.
+
+4. Review Process
+- Your mentor will review your report within 3 business days.
+- Reports are scored on a scale of 1-10 based on thoroughness, clarity, and accuracy.
+- Constructive feedback will be provided alongside the score.
+- You can view your score and feedback in the "My Reports" section.
+
+5. Best Practices
+- Be specific: "Implemented user authentication using JWT" is better than "Worked on authentication."
+- Include metrics where possible: "Reduced API response time by 40%."
+- Be honest about challenges — this shows self-awareness and maturity.
+- Proofread your report before submission.
