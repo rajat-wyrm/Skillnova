@@ -1,0 +1,88 @@
+name: Create Weekly Discussion
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  discussions: write
+
+jobs:
+  create-discussion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Weekly Tech Discussion
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const now = new Date();
+            const week = Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7);
+            const title = `Weekly Tech Talk - Week ${week}`;
+            const body = [
+              `## 🎯 Weekly Tech Discussion - Week ${week}`,
+              "",
+              "Welcome to our weekly tech discussion! Share what you're working on, ask questions, or discuss the latest in tech.",
+              "",
+              "### Discussion Prompts:",
+              "- What are you building this week?",
+              "- Any technical challenges you're facing?",
+              "- Cool libraries or tools you've discovered?",
+              "- Career advice or industry trends?",
+              "",
+              "### Skillnova Updates:",
+              "- Check out the latest commits and PRs",
+              "- Review open issues and contribute",
+              "- Share feedback on the platform",
+              "",
+              "Feel free to start a conversation below! 👇"
+            ].join("\n");
+
+            try {
+              const repo = context.repo;
+              const categories = await github.rest.graphql({
+                query: `
+                  query($owner: String!, $name: String!) {
+                    repository(owner: $owner, name: $name) {
+                      discussionCategories(first: 10) {
+                        nodes { id name slug }
+                      }
+                    }
+                  }
+                `,
+                owner: repo.owner,
+                name: repo.repo,
+              });
+
+              const generalCat = categories.repository.discussionCategories.nodes.find(
+                c => c.slug === 'general'
+              );
+
+              if (generalCat) {
+                await github.rest.graphql({
+                  mutation: `
+                    mutation($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+                      createDiscussion(input: {
+                        repositoryId: $repositoryId,
+                        categoryId: $categoryId,
+                        title: $title,
+                        body: $body
+                      }) {
+                        discussion { id url }
+                      }
+                    }
+                  `,
+                  repositoryId: (await github.rest.repos.get({
+                    owner: repo.owner,
+                    name: repo.repo,
+                  })).data.node_id,
+                  categoryId: generalCat.id,
+                  title: title,
+                  body: body,
+                });
+                console.log(`Created discussion: ${title}`);
+              }
+            } catch (e) {
+              console.log('Discussions may not be enabled:', e.message);
+            }
