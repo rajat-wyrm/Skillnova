@@ -79,11 +79,7 @@ See [`docs/architecture.md`](docs/architecture.md) for details.
 
 ## What this does NOT touch
 
-<<<<<<< HEAD
 - `server/` (existing Express API)
-=======
-- `backend/` (existing Express API)
->>>>>>> pradeep/main
 - `src/` (existing React app)
 - top-level `docker-compose.yml`, `Dockerfile.frontend`, `nginx.conf`
 - top-level `.github/workflows/ci.yml`

@@ -101,6 +101,11 @@ async function main() {
     { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0, currentStreak: 15, longestStreak: 15 },
     { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2, currentStreak: 0, longestStreak: 0 },
     { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8, currentStreak: 8, longestStreak: 10 },
+    { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5 },
+    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8 },
+    { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0 },
+    { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2 },
+    { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8 },
   ];
 
   const interns = [];

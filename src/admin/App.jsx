@@ -17,13 +17,12 @@ const AuditLog           = lazy(() => import('./pages/AuditLog'));
 const Kanban             = lazy(() => import('./pages/Kanban'));
 const CalendarView       = lazy(() => import('./pages/Calendar'));
 const FilesPage          = lazy(() => import('./pages/Files'));
-const Leaderboard        = lazy(() => import('../user/pages/Leaderboard'));
 const NotificationPrefs  = lazy(() => import('./pages/NotificationPreferences'));
 const WebhooksPage       = lazy(() => import('./pages/Webhooks'));
+const LearningBadges     = lazy(() => import('./pages/LearningBadges'));
 
 const PAGES = {
   'admin-dashboard':     <Dashboard />,
-  'admin-leaderboard':   <Suspense fallback={<PageLoader />}><Leaderboard /></Suspense>,
   'admin-users':         <Suspense fallback={<PageLoader />}><AdminPanel /></Suspense>,
   'admin-management':    <Suspense fallback={<PageLoader />}><Management /></Suspense>,
   'admin-knowledge':     <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
@@ -31,6 +30,7 @@ const PAGES = {
   'admin-analytics':     <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
   'admin-announcements': <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
   'admin-kanban':        <Suspense fallback={<PageLoader />}><Kanban /></Suspense>,
+  'admin-learning':      <Suspense fallback={<PageLoader />}><LearningBadges /></Suspense>,
   'admin-calendar':      <Suspense fallback={<PageLoader />}><CalendarView /></Suspense>,
   'admin-files':         <Suspense fallback={<PageLoader />}><FilesPage /></Suspense>,
   'admin-webhooks':      <Suspense fallback={<PageLoader />}><WebhooksPage /></Suspense>,

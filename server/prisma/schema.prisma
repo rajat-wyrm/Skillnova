@@ -39,22 +39,29 @@ model User {
   dateOfBirth     DateTime?
   linkedinUrl     String?
   skills          String?       // comma-separated for simplicity, can migrate to table later
+  educationJson   String?       // JSON array of {institution, degree, field, startYear, endYear}, populated manually or via Resume Import
+  experienceJson  String?       // JSON array of {company, title, startDate, endDate, description}, populated manually or via Resume Import
   avatarUrl       String?
   rating          Float         @default(0)
   twoFactorSecret String?
   twoFactorEnabled Boolean      @default(false)
   emailVerified   Boolean       @default(false)
   emailVerifiedAt DateTime?
+  resetPasswordToken String?
+  resetPasswordExpire DateTime?
   lastLoginAt     DateTime?
   lastLoginIp     String?
   failedAttempts  Int           @default(0)
   lockedUntil     DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  
 
   refreshTokens     RefreshToken[]
   reports           Report[]
   attendances       Attendance[]
+  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
+  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
   projectTasks      ProjectTask[]
   announcements     Announcement[]    @relation("AnnouncementAuthor")
   announcementsReads AnnouncementRead[]
@@ -75,6 +82,14 @@ model User {
   learningTrackers  LearningTracker[]
   learningStreak    LearningStreak?
   badges            UserBadge[]
+  internRatingsReceived InternRating[] @relation("InternRatings")
+  internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
+
+  // Phase 1: Learning / Badges / Completion
+  roadmapAssignments RoadmapAssignment[]
+  milestoneProgress  MilestoneProgress[]
+  badgeAwards        BadgeAward[]
+  internshipProgress InternshipProgress?
 
   @@index([role])
   @@index([status])
@@ -94,6 +109,11 @@ model InternProfile {
   project       Project? @relation(fields: [projectId], references: [id])
   totalTasks    Int      @default(0)
   completedTasks Int    @default(0)
+  isTL          Boolean  @default(false) // Team Lead flag for managing interns
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isTL])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -152,6 +172,27 @@ model OtpChallenge {
 
   @@index([email, purpose])
   @@index([expiresAt])
+}
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  role        UserRole  @default(INTERN)
+  createdById String
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id])
+  usedById    String?   @unique
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id])
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([code])
+}
+
+// ── Reports ─────────────────────────────────────────────────
+enum ReportStatus {
+  DRAFT
+  PENDING
+  REVIEWED
+  REJECTED
 }
 
 // ── Reports ─────────────────────────────────────────────────
@@ -218,6 +259,22 @@ enum ProjectStatus {
   ON_HOLD
   COMPLETED
   ARCHIVED
+}
+
+model InternRating {
+  id        String   @id @default(cuid())
+  internId  String
+  intern    User     @relation("InternRatings", fields: [internId], references: [id], onDelete: Cascade)
+  mentorId  String
+  mentor    User     @relation("MentorRatingsGiven", fields: [mentorId], references: [id])
+  weekStart DateTime @db.Date // Monday of the week this rating covers
+  score     Float
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([internId, weekStart])
+  @@index([internId])
 }
 
 model Project {
@@ -674,4 +731,129 @@ model UserBadge {
   @@unique([internId, badgeId])
   @@index([internId])
   @@index([badgeId])
+// ════════════════════════════════════════════════════════════
+//  PHASE 1 — Learning Roadmap, Achievement Badges,
+//  Internship Completion Tracker
+// ════════════════════════════════════════════════════════════
+
+enum RoadmapStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  skillTags   String[]
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  milestones  LearningMilestone[]
+  assignments RoadmapAssignment[]
+
+  @@index([createdById])
+}
+
+model LearningMilestone {
+  id          String   @id @default(cuid())
+  pathId      String
+  path        LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  resourceUrl String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  progress    MilestoneProgress[]
+
+  @@index([pathId])
+}
+
+model RoadmapAssignment {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pathId       String
+  path         LearningPath  @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  assignedById String
+  mentorGoal   String?
+  status       RoadmapStatus @default(NOT_STARTED)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@index([status])
+}
+
+model MilestoneProgress {
+  id          String    @id @default(cuid())
+  milestoneId String
+  milestone   LearningMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([milestoneId, userId])
+  @@index([userId])
+}
+
+enum BadgeType {
+  ATTENDANCE
+  PROJECT_COMPLETION
+  SKILL_MASTERY
+  TOP_PERFORMER
+  CUSTOM
+}
+
+model Badge {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  icon        String?   // icon key from public/icons.svg, or emoji fallback
+  type        BadgeType
+  criteria    Json?     // rule definition evaluated by badge.service.js, e.g. {"metric":"attendancePct","gte":95}
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  awards      BadgeAward[]
+
+  @@index([type])
+}
+
+model BadgeAward {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt DateTime @default(now())
+  showcase  Boolean  @default(true)
+  note      String?
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model InternshipProgress {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskPct       Float     @default(0)
+  attendancePct Float     @default(0)
+  learningPct   Float     @default(0)
+  mentorEvalPct Float     @default(0)
+  overallPct    Float     @default(0)
+  finalStatus   String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED | TERMINATED
+  computedAt    DateTime  @updatedAt
+
+  @@index([finalStatus])
 }

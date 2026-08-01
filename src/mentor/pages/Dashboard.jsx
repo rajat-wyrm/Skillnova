@@ -2,7 +2,7 @@
 //  Mentor — pages/Dashboard.jsx
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Users, FileText, AlertTriangle, Loader2, TrendingUp, Flame } from 'lucide-react';
+import { Users, FileText, AlertTriangle, Loader2, TrendingUp } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
@@ -38,7 +38,7 @@ const MentorDashboard = () => {
   return (
     <div className="space-y-6">
       <div className="rounded-xl p-5 sm:p-8 text-white" style={{ background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)' }}>
-        <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: '#A78BFA' }}>Captain Overview</p>
+        <p className="text-xs uppercase tracking-widest font-bold mb-1" style={{ color: '#A78BFA' }}>Mentor Overview</p>
         <h1 className="text-2xl sm:text-3xl font-bold">Good day, {user?.name?.split(' ')[0]} 👋</h1>
         <p className="opacity-80 mt-2 text-sm">You have {interns.length} intern{interns.length !== 1 ? 's' : ''} and {reports.length} report{reports.length !== 1 ? 's' : ''} pending review.</p>
       </div>
@@ -56,7 +56,7 @@ const MentorDashboard = () => {
           <table className="w-full text-sm min-w-[40rem]">
             <thead>
               <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)' }}>
-                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance', 'Streak'].map((h) => (
+                {['Intern', 'Department', 'Avg Score', 'Tasks Done', 'Attendance'].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-left" style={{ color: 'var(--muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -74,18 +74,48 @@ const MentorDashboard = () => {
                       {i.attendanceRate}%
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-semibold">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      style={{ background: i.currentStreak > 0 ? 'rgba(255,109,52,0.12)' : 'rgba(148,163,184,0.12)', color: i.currentStreak > 0 ? '#ff6d34' : 'var(--muted)' }}>
-                      {i.currentStreak ?? 0} <Flame size={12} fill={i.currentStreak > 0 ? '#ff6d34' : 'transparent'} />
-                    </span>
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </Card>
+      <Card className="p-5">
+  <SectionHeader
+    title="⚡ Quick Actions"
+    subtitle="Frequently used mentor actions"
+  />
+
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#ff6d34" }}
+    >
+      📝 Review Reports
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#00bea3" }}
+    >
+      📋 Assign Tasks
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#7C3AED" }}
+    >
+      📅 Attendance
+    </button>
+
+    <button
+      className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
+      style={{ background: "#2563eb" }}
+    >
+      📊 View Analytics
+    </button>
+  </div>
+</Card>
     </div>
   );
 };

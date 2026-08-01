@@ -7,10 +7,11 @@ import * as files from '../controllers/files.controller.js';
 import * as webhooks from '../controllers/webhooks.controller.js';
 import * as preferences from '../controllers/preferences.controller.js';
 import * as exports from '../controllers/exports.controller.js';
+import * as resume from '../controllers/resume.controller.js';
 import { authenticate, requireAuth, csrfProtection } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { rateLimitMiddleware } from '../utils/cache.js';
-import { upload } from '../utils/upload.js';
+import { upload, resumeUpload } from '../utils/upload.js';
 import { validate } from '../middleware/validate.js';
 import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -31,6 +32,15 @@ publicApi.get('/files/:id/download', validate(idParam, 'params'), files.download
 // ════════════════════════════════════════════════════════════
 const api = Router();
 api.use(authenticate, requireAuth);
+
+// ── Resume Parser ─────────────────────────────────────────
+// CSRF-exempt: multipart/form-data can't set custom headers reliably
+api.post(
+  '/resume/parse',
+  rateLimitMiddleware({ name: 'resume-parse', windowSec: 60, max: 5 }),
+  resumeUpload.single('resume'),
+  resume.parseResume
+);
 
 // ── Files ──────────────────────────────────────────────────
 // Upload: rate-limited, multer, CSRF-exempt (multipart can't easily send custom header)

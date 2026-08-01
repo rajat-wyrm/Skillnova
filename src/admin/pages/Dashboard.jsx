@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import {
   BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { FileText, CalendarCheck, HelpCircle, AlertCircle, Star, Shield, Loader2 } from 'lucide-react';
+import { FileText, CalendarCheck, HelpCircle, AlertCircle, Star, Shield, Loader2, Activity } from 'lucide-react';
 import { Card, StatCard } from '../../shared/components/UI';
 import api from '../../lib/api';
 
@@ -70,7 +70,46 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+<Card className="p-5">
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-sm" style={{ color: "var(--muted)" }}>
+        Platform Health
+      </p>
 
+      <h2 className="text-3xl font-bold mt-2" style={{ color: "#00bea3" }}>
+        98%
+      </h2>
+
+      <p className="text-xs mt-2" style={{ color: "var(--muted)" }}>
+        All services running normally
+      </p>
+    </div>
+
+    <div
+      className="rounded-full p-4"
+      style={{
+        background: "rgba(0,190,163,.12)",
+        border: "1px solid rgba(0,190,163,.25)"
+      }}
+    >
+      <Activity size={34} color="#00bea3" />
+    </div>
+  </div>
+
+  <div
+    className="mt-5 h-2 rounded-full"
+    style={{ background: "#30363d" }}
+  >
+    <div
+      className="h-2 rounded-full"
+      style={{
+        width: "98%",
+        background: "linear-gradient(90deg,#00bea3,#ff6d34)"
+      }}
+    />
+  </div>
+</Card>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Pending Reviews" value={stats.pendingReports} icon={AlertCircle} color="#ff6d34" />
         <StatCard title="Avg Score" value={`${interns.length ? (interns.reduce((s, i) => s + i.avgScore, 0) / interns.length).toFixed(1) : 0}/10`} icon={Star} color="#00bea3" />
