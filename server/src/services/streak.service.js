@@ -1,10 +1,13 @@
+// ════════════════════════════════════════════════════════════
+//  Streak Service
+// ════════════════════════════════════════════════════════════
 import prisma from '../utils/prisma.js';
-import lru from '../utils/lru.js';
+import { notify } from './notification.service.js';
+import { logger } from '../utils/logger.js';
+import { evaluateBadgeEligibility } from './badge.service.js';
 
 /**
- * Get normalized UTC midnight date
- * @param {Date} date
- * @returns {Date}
+ * Normalizes a date to UTC midnight.
  */
 export function getUtcMidnight(date = new Date()) {
   const d = new Date(date);
@@ -13,92 +16,209 @@ export function getUtcMidnight(date = new Date()) {
 }
 
 /**
- * Check if the user is an intern
- * @param {string} userId
- * @returns {Promise<boolean>}
+ * Gets or creates the streak record for an intern.
  */
-async function isIntern(userId) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true },
+export async function getOrCreateStreak(internId) {
+  let streak = await prisma.learningStreak.findUnique({
+    where: { internId }
   });
-  return user?.role === 'INTERN';
+  if (!streak) {
+    streak = await prisma.learningStreak.create({
+      data: {
+        internId,
+        currentStreak: 0,
+        longestStreak: 0
+      }
+    });
+  }
+  return streak;
 }
 
 /**
- * Record a streak-worthy activity for a user
- * @param {string} userId
+ * Checks if all 4 required daily activities are completed for a given calendar day.
  */
-export async function recordActivity(userId) {
-  if (!userId) return;
+export async function checkDailyActivities(userId, date) {
+  const dayStart = getUtcMidnight(date);
+  const dayEnd = new Date(dayStart.getTime() + 86400000);
 
-  // Only track streaks for interns
-  const isUserIntern = await isIntern(userId);
-  if (!isUserIntern) return;
-
-  const now = new Date();
-  const today = getUtcMidnight(now);
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-
-  // Fetch current streak info
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { currentStreak: true, longestStreak: true, lastActivityAt: true },
-  });
-
-  if (!user) return;
-
-  const lastActivity = user.lastActivityAt ? getUtcMidnight(user.lastActivityAt) : null;
-
-  let newCurrentStreak = user.currentStreak;
-  let newLongestStreak = user.longestStreak;
-
-  if (lastActivity) {
-    if (lastActivity.getTime() === today.getTime()) {
-      // Already recorded an activity today, do nothing
-      return;
-    } else if (lastActivity.getTime() === yesterday.getTime()) {
-      // Continued streak!
-      newCurrentStreak += 1;
-      newLongestStreak = Math.max(newLongestStreak, newCurrentStreak);
-    } else {
-      // Broken streak, reset to 1
-      newCurrentStreak = 1;
-      newLongestStreak = Math.max(newLongestStreak, 1);
+  // 1. Attendance Check
+  const attendance = await prisma.attendance.findUnique({
+    where: {
+      userId_date: { userId, date: dayStart }
     }
-  } else {
-    // First activity ever
-    newCurrentStreak = 1;
-    newLongestStreak = Math.max(newLongestStreak, 1);
-  }
-
-  // Update user streak fields
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      currentStreak: newCurrentStreak,
-      longestStreak: newLongestStreak,
-      lastActivityAt: now,
-    },
   });
+  const hasAttendance = attendance?.status === 'PRESENT';
 
-  lru.del(`user:${userId}`);
-  lru.del(`user:full:${userId}`);
+  // 2. Report Check
+  const report = await prisma.report.findFirst({
+    where: {
+      userId,
+      submittedAt: {
+        gte: dayStart,
+        lt: dayEnd
+      }
+    }
+  });
+  const hasReport = !!report;
+
+  // 3. Learning Tracker Check
+  const tracker = await prisma.learningTracker.findUnique({
+    where: {
+      userId_date: { userId, date: dayStart }
+    }
+  });
+  const hasTracker = !!tracker;
+
+  // 4. Completed Daily Tasks (Automatically checked when attendance, report, and tracker are completed)
+  const hasTasksCompleted = hasAttendance && hasReport && hasTracker;
+
+  return {
+    attendance: hasAttendance,
+    report: hasReport,
+    tasks: hasTasksCompleted,
+    tracker: hasTracker,
+    allCompleted: hasAttendance && hasReport && hasTasksCompleted && hasTracker
+  };
 }
 
 /**
- * Resolve effective streak dynamically (so if user missed days, it shows 0)
- * @param {object} user - User object with currentStreak and lastActivityAt
- * @returns {number}
+ * Checks and updates the user's streak for today.
+ * Triggers in real-time when an activity is completed.
  */
-export function getEffectiveStreak(user) {
-  if (!user || !user.lastActivityAt) return 0;
-  const today = getUtcMidnight();
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const lastActivity = getUtcMidnight(user.lastActivityAt);
+export async function checkAndUpdateStreakForToday(userId) {
+  try {
+    const today = getUtcMidnight();
+    const streak = await getOrCreateStreak(userId);
 
-  if (lastActivity.getTime() === today.getTime() || lastActivity.getTime() === yesterday.getTime()) {
-    return user.currentStreak;
+    // If already completed today, no need to update
+    if (streak.lastCompletedDate && getUtcMidnight(streak.lastCompletedDate).getTime() === today.getTime()) {
+      return { streak, newlyUnlocked: [] };
+    }
+
+    const { allCompleted } = await checkDailyActivities(userId, today);
+    if (!allCompleted) {
+      return { streak, newlyUnlocked: [] };
+    }
+
+    // All completed! Update streak
+    const newCurrent = streak.currentStreak + 1;
+    const newLongest = Math.max(streak.longestStreak, newCurrent);
+
+    const updated = await prisma.learningStreak.update({
+      where: { internId: userId },
+      data: {
+        currentStreak: newCurrent,
+        longestStreak: newLongest,
+        lastCompletedDate: today,
+        streakStartedAt: streak.streakStartedAt || today
+      }
+    });
+
+    logger.info(`🔥 Intern ${userId} streak increased to ${newCurrent} days!`);
+
+    // Send notification
+    await notify(userId, {
+      type: 'streak',
+      title: '🎉 Great job!',
+      body: `Your learning streak is now ${newCurrent} days.\nKeep it going!`,
+      link: '/dashboard'
+    });
+
+    // Evaluate badges
+    const newlyUnlocked = await evaluateBadgeEligibility(userId);
+
+    return { streak: updated, newlyUnlocked };
+  } catch (err) {
+    logger.error({ err, userId }, 'failed-to-update-streak');
+    throw err;
   }
-  return 0;
+}
+
+/**
+ * Scheduler function running once daily after midnight.
+ * Validates the previous day (yesterday) and resets if missed.
+ */
+export async function runDailyStreakScheduler() {
+  const today = getUtcMidnight();
+  const yesterday = new Date(today);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+  logger.info(`🕒 Starting Daily Streak Scheduler for yesterday: ${yesterday.toISOString().split('T')[0]}`);
+
+  // Fetch all active interns
+  const interns = await prisma.user.findMany({
+    where: {
+      role: 'INTERN',
+      status: 'ACTIVE'
+    },
+    select: { id: true, name: true }
+  });
+
+  for (const intern of interns) {
+    try {
+      const streak = await getOrCreateStreak(intern.id);
+      const lastCompleted = streak.lastCompletedDate ? getUtcMidnight(streak.lastCompletedDate) : null;
+
+      // If yesterday was already marked completed, skip
+      if (lastCompleted && lastCompleted.getTime() === yesterday.getTime()) {
+        continue;
+      }
+
+      // Check if yesterday was completed
+      const { allCompleted } = await checkDailyActivities(intern.id, yesterday);
+
+      if (allCompleted) {
+        // Credit yesterday (if they haven't been credited yet)
+        if (!lastCompleted || lastCompleted.getTime() < yesterday.getTime()) {
+          const newCurrent = streak.currentStreak + 1;
+          const newLongest = Math.max(streak.longestStreak, newCurrent);
+
+          await prisma.learningStreak.update({
+            where: { internId: intern.id },
+            data: {
+              currentStreak: newCurrent,
+              longestStreak: newLongest,
+              lastCompletedDate: yesterday,
+              streakStartedAt: streak.streakStartedAt || yesterday
+            }
+          });
+
+          await notify(intern.id, {
+            type: 'streak',
+            title: '🎉 Great job!',
+            body: `Your learning streak is now ${newCurrent} days.\nKeep it going!`,
+            link: '/dashboard'
+          });
+
+          // Evaluate badges
+          await evaluateBadgeEligibility(intern.id);
+
+          logger.info(`🔥 Intern ${intern.name} (${intern.id}) yesterday credited. Streak is ${newCurrent} days.`);
+        }
+      } else {
+        // Yesterday was missed!
+        // Reset streak if currentStreak > 0
+        if (streak.currentStreak > 0) {
+          await prisma.learningStreak.update({
+            where: { internId: intern.id },
+            data: {
+              currentStreak: 0,
+              lastResetDate: today
+            }
+          });
+
+          await notify(intern.id, {
+            type: 'streak',
+            title: 'Streak Lost',
+            body: 'Your learning streak has been reset because yesterday\'s required activities were not completed.\n\nStart again today!',
+            link: '/dashboard'
+          });
+
+          logger.info(`💔 Intern ${intern.name} (${intern.id}) missed yesterday. Streak reset.`);
+        }
+      }
+    } catch (err) {
+      logger.error({ err, userId: intern.id }, `failed-to-process-scheduler-for-intern`);
+    }
+  }
 }
