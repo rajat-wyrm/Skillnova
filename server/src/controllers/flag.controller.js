@@ -26,40 +26,36 @@ export const createFlag = async (req, res) => {
   }
 };
 
-// Get all flags (Admin/Super Admin)
-export const getAllFlags = async (req, res) => {
+const _fetchFlags = async (res, queryOptions) => {
   try {
     const flags = await prisma.flag.findMany({
-      include: {
-        intern: { select: { name: true, email: true, department: true } },
-        mentor: { select: { name: true } },
-      },
+      ...queryOptions,
       orderBy: { createdAt: 'desc' },
     });
-
     res.json({ success: true, flags });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// Get all flags (Admin/Super Admin)
+export const getAllFlags = async (req, res) => {
+  return _fetchFlags(res, {
+    include: {
+      intern: { select: { name: true, email: true, department: true } },
+      mentor: { select: { name: true } },
+    }
+  });
+};
+
 // Get flags for mentor's interns only (Mentor)
 export const getMyFlags = async (req, res) => {
-  try {
-    const mentorId = req.user.id;
-
-    const flags = await prisma.flag.findMany({
-      where: { mentorId },
-      include: {
-        intern: { select: { name: true, email: true, department: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    res.json({ success: true, flags });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+  return _fetchFlags(res, {
+    where: { mentorId: req.user.id },
+    include: {
+      intern: { select: { name: true, email: true, department: true } },
+    }
+  });
 };
 
 // Resolve a flag (Mentor only)
@@ -99,7 +95,7 @@ export const getMyFlagsAsIntern = async (req, res) => {
     const internId = req.user.id;
 
     const flags = await prisma.flag.findMany({
-      where: { 
+      where: {
         internId,
         status: 'ACTIVE'
       },

@@ -1,14 +1,9 @@
 // ════════════════════════════════════════════════════════════
-// ----------------------------------------------------------------
 //  App.jsx — Root component
 //  Hydrates auth, mounts the right app (admin/mentor/intern)
 //  based on the authenticated user's role. Mounts the global
 //  AIAssistant widget so every logged-in user has access.
 // ════════════════════════════════════════════════════════════
-import { useEffect } from 'react';
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-import { useEffect } from 'react';
-// ----------------------------------------------------------------
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
@@ -18,10 +13,10 @@ import AdminApp from './admin/App';
 import MentorApp from './mentor/App';
 import LoaderScreen from './shared/components/LoaderScreen';
 import AIAssistant from './shared/components/AIAssistant';
+import AuthCallback from './auth/pages/AuthCallback';
 
 const App = () => {
-  const { user, step, hydrated, hydrate } = useAuthStore();
-  const { user, step, accessToken, hydrated, hydrate } = useAuthStore();
+  const { user, step, hydrated, hydrate, accessToken } = useAuthStore();
   const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -30,16 +25,12 @@ const App = () => {
 
   useEffect(() => {
     if (user?.id && step === 'authenticated') {
-      connectSocket(useAuthStore.getState().accessToken);
+      connectSocket(accessToken || useAuthStore.getState().accessToken);
     }
     return () => {
       if (step !== 'authenticated') disconnectSocket();
     };
-  }, [user, step]);
-
-  if (!hydrated) return <LoaderScreen label="Initialising SkillNovaâ€¦" />;
-    disconnectSocket();
-  }, [accessToken, step, user?.id]);
+  }, [user?.id, step, accessToken]);
 
   // Google OAuth callback — catch before AuthGate so no login flash
   if (window.location.pathname === '/auth/callback') {

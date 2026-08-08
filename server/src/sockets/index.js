@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════
 import { Server } from 'socket.io';
 import { verifyAccessToken } from '../utils/auth.js';
-import { config, isCorsOriginAllowed } from '../config/index.js';
+import { isCorsOriginAllowed } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 let io = null;

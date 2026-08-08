@@ -5,26 +5,18 @@ import axios from "axios";
 import { APP_CONSTANTS } from "../shared/config/constants";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
-import axios from 'axios';
-
-const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 export const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: APP_CONSTANTS.API_TIMEOUT,
+  timeout: APP_CONSTANTS.API_TIMEOUT || 30000,
   headers: { "Content-Type": "application/json" },
-  timeout: 30_000,
-  headers: { 'Content-Type': 'application/json' },
 });
 
 // ── Helpers ──────────────────────────────────────────────
 const getCookie = (name) => {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(
-    new RegExp("(^|;)\\s*" + name + "=([^;]+)"),
-  );
+  const match = document.cookie.match(new RegExp("(^|;)\\s*" + name + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]) : null;
 };
 
@@ -40,18 +32,9 @@ api.interceptors.request.use((config) => {
       }
     }
   } catch { /* ignore */ }
-  const csrf = getCookie('sn_csrf');
-  const token = getStoredAccessToken();
-  if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
 
-  // Attach CSRF token for state-changing requests
   const csrf = getCookie('sn_csrf');
-  const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE);
   if (csrf && ["post", "put", "patch", "delete"].includes(config.method)) {
-    config.headers[APP_CONSTANTS.CSRF_HEADER] = csrf;
-  if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
     config.headers['X-CSRF-Token'] = csrf;
   }
   return config;
@@ -68,19 +51,6 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401 && !original._retry && !REFRESH_EXCLUDED_URLS.has(original.url)) {
-    if (
-      status === 401 &&
-      !original._retry &&
-      original.url !== "/auth/refresh" &&
-      original.url !== "/auth/login"
-    ) {
-      original._retry = true;
-      try {
-        refreshing =
-          refreshing ||
-          axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-        await refreshing;
-    if (status === 401 && !original._retry && original.url !== '/auth/refresh' && original.url !== '/auth/login') {
       original._retry = true;
       try {
         refreshing = refreshing || axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
