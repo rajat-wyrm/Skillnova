@@ -35,7 +35,7 @@ const Dashboard = ({ onNavigate }) => {
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
+
 
   useEffect(() => {
     (async () => {
@@ -169,17 +169,8 @@ const Dashboard = ({ onNavigate }) => {
           <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
             {weeklySummaryCards.map(({ label, value, color }) => (
               <div key={label} className="bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 shadow-sm">
-                <p className="font-black text-xl text-slate-900">{value}</p>
+                <p className="font-black text-xl text-white">{value}</p>
                 <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color }}>{label}</p>
-          <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
-            {[
-              [stats?.reviewed ?? 0, 'Reports'],
-              [`${attendance?.rate ?? 0}%`, 'Attendance'],
-              [`${user?.rating?.toFixed(1) ?? '—'}`, 'Score'],
-            ].map(([v, l]) => (
-              <div key={l} className="bg-white/5 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10">
-                <p className="font-black text-xl text-white">{v}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color: '#ff6d34' }}>{l}</p>
               </div>
             ))}
           </div>
@@ -230,10 +221,10 @@ const Dashboard = ({ onNavigate }) => {
       </MotionDiv>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Reports"   value={stats?.total ?? 0}    icon={ClipboardList} color="#ff6d34" />
-        <StatCard title="Reviewed"        value={stats?.reviewed ?? 0} icon={CheckCircle}   color="#00bea3" />
+        <StatCard title="Total Reports" value={stats?.total ?? 0} icon={ClipboardList} color="#ff6d34" />
+        <StatCard title="Reviewed" value={stats?.reviewed ?? 0} icon={CheckCircle} color="#00bea3" />
         <StatCard title="Attendance Rate" value={`${attendance?.rate ?? 0}%`} icon={CalendarCheck} color="#ff6d34" />
-        <StatCard title="Avg Score"       value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
+        <StatCard title="Avg Score" value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
@@ -305,7 +296,6 @@ const Dashboard = ({ onNavigate }) => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>
           {myTasksByStatus.length === 0 ? (

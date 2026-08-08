@@ -10,15 +10,19 @@ import notify from '../../lib/toast';
 import { ResumeImportSection } from '../components/resume-import';
 
 const FIELDS = [
-  { label: 'Full Name', key: 'name', type: 'text', required: true, maxLen: 80,
-    validate: (v) => !v?.trim() ? 'Full name is required.' : v.trim().length < 2 ? 'Name must be at least 2 characters.' : '' },
+  {
+    label: 'Full Name', key: 'name', type: 'text', required: true, maxLen: 80,
+    validate: (v) => !v?.trim() ? 'Full name is required.' : v.trim().length < 2 ? 'Name must be at least 2 characters.' : ''
+  },
   { label: 'Email', key: 'email', type: 'email', disabled: true },
   { label: 'Department', key: 'department', type: 'text' },
   { label: 'College', key: 'college', type: 'text' },
   { label: 'Year of Study', key: 'yearOfStudy', type: 'text' },
   { label: 'Date of Birth', key: 'dateOfBirth', type: 'date' },
-  { label: 'LinkedIn', key: 'linkedinUrl', type: 'url',
-    validate: (v) => v && !/^https?:\/\/.+/.test(v) ? 'Enter a valid URL starting with https://' : '' },
+  {
+    label: 'LinkedIn', key: 'linkedinUrl', type: 'url',
+    validate: (v) => v && !/^https?:\/\/.+/.test(v) ? 'Enter a valid URL starting with https://' : ''
+  },
 ];
 
 const formatDateValue = (value) => {
@@ -70,7 +74,6 @@ const FormField = ({ field, value, editing, onChange, touched, error }) => {
         {field.required && editing && <span style={{ color: '#ff6d34' }}> *</span>}
       </label>
       <input id={uid} type={field.type} value={field.type === 'date' ? formatDateValue(value) : value ?? ''} disabled={!editing || field.disabled}
-      <input id={uid} type={field.type} value={value || ''} disabled={!editing || field.disabled}
         onChange={onChange}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         maxLength={field.maxLen}
@@ -429,9 +432,9 @@ const Profile = () => {
   const handleResumeApply = (parsed) => {
     setProfile((prev) => ({
       ...prev,
-      skills:      parsed.skills      || prev.skills,
-      college:     parsed.college     || prev.college,
-      department:  parsed.department  || prev.department,
+      skills: parsed.skills || prev.skills,
+      college: parsed.college || prev.college,
+      department: parsed.department || prev.department,
       yearOfStudy: parsed.yearOfStudy || prev.yearOfStudy,
       linkedinUrl: parsed.linkedinUrl || prev.linkedinUrl,
     }));

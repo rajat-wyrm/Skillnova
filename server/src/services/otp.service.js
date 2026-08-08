@@ -6,7 +6,6 @@ import prisma from "../utils/prisma.js";
 import { hashPassword } from "../utils/auth.js";
 import { sendEmail } from "./email.service.js";
 import { logger } from "../utils/logger.js";
-import { verifyPassword } from "../utils/auth.js";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes

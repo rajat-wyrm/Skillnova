@@ -13,8 +13,7 @@ const _chatSchema = z.object({
   sessionId: z.string().cuid().optional(),
 });
 
-export const chat = asyncHandler(async (req, res) => {
-  const { message, sessionId } = req.body;
+async function _prepareChatSession(req, message, sessionId) {
   let session;
   if (sessionId) {
     session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
@@ -25,7 +24,7 @@ export const chat = asyncHandler(async (req, res) => {
         userId: req.user.id,
         title: message.slice(0, 60),
       },
-});
+    });
   }
 
   const history = await prisma.chatMessage.findMany({
@@ -38,6 +37,13 @@ export const chat = asyncHandler(async (req, res) => {
   await prisma.chatMessage.create({
     data: { sessionId: session.id, role: 'user', content: message },
   });
+
+  return { session, history };
+}
+
+export const chat = asyncHandler(async (req, res) => {
+  const { message, sessionId } = req.body;
+  const { session, history } = await _prepareChatSession(req, message, sessionId);
 
   const result = await chatCompletion({ user: req.user, history, userMessage: message });
   const assistantMsg = await prisma.chatMessage.create({
@@ -61,26 +67,7 @@ export const chat = asyncHandler(async (req, res) => {
 
 export const streamChat = asyncHandler(async (req, res) => {
   const { message, sessionId } = req.body;
-  let session;
-  if (sessionId) {
-    session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
-    if (!session || session.userId !== req.user.id) throw ApiError.notFound();
-  } else {
-    session = await prisma.chatSession.create({
-      data: { userId: req.user.id, title: message.slice(0, 60) },
-    });
-  }
-
-  const history = await prisma.chatMessage.findMany({
-    where: { sessionId: session.id },
-    orderBy: { createdAt: 'asc' },
-    take: 20,
-    select: { role: true, content: true },
-  });
-
-  await prisma.chatMessage.create({
-    data: { sessionId: session.id, role: 'user', content: message },
-  });
+  const { session, history } = await _prepareChatSession(req, message, sessionId);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');

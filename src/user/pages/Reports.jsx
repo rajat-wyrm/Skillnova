@@ -1,37 +1,8 @@
-import React from "react";
-import { Card } from "../../shared/components/UI";
-
-const Reports = () => {
-  return (
-    <Card className="p-5">
-      <h2>Reports</h2>
-      <p>Reports page is temporarily working.</p>
-    </Card>
 // ════════════════════════════════════════════════════════════
 //  USER — pages/Reports.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Search, FileText, Download, Upload, Loader2, X } from 'lucide-react';
-import { Card, Badge, SectionHeader, Input, GreenButton, Modal } from '../../shared/components/UI';
-import api from '../../lib/api';
-import notify from '../../lib/toast';
-import { formatDate } from '../../lib/utils';
-
-// User - pages/Reports.jsx
-import { useEffect, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  CalendarDays,
-  Clock3,
-  FileText,
-  History,
-  Loader2,
-  PencilLine,
-  RefreshCw,
-  Send,
-  Sparkles,
-  Star,
-} from 'lucide-react';
+import { Search, FileText, Upload, Loader2 } from 'lucide-react';
 import { Card, Badge, SectionHeader, Input, GreenButton, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
@@ -58,76 +29,6 @@ const Reports = () => {
   };
 
   useEffect(() => { fetch(); }, []);
-
-  const filtered = reports.filter((r) =>
-    !search || r.title.toLowerCase().includes(search.toLowerCase())
-  );
-  useEffect(() => {
-    load();
-  }, []);
-
-  const currentReport =
-  selectedReport ||
-  currentWeek?.report ||
-  null;
-  const currentPreview = currentWeek?.preview || null;
-  const todayLog = currentWeek?.todayLog || dailyLogs.find((item) => item.date?.slice(0, 10) === todayKey()) || null;
-  const needsReminder = currentWeek?.missingToday ?? !todayLog;
-  const editableReport = currentReport && ['DRAFT', 'NEEDS_REVISION', 'REJECTED'].includes(currentReport.status); console.log(currentReport);
-  const weeklySummary = currentReport?.summary || currentPreview?.summary || {
-    totalHours: 0,
-    challenges: [],
-    achievements: [],
-    technologies: [],
-    nextSteps: [],
-  };
-
-
-  const openLogEditor = (log) => {
-    setLogEditor(log);
-    setLogForm({
-      workDone: log.workDone || '',
-      hoursWorked: log.hoursWorked ?? '',
-      technologiesUsed: log.technologiesUsed || '',
-      challenges: log.challenges || '',
-      tomorrowPlan: log.tomorrowPlan || '',
-    });
-  };
-
-  const clearLogEditor = () => {
-    setLogEditor(null);
-    setLogForm(emptyLogForm);
-  };
-
-  const saveLog = async () => {
-    if (!logForm.workDone.trim()) {
-      notify.error('Please add what you worked on today.');
-      return;
-    }
-    setSavingLog(true);
-    try {
-      const payload = {
-        date: logEditor?.date || new Date().toISOString(),
-        workDone: logForm.workDone.trim(),
-        hoursWorked: Number(logForm.hoursWorked || 0),
-        technologiesUsed: logForm.technologiesUsed.trim() || undefined,
-        challenges: logForm.challenges.trim() || undefined,
-        tomorrowPlan: logForm.tomorrowPlan.trim() || undefined,
-      };
-      if (logEditor?.id) {
-        await api.put(`/reports/daily-logs/${logEditor.id}`, payload);
-      } else {
-        await api.post('/reports/daily-logs', payload);
-      }
-      notify.success('Daily log saved.');
-      clearLogEditor();
-      load();
-    } catch (err) {
-      notify.error(err.response?.data?.error || 'Failed to save log.');
-    } finally {
-      setSavingLog(false);
-    }
-  };
 
   const filtered = reports.filter((r) =>
     !search || r.title.toLowerCase().includes(search.toLowerCase())
@@ -180,7 +81,7 @@ const Reports = () => {
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search reports…"
-          className="w-full pl-9 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition" />
+          className="w-full pl-9 py-2.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition" />
       </div>
 
       <div className="space-y-3">
@@ -194,7 +95,7 @@ const Reports = () => {
                     style={{ color: r.status === 'REVIEWED' ? '#00bea3' : r.status === 'REJECTED' ? '#dc2626' : '#ff6d34' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-slate-900 dark:text-white break-words">{r.title}</h3>
+                  <h3 className="font-semibold text-slate-900 break-words">{r.title}</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Week {r.weekNumber ?? '—'} · Submitted {formatDate(r.submittedAt)}</p>
                   {r.feedback && <p className="text-xs mt-1 italic" style={{ color: 'var(--muted)' }}>“{r.feedback}”</p>}
                 </div>
@@ -204,7 +105,7 @@ const Reports = () => {
                   {r.status}
                 </Badge>
                 {r.score != null && (
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{r.score}/10</span>
+                  <span className="text-sm font-bold text-slate-700">{r.score}/10</span>
                 )}
               </div>
             </div>
@@ -234,7 +135,7 @@ const Reports = () => {
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Content</label>
             <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
               rows={8} placeholder="Goals · Completed · Blockers · Learnings · Next steps"
-              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition font-sans" />
+              className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition font-sans" />
           </div>
         </div>
       </Modal>

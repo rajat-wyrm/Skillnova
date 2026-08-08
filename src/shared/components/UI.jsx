@@ -1,19 +1,17 @@
 // ══════════════════════════════════════════════
 //  SHARED — UI.jsx  (UptoSkills Branded)
 // ══════════════════════════════════════════════
-
-import { TrendingUp, X, CheckSquare } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, X } from "lucide-react";
 
 // UptoSkills Brand Colors
 export const BRAND = {
-  orange:    "#ff6d34", // Main Brand Color
-  green:     "#00bea3",
-  dark:      "#2D3436",
+  orange: "#ff6d34", // Main Brand Color
+  green: "#00bea3",
+  dark: "#2D3436",
   orangeLight: "#fff3ee",
-  greenLight:  "#e6faf8",
+  greenLight: "#e6faf8",
 };
-
-const MotionDiv = ({ children, ...props }) => <div {...props}>{children}</div>;
 
 /* ── Avatar ─────────────────────────────────── */
 export const Avatar = ({ initials, size = "md" }) => {
@@ -34,15 +32,14 @@ export const Avatar = ({ initials, size = "md" }) => {
 };
 
 /* ── Badge ───────────────────────────────────── */
-/* â”€â”€ Badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export const Badge = ({ children, variant = "default" }) => {
   const variants = {
     default: { background: "var(--badge-default-bg)", color: "var(--badge-default-fg)", border: "1px solid var(--badge-default-border)" },
     success: { background: "var(--badge-success-bg)", color: "var(--badge-success-fg)", border: "1px solid var(--badge-success-border)" },
     warning: { background: "var(--badge-warning-bg)", color: "var(--badge-warning-fg)", border: "1px solid var(--badge-warning-border)" },
-    danger:  { background: "var(--badge-danger-bg)", color: "var(--badge-danger-fg)", border: "1px solid var(--badge-danger-border)" },
-    purple:  { background: "var(--badge-purple-bg)", color: "var(--badge-purple-fg)", border: "1px solid var(--badge-purple-border)" },
-    gray:    { background: "var(--badge-gray-bg)", color: "var(--badge-gray-fg)", border: "1px solid var(--badge-gray-border)" },
+    danger: { background: "var(--badge-danger-bg)", color: "var(--badge-danger-fg)", border: "1px solid var(--badge-danger-border)" },
+    purple: { background: "var(--badge-purple-bg)", color: "var(--badge-purple-fg)", border: "1px solid var(--badge-purple-border)" },
+    gray: { background: "var(--badge-gray-bg)", color: "var(--badge-gray-fg)", border: "1px solid var(--badge-gray-border)" },
   };
   return (
     <span
@@ -85,7 +82,7 @@ export const StatCard = ({ title, value, icon: _Icon, trend, color = "#ff6d34", 
         <_Icon size={24} />
       </div>
     </div>
-    
+
     {trend && (
       <div className="flex items-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <TrendingUp size={12} style={{ color: "#00bea3" }} />
@@ -161,9 +158,8 @@ export const Input = ({ label, icon: Icon, error, ...props }) => (
       )}
       <input
         {...props}
-        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 text-sm rounded-xl border bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${
-          error ? 'border-red-500 bg-red-50' : 'border-slate-200 hover:border-slate-300 focus:border-blue-500'
-        }`}
+        className={`w-full ${Icon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 text-sm rounded-xl border bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${error ? 'border-red-500 bg-red-50' : 'border-slate-200 hover:border-slate-300 focus:border-blue-500'
+          }`}
       />
     </div>
     {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
@@ -196,77 +192,6 @@ export const Modal = ({ isOpen, onClose, title, children, footer }) => {
           {footer && (
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
               {footer}
-export const Modal = ({ isOpen, onClose, title, children, footer }) => (
-  <AnimatePresence>
-    {isOpen && (
-      <>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
-        />
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
-          >
-/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-export const Modal = ({ isOpen, onClose, title, children, footer }) => {
-  const modalRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const trapFocus = (e) => {
-      if (e.key !== 'Tab') return;
-      const modal = modalRef.current;
-      if (!modal) return;
-      const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
-    document.addEventListener('keydown', trapFocus);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', trapFocus);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen, onClose]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
-          >
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-lg text-slate-900">{title}</h3>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-                type="button"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-6">
-              {children}
             </div>
           )}
         </div>
@@ -274,14 +199,8 @@ export const Modal = ({ isOpen, onClose, title, children, footer }) => {
     </>
   );
 };
-      </>
-    )}
-  </AnimatePresence>
-);
-  );
-};
 
-/* â”€â”€ Tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Tooltip ──────────────────────────────────── */
 export const Tooltip = ({ children, content, side = 'top' }) => {
   const [show, setShow] = useState(false);
   const positions = {
@@ -310,4 +229,3 @@ export const Tooltip = ({ children, content, side = 'top' }) => {
     </span>
   );
 };
-

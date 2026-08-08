@@ -10,14 +10,6 @@ import { authenticate, requireAuth } from "../middleware/auth.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { config } from "../config/index.js";
 import { requirePermission } from "../middleware/rbac.js";
-import { Router } from 'express';
-import { z } from 'zod';
-import rateLimit from 'express-rate-limit';
-import * as auth from '../controllers/auth.controller.js';
-import { authenticate, requireAuth } from '../middleware/auth.js';
-import { validate, schemas } from '../middleware/validate.js';
-import { config } from '../config/index.js';
-import { forgotPassword, resetPassword } from '../controllers/auth.controller.js';
 
 const router = Router();
 
@@ -54,12 +46,19 @@ const otpSchema = z.object({
 
 router.post("/login", loginLimiter, validate(loginSchema), auth.login);
 router.post("/verify-otp", loginLimiter, validate(otpSchema), auth.verifyOtp);
-router.post('/login', loginLimiter, validate(loginSchema), auth.login);
-router.post('/verify-otp', loginLimiter, validate(otpSchema), auth.verifyOtp);
-router.post('/refresh', auth.refresh);
-router.post('/logout', authenticate, auth.logout);
 router.get('/me', authenticate, requireAuth, auth.me);
 router.post('/2fa/setup', authenticate, requireAuth, auth.setupTotp);
+const internDatesSchema = {
+  internStartDate: z
+    .string()
+    .refine((val) => !val || !isNaN(new Date(val).getTime()))
+    .optional(),
+  internEndDate: z
+    .string()
+    .refine((val) => !val || !isNaN(new Date(val).getTime()))
+    .optional(),
+};
+
 router.post(
   "/signup/start",
   loginLimiter,
@@ -69,14 +68,7 @@ router.post(
       email: schemas.email,
       password: schemas.password,
       isIntern: z.boolean().default(true),
-      internStartDate: z
-        .string()
-        .refine((val) => !val || !isNaN(new Date(val).getTime()))
-        .optional(),
-      internEndDate: z
-        .string()
-        .refine((val) => !val || !isNaN(new Date(val).getTime()))
-        .optional(),
+      ...internDatesSchema,
     }),
   ),
   auth.signupStart,
@@ -89,14 +81,7 @@ router.post(
     z.object({
       challengeToken: z.string(),
       code: z.string().min(4).max(8),
-      internStartDate: z
-        .string()
-        .refine((val) => !val || !isNaN(new Date(val).getTime()))
-        .optional(),
-      internEndDate: z
-        .string()
-        .refine((val) => !val || !isNaN(new Date(val).getTime()))
-        .optional(),
+      ...internDatesSchema,
     }),
   ),
   auth.signupVerify,
@@ -138,8 +123,6 @@ router.post(
   auth.setInternAsTeamLead,
 );
 
-router.get("/me", authenticate, requireAuth, auth.me);
-router.post("/2fa/setup", authenticate, requireAuth, auth.setupTotp);
 router.post(
   "/2fa/enable",
   authenticate,
@@ -152,9 +135,6 @@ router.post(
 router.get("/google/status", googleAuth.status);
 router.get("/google", googleAuth.start);
 router.get("/google/callback", googleAuth.callback);
-router.get('/google/status', googleAuth.status);
-router.get('/google', googleAuth.start);
-router.get('/google/callback', googleAuth.callback);
 // ── Password Reset ─────────────────────────────────────────
 router.post('/forgot-password', auth.forgotPassword);
 router.post('/reset-password', auth.resetPassword);
@@ -163,9 +143,9 @@ router.get('/demo-accounts', (req, res) => {
   res.json({
     accounts: [
       { label: 'Senior Team Leader', email: 'superadmin@skillnova.com', pwd: 'SuperAdmin#2026', color: '#7C3AED' },
-      { label: 'Team Leader',        email: 'admin@skillnova.com',      pwd: 'Admin#2026',      color: '#ff6d34' },
-      { label: 'Captain',            email: 'mentor@skillnova.com',     pwd: 'Mentor#2026',     color: '#7C3AED' },
-      { label: 'Intern',             email: 'rahul@skillnova.com',      pwd: 'User#2026',       color: '#00bea3' },
+      { label: 'Team Leader', email: 'admin@skillnova.com', pwd: 'Admin#2026', color: '#ff6d34' },
+      { label: 'Captain', email: 'mentor@skillnova.com', pwd: 'Mentor#2026', color: '#7C3AED' },
+      { label: 'Intern', email: 'rahul@skillnova.com', pwd: 'User#2026', color: '#00bea3' },
     ],
   });
 });

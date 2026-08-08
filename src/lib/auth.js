@@ -4,9 +4,6 @@
 import { create } from "zustand";
 import api, { getErrorMessage } from "./api";
 import { APP_CONSTANTS } from "../shared/config/constants";
-import { create } from 'zustand';
-import api, { getErrorMessage } from './api';
-
 const STORAGE_KEY = 'skillnova.auth';
 const STORAGE_ENABLED = !import.meta.env.DEV;
 
@@ -60,6 +57,7 @@ export const useAuthStore = create((set, get) => ({
   hydrate: async () => {
     if (get().hydrated) return;
     // Always try /auth/me first — validates httpOnly cookies (Google OAuth uses these)
+    set({ step: 'auth-checking' });
     try {
       const { data } = await api.get("/auth/me");
       set({
@@ -82,31 +80,7 @@ export const useAuthStore = create((set, get) => ({
         step: "authenticated",
         hydrated: true,
       });
-
       persist(get());
-    const persisted = loadFromStorage();
-    if (persisted?.user && persisted?.accessToken) {
-      set({
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        permissions: derivePermissions(persisted.user.role),
-        step: 'auth-checking',
-        hydrated: true,
-      });
-      try {
-        const { data } = await api.get('/auth/me');
-        set({
-          user: data.user,
-          accessToken: get().accessToken,
-          permissions: data.permissions || derivePermissions(data.user?.role),
-          step: 'authenticated',
-          hydrated: true,
-        });
-        persist(get());
-      } catch {
-        set({ user: null, accessToken: null, permissions: [], step: 'login', hydrated: true });
-        persist(get());
-      }
     } else {
       set({ user: null, accessToken: null, permissions: [], step: 'login', hydrated: true });
     }
@@ -264,20 +238,6 @@ export const useAuthStore = create((set, get) => ({
 
   reset: () => {
     set({ user: null, accessToken: null, permissions: [], step: 'login', challengeToken: null, error: null, otpMode: 'admin' });
-    persist(get());
-  },
-
-  goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null, otpMode: 'admin' }),
-    set({
-      user: null,
-      accessToken: null,
-      permissions: [],
-      step: "login",
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-      error: null,
-    });
     persist(get());
   },
 

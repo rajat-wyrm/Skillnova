@@ -10,6 +10,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+import { logger } from '../utils/logger.js';
+
 export const sendEmail = async (to, subject, html) => {
   try {
     await transporter.sendMail({
@@ -18,8 +20,8 @@ export const sendEmail = async (to, subject, html) => {
       subject,
       html,
     });
-    console.log(`✅ Email sent to ${to}`);
+    logger.info(`✅ Email sent to ${to}`);
   } catch (error) {
-    console.error("❌ Email error:", error.message);
+    logger.error({ err: error }, "❌ Email error");
   }
 };

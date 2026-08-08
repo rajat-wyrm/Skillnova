@@ -47,55 +47,43 @@ function generateInviteCode() {
   }
   return code; // e.g. "K3F9-7GQX"
 }
-} from '../utils/auth.js';
-import { config } from '../config/index.js';
-import { memoryStore } from '../utils/redis.js';
-import { sendEmail } from '../services/email.services.js';
-import { getClientIp, getUserAgent } from '../middleware/auth.js';
-import { audit } from '../services/audit.service.js';
-import { logger } from '../utils/logger.js';
-import { notify } from '../services/notification.service.js';
+
+import { sendEmail } from '../services/email.service.js';
 import { resolveOtpMode } from '../utils/authFlow.js';
 
 // ── Cookie options ───────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: 'lax',
   secure: config.isProd,
-  path: "/api/v1/auth",
-  maxAge: config.security.refreshCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
   path: '/api/v1/auth',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  domain: config.isProd ? undefined : 'localhost',
+  maxAge: config.security.refreshCookieMaxAge || 7 * 24 * 60 * 60 * 1000,
 };
 
 const ACCESS_COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: "lax",
+  sameSite: 'lax',
   secure: config.isProd,
-  path: "/",
-  maxAge: config.security.accessCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
   path: '/',
-  maxAge: 15 * 60 * 1000,
+  domain: config.isProd ? undefined : 'localhost',
+  maxAge: config.security.accessCookieMaxAge || 15 * 60 * 1000,
 };
 
 const CSRF_COOKIE_OPTS = {
   httpOnly: false,
-  sameSite: "lax",
+  sameSite: 'lax',
   secure: config.isProd,
-  path: "/",
-  maxAge: config.security.csrfCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
   path: '/',
-  maxAge: 24 * 60 * 60 * 1000,
+  domain: config.isProd ? undefined : 'localhost',
+  maxAge: config.security.csrfCookieMaxAge || 24 * 60 * 60 * 1000,
 };
 
-const MAX_FAILED = 5;
-const LOCK_MS = 15 * 60 * 1000;
+const REFRESH_DEDUP_TTL = 5000; // ms
+const recentlyRefreshed = new Set();
 
 // ── Helpers ──────────────────────────────────────────────
-function issueTokens(res, user, req, { rememberMe = true } = {}) {
+export function issueTokens(res, user, req, { rememberMe = true } = {}) {
   const sessionId = crypto.randomBytes(24).toString("hex");
   const tokenPayload = { sub: user.id, role: user.role, sid: sessionId };
   const accessToken = signAccessToken(tokenPayload);
@@ -131,9 +119,8 @@ function issueTokens(res, user, req, { rememberMe = true } = {}) {
   memoryStore.set(
     `session:${sessionId}`,
     { uid: user.id, role: user.role },
-    config.security.refreshCookieMaxAge / 1000,
+    Math.floor((config.security.refreshCookieMaxAge || 7 * 24 * 60 * 60 * 1000) / 1000),
   );
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role }, 7 * 24 * 60 * 60);
   return { accessToken, refreshToken, sessionId };
 }
 
@@ -150,7 +137,7 @@ function issuePendingSession(res, user) {
     { uid: user.id, role: user.role, pending: true },
     config.security.pendingSessionTtlSeconds,
   );
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, 15 * 60);
+  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, Math.floor((config.security.pendingSessionTtlSeconds || 15 * 60)));
   return sessionId;
 }
 
@@ -168,9 +155,6 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
-  if (user.status === "SUSPENDED")
-    throw ApiError.forbidden("Account suspended");
-  if (user.status === "INACTIVE") throw ApiError.forbidden("Account inactive");
   if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
   if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
 
@@ -181,7 +165,6 @@ export const login = asyncHandler(async (req, res) => {
       failed >= config.security.maxFailedAttempts
         ? new Date(Date.now() + config.security.lockDurationMs)
         : null;
-    const lockedUntil = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MS) : null;
     await prisma.user.update({
       where: { id: user.id },
       data: { failedAttempts: failed, lockedUntil },
@@ -219,15 +202,9 @@ export const login = asyncHandler(async (req, res) => {
     await prisma.otpChallenge.create({
       data: {
         email: user.email,
-        purpose:
-          user.role === "SUPER_ADMIN" || user.role === "ADMIN"
-            ? "login_admin"
-            : "login_2fa",
+        purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
         codeHash: await bcrypt.hash(code, config.security.otpHashRounds),
         expiresAt: new Date(Date.now() + parseDurationToMs(config.jwt.otpTtl)),
-        purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
-        codeHash: await bcrypt.hash(code, 8),
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
 
@@ -240,12 +217,11 @@ export const login = asyncHandler(async (req, res) => {
     });
 
     const responsePayload = {
-      step: "otp_required",
+      step: 'otp_required',
       challengeToken,
       sessionId,
       otpMode: resolveOtpMode(user.role),
       contactHint: user.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
-      contactHint: user.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
     };
     if (!config.isProd) responsePayload.devCode = code;
 
@@ -509,7 +485,6 @@ export const refresh = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized("Invalid refresh token");
   }
 
-  const tokenHash = hashToken(token);
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
   if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
     throw ApiError.unauthorized("Refresh token revoked or expired");
@@ -529,7 +504,6 @@ export const refresh = asyncHandler(async (req, res) => {
   recentlyRefreshed.add(tokenHash);
   setTimeout(() => recentlyRefreshed.delete(tokenHash), REFRESH_DEDUP_TTL);
   await audit({ userId: user.id, action: "auth.refresh", req });
-  await audit({ userId: user.id, action: 'auth.refresh', req });
 
   res.json({ user: sanitize(user), accessToken, refreshToken: newRefresh });
 });
@@ -544,7 +518,7 @@ export const logout = asyncHandler(async (req, res) => {
         where: { tokenHash, revokedAt: null },
         data: { revokedAt: new Date() },
       })
-      .catch(() => {});
+      .catch(() => { });
   }
   if (req.sessionId) memoryStore.del(`session:${req.sessionId}`);
 
@@ -701,6 +675,8 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
     message: `${user.name} is now ${isTL ? "a" : "not a"} Team Lead`,
     internProfile: updated,
   });
+});
+
 // @desc    Forgot Password - sends email
 // @route   POST /api/auth/forgot-password
 export const forgotPassword = asyncHandler(async (req, res) => {
@@ -717,21 +693,21 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   // 2. Save to DB with 15 min expiry
   await prisma.user.update({
     where: { id: user.id },
-    data: { 
+    data: {
       resetPasswordToken: hashedToken,
       resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000)
     }
   });
 
   // 3. Send email
-  const resetLink = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+  const resetLink = `${config.appUrl}/reset-password?token=${resetToken}`;
   const html = `
     <h2>Reset Your SkillNova Password</h2>
     <p>Hi ${user.name},</p>
     <a href="${resetLink}">Click here to reset</a>
     <p>This link expires in 15 minutes</p>
   `;
-  await sendEmail(user.email, "Reset Your SkillNova Password", html);
+  await sendEmail({ to: user.email, subject: "Reset Your SkillNova Password", html });
 
   res.json({ message: 'Password reset email sent' });
 });
@@ -739,12 +715,14 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 // @desc    Reset Password with token
 // @route   POST /api/auth/reset-password/:token
 export const resetPassword = asyncHandler(async (req, res) => {
-  const { token } = req.params;
+  const token = req.params.token || req.body.token;
   const { password } = req.body;
+
+  if (!token) throw ApiError.badRequest('Token is required');
 
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
   const user = await prisma.user.findFirst({
-    where: { 
+    where: {
       resetPasswordToken: hashedToken,
       resetPasswordExpire: { gt: new Date() }
     }
@@ -752,10 +730,10 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
   if (!user) throw ApiError.badRequest('Invalid or expired token');
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, config.security.bcryptRounds || 10);
   await prisma.user.update({
     where: { id: user.id },
-    data: { 
+    data: {
       passwordHash: hashedPassword,
       resetPasswordToken: null,
       resetPasswordExpire: null

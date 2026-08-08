@@ -6,20 +6,20 @@ import dotenv from 'dotenv';
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(configDir, '../../.env') });
 
-const requiredSecrets = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
-import "dotenv/config";
-import crypto from "node:crypto";
+// const requiredSecrets = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
+// import "dotenv/config";
+// import crypto from "node:crypto";
 
-const isProd = process.env.NODE_ENV === "production";
-const required = [
-  "DATABASE_URL",
-  "JWT_ACCESS_SECRET",
-  "JWT_REFRESH_SECRET",
-  "JWT_SECRET",
-  "CSRF_SECRET",
-  ...(isProd ? ["FILE_SIGN_SECRET"] : []),
-];
-const required = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
+// const isProd = process.env.NODE_ENV === "production";
+// const required = [
+//   "DATABASE_URL",
+//   "JWT_ACCESS_SECRET",
+//   "JWT_REFRESH_SECRET",
+//   "JWT_SECRET",
+//   "CSRF_SECRET",
+//   ...(isProd ? ["FILE_SIGN_SECRET"] : []),
+// ];
+const requiredSecrets = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
 const isProd = process.env.NODE_ENV === 'production';
 const missingSecrets = requiredSecrets.filter((k) => !process.env[k]);
 const missingDatabaseUrl = !process.env.DATABASE_URL;
@@ -48,31 +48,23 @@ if (invalidDatabaseUrl) {
 if (missingSecrets.length) {
   if (isProd) {
     console.error(`[config] Missing required env var(s): ${missingSecrets.join(', ')}`);
+    console.error("\n[config] FATAL: Missing required environment variable(s):");
+    missingSecrets.forEach((k) => console.error(`  - ${k}`));
+    console.error("\nCopy server/.env.example to server/.env and fill in real values.");
     console.error(
-      "\n[config] FATAL: Missing required environment variable(s):",
+      "Generate secrets with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\"\n"
     );
-    missing.forEach((k) => console.error(`  - ${k}`));
-    console.error(
-      "\nCopy server/.env.example to server/.env and fill in real values.",
-    );
-    console.error(
-      "Generate secrets with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\"\n",
-    );
-    console.error(`[config] Missing required env var(s): ${missing.join(', ')}`);
     process.exit(1);
   }
+
   // Dev / test: warn loudly and substitute placeholders so unit tests can
   // run without a populated .env file. Production servers always set these.
   console.warn(
-    `[config] Missing env var(s) substituted with random placeholders: ${missingSecrets.join(', ')}`,
+    `[config] Missing env var(s) substituted with random placeholders: ${missingSecrets.join(', ')}`
   );
+
   for (const k of missingSecrets) {
     process.env[k] = `dev-${k.toLowerCase()}-${crypto.randomBytes(12).toString('hex')}`;
-    `[config] Missing env var(s) substituted with random placeholders: ${missing.join(", ")}`,
-  );
-  for (const k of missing) {
-    process.env[k] =
-      `dev-${k.toLowerCase()}-${crypto.randomBytes(12).toString("hex")}`;
   }
 }
 
@@ -94,17 +86,17 @@ if (
 }
 
 // Warn about weak secrets in dev
-if (!isProd) {
-  const weakSecrets = required.filter((k) => {
-    const v = process.env[k];
-    return v && v.length < 32;
-  });
-  if (weakSecrets.length) {
-    console.warn(
-      `[config] WARNING: Short secret(s) (< 32 chars): ${weakSecrets.join(", ")}. OK for dev, not for production.`,
-    );
-  }
-}
+// if (!isProd) {
+//   const weakSecrets = requiredSecrets.filter((k) => {
+//     const v = process.env[k];
+//     return v && v.length < 32;
+//   });
+//   if (weakSecrets.length) {
+//     console.warn(
+//       `[config] WARNING: Short secret(s) (< 32 chars): ${weakSecrets.join(", ")}. OK for dev, not for production.`,
+//     );
+//   }
+// }
 
 function parseTtl(value, fallback) {
   if (!value) return fallback;
@@ -156,22 +148,6 @@ export const config = {
     refreshTtl: parseTtl(process.env.REFRESH_TOKEN_TTL, '7d'),
     otpTtl: parseTtl(process.env.OTP_TTL, '10m'),
     twoFaTtl: parseTtl(process.env.TWOFA_TTL, '10m'),
-    accessTtl: process.env.ACCESS_TOKEN_TTL
-      ? /\D/.test(process.env.ACCESS_TOKEN_TTL)
-        ? process.env.ACCESS_TOKEN_TTL
-        : Number(process.env.ACCESS_TOKEN_TTL)
-      : "15m",
-    refreshTtl: process.env.REFRESH_TOKEN_TTL
-      ? /\D/.test(process.env.REFRESH_TOKEN_TTL)
-        ? process.env.REFRESH_TOKEN_TTL
-        : Number(process.env.REFRESH_TOKEN_TTL)
-      : "7d",
-    otpTtl: process.env.OTP_TTL || "10m",
-    twoFaTtl: process.env.TWOFA_TTL || "10m",
-    accessTtl: process.env.ACCESS_TOKEN_TTL || '15m',
-    refreshTtl: process.env.REFRESH_TOKEN_TTL || '7d',
-    otpTtl: process.env.OTP_TTL || '10m',
-    twoFaTtl: process.env.TWOFA_TTL || '10m',
   },
 
   csrf: {
@@ -231,10 +207,8 @@ export const config = {
     },
   },
 
-  logLevel: process.env.LOG_LEVEL || "info",
-  isProd: process.env.NODE_ENV === "production",
   logLevel: process.env.LOG_LEVEL || 'info',
-  isProd: process.env.NODE_ENV === 'production',
+  isProd: isProd,
 };
 
 export function isCorsOriginAllowed(origin) {

@@ -91,3 +91,19 @@ export const COOKIE_NAMES = {
 };
 
 export const isProd = config.isProd;
+
+// ── OAuth State tokens ─────────────────────────────────────
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign({ returnTo, nonce: crypto.randomBytes(8).toString('hex') }, config.jwt.accessSecret, {
+    expiresIn: '15m',
+    algorithm: ALGO,
+    issuer: 'skillnova',
+  });
+}
+
+export function verifyOAuthState(token) {
+  return jwt.verify(token, config.jwt.accessSecret, {
+    algorithms: [ALGO],
+    issuer: 'skillnova',
+  });
+}

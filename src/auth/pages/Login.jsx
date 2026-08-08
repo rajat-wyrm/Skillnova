@@ -7,10 +7,6 @@ import { getErrorMessage } from "../../lib/api";
 import notify from "../../lib/toast";
 import { APP_CONSTANTS } from "../../shared/config/constants";
 import "../auth.css";
-import { useState, useId } from 'react';
-import { useAuthStore } from '../../lib/auth';
-import notify from '../../lib/toast';
-import '../auth.css';
 
 const Icon = {
   Mail: () => (
@@ -154,7 +150,6 @@ const Login = () => {
     }
     return "";
   });
-  const [formError, setFormError] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false });
   const [fieldError, setFieldError] = useState({ email: "", password: "" });
 
@@ -203,22 +198,6 @@ const Login = () => {
     }
   };
 
-  const emailState =
-    touched.email && !formError
-      ? fieldError.email
-        ? "error"
-        : email
-          ? "success"
-          : ""
-      : "";
-  const pwdState =
-    touched.password && !formError
-      ? fieldError.password
-        ? "error"
-        : password
-          ? "success"
-          : ""
-      : "";
   const emailState = touched.email
     ? (fieldError.email ? 'error' : email ? 'success' : '')
     : '';
@@ -244,10 +223,6 @@ const Login = () => {
         <p className="auth-subtitle">
           Sign in to your SkillNova account to continue.
         </p>
-          <img src="/logo.png" alt="SkillNova" style={{ height: 44, mixBlendMode: 'multiply' }} />
-        </div>
-        <h1 className="auth-title">Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to your SkillNova account to continue.</p>
 
         <form
           id="main-form"
@@ -280,7 +255,6 @@ const Login = () => {
                 aria-label="Email address"
                 aria-describedby={`${emailId}-error`}
                 aria-invalid={emailState === "error" ? "true" : undefined}
-                aria-invalid={emailState === 'error' ? 'true' : undefined}
                 onChange={handleChange}
                 onBlur={handleBlur}
               />
@@ -311,17 +285,7 @@ const Login = () => {
             )}
           </div>
 
-          <div
-            className={`auth-form-group ${pwdState === "error" ? "is-error" : pwdState === "success" ? "is-success" : ""}`}
-          >
-            <label className="auth-label" htmlFor={passwordId}>
-              Password{" "}
-              <span className="auth-required" aria-label="required">
-                *
-              </span>
-            {emailState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.email}</p>}
-            {emailState === 'success' && <p className="auth-msg auth-msg-success"><Icon.Check /> Email looks good.</p>}
-          </div>
+
 
           <div className={`auth-form-group ${pwdState === 'error' ? 'is-error' : pwdState === 'success' ? 'is-success' : ''}`}>
             <label className="auth-label" htmlFor={passwordId}>
@@ -343,7 +307,6 @@ const Login = () => {
                 aria-label="Password"
                 aria-describedby={`${passwordId}-error`}
                 style={{ paddingRight: "42px" }}
-                style={{ paddingRight: '42px' }}
                 onChange={handleChange}
                 onBlur={handleBlur}
               />
@@ -396,14 +359,13 @@ const Login = () => {
         <div className="auth-divider">
           <span>Demo Accounts</span>
         </div>
-        <div className="auth-divider"><span>Demo Accounts</span></div>
 
         <div className="auth-demo-grid">
           {[
             { label: 'Super Admin', email: 'superadmin@skillnova.com', pwd: 'SuperAdmin#2026', color: '#7C3AED' },
-            { label: 'Admin',       email: 'admin@skillnova.com',      pwd: 'Admin#2026',      color: '#ff6d34' },
-            { label: 'Mentor',      email: 'mentor@skillnova.com',     pwd: 'Mentor#2026',     color: '#7C3AED' },
-            { label: 'Intern',      email: 'rahul@skillnova.com',      pwd: 'User#2026',       color: '#00bea3' },
+            { label: 'Admin', email: 'admin@skillnova.com', pwd: 'Admin#2026', color: '#ff6d34' },
+            { label: 'Mentor', email: 'mentor@skillnova.com', pwd: 'Mentor#2026', color: '#7C3AED' },
+            { label: 'Intern', email: 'rahul@skillnova.com', pwd: 'User#2026', color: '#00bea3' },
           ].map((d) => (
             <button
               key={d.email}
@@ -471,7 +433,7 @@ const GoogleSignInButton = () => {
     fetch(`${import.meta.env.VITE_API_URL || "/api/v1"}/auth/google/status`)
       .then((r) => r.json())
       .then((d) => setEnabled(d.enabled))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   if (!enabled) return null;

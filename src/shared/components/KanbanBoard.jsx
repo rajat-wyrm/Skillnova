@@ -16,10 +16,10 @@ import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
 
 const COLUMNS = [
-  { id: 'TODO',        title: 'To do',         color: '#94a3b8' },
-  { id: 'IN_PROGRESS', title: 'In progress',   color: '#ff6d34' },
-  { id: 'REVIEW',      title: 'In review',     color: '#7C3AED' },
-  { id: 'DONE',        title: 'Done',          color: '#00bea3' },
+  { id: 'TODO', title: 'To do', color: '#94a3b8' },
+  { id: 'IN_PROGRESS', title: 'In progress', color: '#ff6d34' },
+  { id: 'REVIEW', title: 'In review', color: '#7C3AED' },
+  { id: 'DONE', title: 'Done', color: '#00bea3' },
 ];
 
 const PRIORITY_COLORS = {
@@ -75,35 +75,35 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) =>
         </div>
       )}
       <button
-  onClick={(e) => {
-    e.stopPropagation();
-    onAI(task);
-  }}
-  style={{
-    marginTop: 10,
-    width: '100%',
-    padding: '8px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#7C3AED',
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  }}
->
-  <Sparkles size={14} />
-  AI Learning Guide
-</button>
+        onClick={(e) => {
+          e.stopPropagation();
+          onAI(task);
+        }}
+        style={{
+          marginTop: 10,
+          width: '100%',
+          padding: '8px',
+          borderRadius: 8,
+          border: 'none',
+          background: '#7C3AED',
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+        }}
+      >
+        <Sparkles size={14} />
+        AI Learning Guide
+      </button>
     </div>
   );
 };
 
-const Column = ({ column, tasks, canEdit, onAdd, onClickTask,onAITask }) => {
+const Column = ({ column, tasks, canEdit, onAdd, onClickTask, onAITask }) => {
   const taskIds = tasks.map((t) => t.id);
   const { setNodeRef } = useSortable({ id: column.id, data: { type: 'column' }, disabled: !canEdit });
   return (
@@ -209,17 +209,17 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
       ]);
       setProject(p?.data?.project);
       setTasks(t.data.items);
-      
+
     } catch { /* ignore */ }
     setLoading(false);
   }, [projectId]);
 
   const getTaskGuidance = async (task) => {
-  setSelectedAITask(task);
-  setAiLoading(true);
-  setAiResponse('');
+    setSelectedAITask(task);
+    setAiLoading(true);
+    setAiResponse('');
 
-  const prompt = `
+    const prompt = `
 You are an AI mentor helping an intern complete a task.
 
 Task Title:
@@ -248,25 +248,23 @@ Please provide:
 10. End with some motivation.
 `;
 
-  try {
-    const { data } = await api.post('/ai/chat', {
-      message: prompt,
-    });
+    try {
+      const { data } = await api.post('/ai/chat', {
+        message: prompt,
+      });
 
-    setAiResponse(data.reply);
-  } catch  {
-    notify.error('Failed to get AI guidance.');
-  } finally {
-    setAiLoading(false);
-  }
-};
+      setAiResponse(data.reply);
+    } catch {
+      notify.error('Failed to get AI guidance.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
-    fetchTasks();
-  }, [fetchTasks]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -321,41 +319,41 @@ Please provide:
   return (
     <div>
       {project && (
-  <div
-    style={{
-      marginBottom: 16,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-    <div>
-      <h2
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: "var(--text)",
-        }}
-      >
-        {project.name}
-      </h2>
-
-      {project.description && (
-        <p
+        <div
           style={{
-            fontSize: 13,
-            color: "var(--muted)",
-            marginTop: 4,
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          {project.description}
-        </p>
-      )}
-    </div>
+          <div>
+            <h2
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text)",
+              }}
+            >
+              {project.name}
+            </h2>
 
-  
-  </div>
-)}
+            {project.description && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--muted)",
+                  marginTop: 4,
+                }}
+              >
+                {project.description}
+              </p>
+            )}
+          </div>
+
+
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
           {COLUMNS.map((c) => (
@@ -374,80 +372,80 @@ Please provide:
       </DndContext>
       {modalTask && <TaskModal task={modalTask} onClose={() => setModalTask(null)} onSave={onSaveTask} />}
       {selectedAITask && (
-  <div
-    style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.45)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-    }}
-  >
-    <div
-      style={{
-        width: 'min(850px,90vw)',
-        maxHeight: '85vh',
-        overflowY: 'auto',
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: 16,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Sparkles size={20} color="#ff6d34" />
-          <div>
-            <h2 style={{ margin: 0 }}>AI Learning Guide</h2>
-            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
-              {selectedAITask.title}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            setSelectedAITask(null);
-            setAiResponse('');
-          }}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-          }}
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      {aiLoading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <Loader2 className="animate-spin" />
-          <p>Generating learning guide...</p>
-        </div>
-      ) : (
         <div
           style={{
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.7,
-            color: 'var(--text)',
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
           }}
         >
-          {aiResponse}
+          <div
+            style={{
+              width: 'min(850px,90vw)',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 20,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Sparkles size={20} color="#ff6d34" />
+                <div>
+                  <h2 style={{ margin: 0 }}>AI Learning Guide</h2>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+                    {selectedAITask.title}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedAITask(null);
+                  setAiResponse('');
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {aiLoading ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <Loader2 className="animate-spin" />
+                <p>Generating learning guide...</p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.7,
+                  color: 'var(--text)',
+                }}
+              >
+                {aiResponse}
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
     </div>
   );
 };
