@@ -46,6 +46,27 @@ export function verifyRefreshToken(token) {
   });
 }
 
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign(
+    { purpose: 'oauth_state', returnTo },
+    config.jwt.secret,
+    {
+      expiresIn: '10m',
+      algorithm: ALGO,
+    },
+  );
+}
+
+export function verifyOAuthState(token) {
+  const payload = jwt.verify(token, config.jwt.secret, {
+    algorithms: [ALGO],
+  });
+  if (!payload || payload.purpose !== 'oauth_state' || typeof payload.returnTo !== 'string') {
+    throw new Error('Invalid OAuth state token');
+  }
+  return payload;
+}
+
 export function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }

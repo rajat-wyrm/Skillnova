@@ -2,7 +2,9 @@
 //  SHARED — UI.jsx  (UptoSkills Branded)
 // ══════════════════════════════════════════════
 
-import { TrendingUp, X, CheckSquare } from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TrendingUp, X, CheckSquare } from 'lucide-react';
 
 // UptoSkills Brand Colors
 export const BRAND = {
