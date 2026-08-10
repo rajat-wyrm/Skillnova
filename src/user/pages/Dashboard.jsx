@@ -155,7 +155,7 @@ const Dashboard = ({ onNavigate }) => {
                   </div>
                   {r.score != null && (
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
-                      {r.score}/10
+                      {Number(r.score).toFixed(1)}/10
                     </span>
                   )}
                 </div>
