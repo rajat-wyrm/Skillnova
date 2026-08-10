@@ -260,18 +260,6 @@ export const useAuthStore = create((set, get) => ({
   },
 
   goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null, otpMode: 'admin' }),
-    set({
-      user: null,
-      accessToken: null,
-      permissions: [],
-      step: "login",
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-      error: null,
-    });
-    persist(get());
-  },
 
   goToSignup: () =>
     set({
