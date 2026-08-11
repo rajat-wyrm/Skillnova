@@ -10,14 +10,6 @@ import { authenticate, requireAuth } from "../middleware/auth.js";
 import { validate, schemas } from "../middleware/validate.js";
 import { config } from "../config/index.js";
 import { requirePermission } from "../middleware/rbac.js";
-import { Router } from 'express';
-import { z } from 'zod';
-import rateLimit from 'express-rate-limit';
-import * as auth from '../controllers/auth.controller.js';
-import { authenticate, requireAuth } from '../middleware/auth.js';
-import { validate, schemas } from '../middleware/validate.js';
-import { config } from '../config/index.js';
-import { forgotPassword, resetPassword } from '../controllers/auth.controller.js';
 
 const router = Router();
 
@@ -54,8 +46,6 @@ const otpSchema = z.object({
 
 router.post("/login", loginLimiter, validate(loginSchema), auth.login);
 router.post("/verify-otp", loginLimiter, validate(otpSchema), auth.verifyOtp);
-router.post('/login', loginLimiter, validate(loginSchema), auth.login);
-router.post('/verify-otp', loginLimiter, validate(otpSchema), auth.verifyOtp);
 router.post('/refresh', auth.refresh);
 router.post('/logout', authenticate, auth.logout);
 router.get('/me', authenticate, requireAuth, auth.me);
@@ -152,9 +142,6 @@ router.post(
 router.get("/google/status", googleAuth.status);
 router.get("/google", googleAuth.start);
 router.get("/google/callback", googleAuth.callback);
-router.get('/google/status', googleAuth.status);
-router.get('/google', googleAuth.start);
-router.get('/google/callback', googleAuth.callback);
 // ── Password Reset ─────────────────────────────────────────
 router.post('/forgot-password', auth.forgotPassword);
 router.post('/reset-password', auth.resetPassword);

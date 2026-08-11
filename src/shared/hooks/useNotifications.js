@@ -4,14 +4,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '../../lib/auth';
 import api from '../../lib/api';
-import { getSocket } from '../../lib/socket';
-import { useEffect, useState, useCallback } from 'react';
-import { useAuthStore } from '../../lib/auth';
-import api from '../../lib/api';
-import { getSocket } from '../../lib/socket';
+import { connectSocket } from '../../lib/socket';
 
 export function useNotifications() {
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -21,7 +18,7 @@ export function useNotifications() {
         api.get('/notifications', { params: { limit: 50 } }),
         api.get('/notifications/unread-count'),
       ]);
-      setItems(listData.items);
+      setItems(listData.items || []);
       setUnreadCount(countData.unreadCount ?? 0);
     } catch {
       /* ignore */
@@ -31,45 +28,41 @@ export function useNotifications() {
   const markRead = useCallback(async (id) => {
     setItems((arr) => arr.map((n) => (n.id === id ? { ...n, read: true } : n)));
     setUnreadCount((c) => Math.max(0, c - 1));
-    try { await api.post(`/notifications/${id}/read`); } catch { /* ignore */ }
+    try {
+      await api.post(`/notifications/${id}/read`);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const markAllRead = useCallback(async () => {
     setItems((arr) => arr.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
-    try { await api.post('/notifications/read-all'); } catch { /* ignore */ }
+    try {
+      await api.post('/notifications/read-all');
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
     if (!user) return undefined;
+
     fetchAll();
-    const socket = getSocket();
+    const socket = connectSocket(accessToken);
     if (!socket) return undefined;
-    if (!userId) return undefined;
-
-    const loadTimer = window.setTimeout(() => {
-      void fetchAll();
-    }, 0);
-
-    const socket = connectSocket(token);
 
     const onNotification = (n) => {
       setItems((arr) => [n, ...arr].slice(0, 50));
       setUnreadCount((c) => c + 1);
     };
-    socket.on('notification', onNotification);
-    return () => socket.off('notification', onNotification);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
 
-    const onBroadcast = (n) => {
-      setBroadcasts((arr) => [n, ...arr].slice(0, 50));
+    socket.on('notification', onNotification);
+    return () => {
+      socket.off('notification', onNotification);
     };
-
-    socket.on('notification', onNotification);
-    return () => socket.off('notification', onNotification);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, accessToken, fetchAll]);
 
   return { items, unreadCount, fetchAll, markRead, markAllRead };
 }

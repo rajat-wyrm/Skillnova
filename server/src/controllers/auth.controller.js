@@ -47,14 +47,8 @@ function generateInviteCode() {
   }
   return code; // e.g. "K3F9-7GQX"
 }
-} from '../utils/auth.js';
-import { config } from '../config/index.js';
-import { memoryStore } from '../utils/redis.js';
+
 import { sendEmail } from '../services/email.services.js';
-import { getClientIp, getUserAgent } from '../middleware/auth.js';
-import { audit } from '../services/audit.service.js';
-import { logger } from '../utils/logger.js';
-import { notify } from '../services/notification.service.js';
 import { resolveOtpMode } from '../utils/authFlow.js';
 
 // ── Cookie options ───────────────────────────────────────
@@ -177,10 +171,6 @@ export const login = asyncHandler(async (req, res) => {
   const ok = verifyPassword(password, user.passwordHash);
   if (!ok) {
     const failed = user.failedAttempts + 1;
-    const lockedUntil =
-      failed >= config.security.maxFailedAttempts
-        ? new Date(Date.now() + config.security.lockDurationMs)
-        : null;
     const lockedUntil = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MS) : null;
     await prisma.user.update({
       where: { id: user.id },
@@ -509,7 +499,6 @@ export const refresh = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized("Invalid refresh token");
   }
 
-  const tokenHash = hashToken(token);
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
   if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
     throw ApiError.unauthorized("Refresh token revoked or expired");
@@ -529,7 +518,6 @@ export const refresh = asyncHandler(async (req, res) => {
   recentlyRefreshed.add(tokenHash);
   setTimeout(() => recentlyRefreshed.delete(tokenHash), REFRESH_DEDUP_TTL);
   await audit({ userId: user.id, action: "auth.refresh", req });
-  await audit({ userId: user.id, action: 'auth.refresh', req });
 
   res.json({ user: sanitize(user), accessToken, refreshToken: newRefresh });
 });
@@ -701,6 +689,8 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
     message: `${user.name} is now ${isTL ? "a" : "not a"} Team Lead`,
     internProfile: updated,
   });
+});
+
 // @desc    Forgot Password - sends email
 // @route   POST /api/auth/forgot-password
 export const forgotPassword = asyncHandler(async (req, res) => {

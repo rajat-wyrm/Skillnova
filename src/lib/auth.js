@@ -1,11 +1,9 @@
 // ════════════════════════════════════════════════════════════
 //  Auth Store — Zustand
 // ════════════════════════════════════════════════════════════
-import { create } from "zustand";
-import api, { getErrorMessage } from "./api";
-import { APP_CONSTANTS } from "../shared/config/constants";
 import { create } from 'zustand';
 import api, { getErrorMessage } from './api';
+import { APP_CONSTANTS } from '../shared/config/constants';
 
 const STORAGE_KEY = 'skillnova.auth';
 const STORAGE_ENABLED = !import.meta.env.DEV;
@@ -22,17 +20,19 @@ const loadFromStorage = () => {
 
 const persist = (state) => {
   if (!STORAGE_ENABLED) {
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     return;
   }
 
   try {
     if (state.user && state.accessToken) {
       localStorage.setItem(
-        APP_CONSTANTS.AUTH_STORAGE_KEY,
-        JSON.stringify({ user: state.user, accessToken: state.accessToken }),
         STORAGE_KEY,
-        JSON.stringify({ user: state.user, accessToken: state.accessToken })
+        JSON.stringify({ user: state.user, accessToken: state.accessToken }),
       );
     } else {
       localStorage.removeItem(STORAGE_KEY);
@@ -46,7 +46,7 @@ export const useAuthStore = create((set, get) => ({
   user: null,
   accessToken: null,
   permissions: [],
-  step: "login", // 'login' | 'signup' | 'signup_otp' | 'otp' | 'authenticated'
+  step: 'login', // 'login' | 'signup' | 'signup_otp' | 'otp' | 'authenticated'
   challengeToken: null,
   devCode: null,
   otpMode: 'admin',
@@ -59,13 +59,13 @@ export const useAuthStore = create((set, get) => ({
 
   hydrate: async () => {
     if (get().hydrated) return;
-    // Always try /auth/me first — validates httpOnly cookies (Google OAuth uses these)
+
     try {
-      const { data } = await api.get("/auth/me");
+      const { data } = await api.get('/auth/me');
       set({
         user: data.user,
         permissions: data.permissions ?? derivePermissions(data.user.role),
-        step: "authenticated",
+        step: 'authenticated',
         hydrated: true,
       });
       persist(get());
@@ -73,17 +73,7 @@ export const useAuthStore = create((set, get) => ({
     } catch {
       // No valid cookie — fall back to localStorage
     }
-    const persisted = loadFromStorage();
-    if (persisted?.user && persisted?.accessToken) {
-      set({
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        permissions: derivePermissions(persisted.user.role),
-        step: "authenticated",
-        hydrated: true,
-      });
 
-      persist(get());
     const persisted = loadFromStorage();
     if (persisted?.user && persisted?.accessToken) {
       set({
@@ -93,6 +83,8 @@ export const useAuthStore = create((set, get) => ({
         step: 'auth-checking',
         hydrated: true,
       });
+      persist(get());
+
       try {
         const { data } = await api.get('/auth/me');
         set({
@@ -268,18 +260,6 @@ export const useAuthStore = create((set, get) => ({
   },
 
   goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null, otpMode: 'admin' }),
-    set({
-      user: null,
-      accessToken: null,
-      permissions: [],
-      step: "login",
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-      error: null,
-    });
-    persist(get());
-  },
 
   goToSignup: () =>
     set({

@@ -24,27 +24,6 @@ const Exports          = lazy(() => import('./pages/Exports'));
 const Roadmap          = lazy(() => import('./pages/Roadmap'));
 const Badges           = lazy(() => import('./pages/Badges'));
 
-const PAGES = {
-  dashboard:      <Dashboard />,
-  knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
-  qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
-  project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
-  kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
-  calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
-  files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
-  reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
-  attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
-  roadmap:        <Suspense fallback={<PageLoader />}><Roadmap /></Suspense>,
-  badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
-  ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
-  notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
-  announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
-  exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
-  analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
-  profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
-  settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
-};
-
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
 
@@ -58,6 +37,8 @@ const UserApp = () => {
     files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
     reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
     attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
+    roadmap:        <Suspense fallback={<PageLoader />}><Roadmap onNavigate={setPage} /></Suspense>,
+    badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
     ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
     notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
     announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,

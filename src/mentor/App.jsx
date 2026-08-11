@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import { PageLoader } from '../shared/components/Skeleton';
 
 const Interns        = lazy(() => import('./pages/Interns'));
+const CalendarView   = lazy(() => import('./pages/Calendar'));
 const Reports        = lazy(() => import('./pages/Reports'));
 const Projects       = lazy(() => import('./pages/Projects'));
 const KnowledgeBase  = lazy(() => import('./pages/KnowledgeBase'));
@@ -20,6 +21,7 @@ const RoadmapManage  = lazy(() => import('./pages/RoadmapManage'));
 const PAGES = {
   dashboard:      <Dashboard />,
   interns:        <Suspense fallback={<PageLoader />}><Interns /></Suspense>,
+  meetings:       <Suspense fallback={<PageLoader />}><CalendarView /></Suspense>,
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   projects:       <Suspense fallback={<PageLoader />}><Projects /></Suspense>,
   roadmap:        <Suspense fallback={<PageLoader />}><RoadmapManage /></Suspense>,

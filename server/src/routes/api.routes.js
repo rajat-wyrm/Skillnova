@@ -1,25 +1,13 @@
 // ════════════════════════════════════════════════════════════
 //  Reports, Announcements, Q&A, Attendance, Projects, AI
 // ════════════════════════════════════════════════════════════
-import { Router } from "express";
-import { z } from "zod";
-import * as reports from "../controllers/reports.controller.js";
-import * as announcements from "../controllers/announcements.controller.js";
-import * as qa from "../controllers/qa.controller.js";
-import * as attendance from "../controllers/attendance.controller.js";
-import * as ratings from "../controllers/ratings.controller.js";
-import * as projects from "../controllers/projects.controller.js";
-import * as ai from "../controllers/ai.controller.js";
-import * as notif from "../controllers/notifications.controller.js";
-import { authenticate, requireAuth } from "../middleware/auth.js";
-import { requirePermission } from "../middleware/rbac.js";
-import { validate, schemas } from "../middleware/validate.js";
 import { Router } from 'express';
 import { z } from 'zod';
 import * as reports from '../controllers/reports.controller.js';
 import * as announcements from '../controllers/announcements.controller.js';
 import * as qa from '../controllers/qa.controller.js';
 import * as attendance from '../controllers/attendance.controller.js';
+import * as ratings from '../controllers/ratings.controller.js';
 import * as projects from '../controllers/projects.controller.js';
 import * as ai from '../controllers/ai.controller.js';
 import * as notif from '../controllers/notifications.controller.js';
@@ -43,18 +31,18 @@ api.get(
 );
 api.get("/reports/stats", requirePermission("reports:read"), reports.stats);
 api.get(
+  "/reports",
+  requirePermission("reports:read"),
+  validate(schemas.pagination, "query"),
+  reports.list,
+);
+api.get("/reports/stats", requirePermission("reports:read"), reports.stats);
+api.get(
   "/reports/:id",
   requirePermission("reports:read"),
   validate(idParam, "params"),
   reports.getById,
 );
-  '/reports',
-  requirePermission('reports:read'),
-  validate(schemas.pagination, 'query'),
-  reports.list
-);
-api.get('/reports/stats', requirePermission('reports:read'), reports.stats);
-api.get('/reports/:id', requirePermission('reports:read'), validate(idParam, 'params'), reports.getById);
 api.post(
   "/reports",
   requirePermission("reports:create"),
@@ -65,7 +53,6 @@ api.post(
       fileUrl: z.string().url().optional(),
       weekNumber: z.number().int().min(1).max(104).optional(),
     }),
-    })
   ),
   reports.create,
 );

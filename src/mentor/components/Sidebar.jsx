@@ -5,12 +5,14 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
   Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Map,
+  Calendar,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
 const MENU = [
   { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
   { id: 'interns',       label: 'My Interns',     icon: Users           },
+  { id: 'meetings',      label: 'Meetings',       icon: Calendar        },
   { id: 'reports',       label: 'Report Reviews', icon: FileText        },
   { id: 'projects',      label: 'Projects',       icon: Activity        },
   { id: 'roadmap',       label: 'Learning Roadmaps', icon: Map          },
