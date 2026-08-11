@@ -8,6 +8,7 @@ import Header from './Header';
 const PAGE_TITLES = {
   dashboard:      'Mentor Dashboard',
   interns:        'My Interns',
+  meetings:       'Meetings Calendar',
   reports:        'Reports to Review',
   projects:       'Projects & Tasks',
   knowledge:      'Knowledge Base',
