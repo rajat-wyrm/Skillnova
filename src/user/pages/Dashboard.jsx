@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  USER — pages/Dashboard.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -27,6 +27,73 @@ const sampleReports = [
   { id: 1, title: 'Weekly Report', status: 'REVIEWED', submittedAt: new Date(), score: 8 },
 ];
 
+const PromptButton = ({ label, colorClass, isActive, onOpen, onClose, onSubmit, isReport = false }) => {
+  const [value, setValue] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isActive && inputRef.current) {
+      inputRef.current.focus();
+    } else {
+      setValue('');
+    }
+  }, [isActive]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(value);
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button 
+        onClick={() => isActive ? onClose() : onOpen()}
+        className={`px-3 py-1 rounded text-white text-sm ${colorClass} hover:brightness-110 transition`}
+      >
+        {label}
+      </button>
+      
+      {isActive && (
+        <MotionDiv
+          initial={{ opacity: 0, y: -5, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="absolute top-full left-0 mt-2 p-3 rounded-xl shadow-2xl z-50 min-w-[260px] border border-white/10"
+          style={{ background: 'linear-gradient(135deg, #1f2425 0%, #161b1c 100%)' }}
+        >
+          <form onSubmit={handleSubmit}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder={`Enter ${isReport ? 'report' : 'task'} name...`}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') onClose();
+              }}
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#00bea3] mb-3 transition-colors"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#00bea3] hover:bg-[#00a38c] transition-colors shadow-lg shadow-[#00bea3]/20"
+              >
+                Create
+              </button>
+            </div>
+          </form>
+        </MotionDiv>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = ({ onNavigate }) => {
   const { user } = useAuthStore();
   const [stats, setStats] = useState(null);
@@ -34,6 +101,7 @@ const Dashboard = ({ onNavigate }) => {
   const [myTasks, setMyTasks] = useState([]);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activePrompt, setActivePrompt] = useState(null);
 
   
 
@@ -104,13 +172,20 @@ const Dashboard = ({ onNavigate }) => {
   })).filter((s) => s.value > 0);
 
   // helper buttons for local sample data
-  const addSampleTask = (status = 'TODO') => {
+  const addSampleTask = (status = 'TODO', customTitle = '') => {
     const id = Date.now();
-    setMyTasks((prev) => [{ id, title: `Sample Task ${id % 1000}`, status, priority: 'MEDIUM' }, ...prev]);
+    const title = customTitle.trim() || `Sample Task ${id % 1000}`;
+    setMyTasks((prev) => [{ id, title, status, priority: 'MEDIUM', dueDate: new Date().toISOString() }, ...prev]);
   };
-  const addSampleReport = (status = 'REVIEWED') => {
+  
+  const markTaskCompleted = (id) => {
+    setMyTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: 'DONE' } : t)));
+  };
+
+  const addSampleReport = (status = 'REVIEWED', customTitle = '') => {
     const id = Date.now();
-    setMyReports((prev) => [{ id, title: `Sample Report ${id % 1000}`, status, submittedAt: new Date(), score: Math.floor(Math.random() * 10) + 1 }, ...prev]);
+    const title = customTitle.trim() || `Sample Report ${id % 1000}`;
+    setMyReports((prev) => [{ id, title, status, submittedAt: new Date(), score: Math.floor(Math.random() * 10) + 1 }, ...prev]);
   };
 
   const greeting = (() => {
@@ -156,30 +231,46 @@ const Dashboard = ({ onNavigate }) => {
             You have <span className="text-white font-bold">{myTasks.filter((t) => t.status !== 'DONE').length} pending tasks</span>{' '}
             and {stats?.pending ?? 0} reports awaiting review.
           </p>
-          <div className="mt-4 flex gap-2">
-            <button onClick={() => addSampleTask('TODO')}
-              className="px-3 py-1 rounded bg-gray-700 text-white text-sm">Add Sample Task (TODO)</button>
-            <button onClick={() => addSampleTask('IN_PROGRESS')}
-              className="px-3 py-1 rounded bg-orange-500 text-white text-sm">Add Sample Task (In progress)</button>
-            <button onClick={() => addSampleTask('DONE')}
-              className="px-3 py-1 rounded bg-green-600 text-white text-sm">Add Sample Task (Done)</button>
-            <button onClick={() => addSampleReport('REVIEWED')}
-              className="px-3 py-1 rounded bg-violet-600 text-white text-sm">Add Sample Report (Reviewed)</button>
+          <div className="mt-4 flex gap-2 flex-wrap">
+            <PromptButton
+              label="Add Sample Task (TODO)"
+              colorClass="bg-gray-700"
+              isActive={activePrompt === 'TODO'}
+              onOpen={() => setActivePrompt('TODO')}
+              onClose={() => setActivePrompt(null)}
+              onSubmit={(title) => { addSampleTask('TODO', title); setActivePrompt(null); }}
+            />
+            <PromptButton
+              label="Add Sample Task (In progress)"
+              colorClass="bg-orange-500"
+              isActive={activePrompt === 'IN_PROGRESS'}
+              onOpen={() => setActivePrompt('IN_PROGRESS')}
+              onClose={() => setActivePrompt(null)}
+              onSubmit={(title) => { addSampleTask('IN_PROGRESS', title); setActivePrompt(null); }}
+            />
+            <PromptButton
+              label="Add Sample Task (Done)"
+              colorClass="bg-green-600"
+              isActive={activePrompt === 'DONE'}
+              onOpen={() => setActivePrompt('DONE')}
+              onClose={() => setActivePrompt(null)}
+              onSubmit={(title) => { addSampleTask('DONE', title); setActivePrompt(null); }}
+            />
+            <PromptButton
+              label="Add Sample Report (Reviewed)"
+              colorClass="bg-violet-600"
+              isActive={activePrompt === 'REVIEWED'}
+              onOpen={() => setActivePrompt('REVIEWED')}
+              onClose={() => setActivePrompt(null)}
+              onSubmit={(title) => { addSampleReport('REVIEWED', title); setActivePrompt(null); }}
+              isReport
+            />
           </div>
           <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
             {weeklySummaryCards.map(({ label, value, color }) => (
               <div key={label} className="bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 shadow-sm">
                 <p className="font-black text-xl text-slate-900">{value}</p>
                 <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color }}>{label}</p>
-          <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
-            {[
-              [stats?.reviewed ?? 0, 'Reports'],
-              [`${attendance?.rate ?? 0}%`, 'Attendance'],
-              [`${user?.rating?.toFixed(1) ?? '—'}`, 'Score'],
-            ].map(([v, l]) => (
-              <div key={l} className="bg-white/5 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10">
-                <p className="font-black text-xl text-white">{v}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color: '#ff6d34' }}>{l}</p>
               </div>
             ))}
           </div>
@@ -291,20 +382,25 @@ const Dashboard = ({ onNavigate }) => {
           <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>All clear — nothing urgent today.</p>
         ) : (
           <div className="space-y-2">
-            {agendaItems.map((task) => (
+            {agendaItems.map((task, index) => (
               <div key={task.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: 'var(--bg)' }}>
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.priority === 'HIGH' || task.priority === 'URGENT' ? '#ff6d34' : '#00bea3' }} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{task.title}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>Task {index + 1}: {task.title}</p>
                   <p className="text-xs" style={{ color: 'var(--muted)' }}>{task.dueDate ? formatRelative(task.dueDate) : task.status.replace('_', ' ')}</p>
                 </div>
+                <button
+                  onClick={() => markTaskCompleted(task.id)}
+                  className="px-2 py-1 rounded text-xs font-semibold bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors ml-2"
+                >
+                  Completed
+                </button>
               </div>
             ))}
           </div>
         )}
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>
