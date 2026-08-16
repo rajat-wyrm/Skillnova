@@ -1,41 +1,61 @@
-// Mentor Projects — list projects + tasks
+// ════════════════════════════════════════════════════════════
+//  MENTOR — pages/Projects.jsx
+//  Project picker + full Kanban board so mentors can actually
+//  create and assign tasks to their interns (not just view them).
+// ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Activity, CheckCircle, Loader2 } from 'lucide-react';
-import { Card, Badge, SectionHeader } from '../../shared/components/UI';
+import { ListChecks, Loader2 } from 'lucide-react';
+import { Card, SectionHeader } from '../../shared/components/UI';
+import KanbanBoard from '../../shared/components/KanbanBoard';
 import api from '../../lib/api';
+import notify from '../../lib/toast';
 
 const Projects = () => {
   const [projects, setProjects] = useState([]);
+  const [active, setActive] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setLoading(true);
     api.get('/projects', { params: { limit: 50 } })
-      .then((r) => setProjects(r.data.items))
+      .then((r) => {
+        setProjects(r.data.items);
+        if (r.data.items[0]) setActive(r.data.items[0].id);
+      })
+      .catch(() => notify.error('Failed to load projects.'))
       .finally(() => setLoading(false));
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="animate-spin" size={28} style={{ color: 'var(--muted)' }} /></div>;
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Projects & Tasks" subtitle="Manage projects and assign tasks to interns" />
-      <div className="grid gap-4 md:grid-cols-2">
-        {projects.map((p) => (
-          <Card key={p.id} className="p-5">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">{p.name}</h3>
-                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{p.description}</p>
-              </div>
-              <Badge variant={p.status === 'ACTIVE' ? 'success' : p.status === 'COMPLETED' ? 'default' : 'warning'}>{p.status}</Badge>
-            </div>
-            <div className="flex items-center gap-4 mt-3 pt-3 text-xs" style={{ borderTop: '1px solid var(--border)', color: 'var(--muted)' }}>
-              <span className="flex items-center gap-1"><Activity size={11} /> {p._count?.tasks ?? 0} tasks</span>
-              <span className="flex items-center gap-1"><CheckCircle size={11} /> {p._count?.interns ?? 0} interns</span>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <SectionHeader title="Projects & Tasks" subtitle="Create tasks and assign them to your interns" />
+      {projects.length === 0 ? (
+        <Card className="p-12 text-center">
+          <ListChecks size={32} className="mx-auto opacity-30" style={{ color: 'var(--muted)' }} />
+          <p className="text-sm mt-2" style={{ color: 'var(--muted)' }}>No projects yet.</p>
+        </Card>
+      ) : (
+        <>
+          <div className="flex gap-2 flex-wrap">
+            {projects.map((p) => (
+              <button key={p.id} onClick={() => setActive(p.id)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium transition"
+                style={{
+                  background: active === p.id ? '#ff6d34' : 'var(--card)',
+                  color: active === p.id ? '#fff' : 'var(--text)',
+                  border: '1px solid var(--border)',
+                }}>
+                {p.name}
+              </button>
+            ))}
+          </div>
+          {active && <KanbanBoard projectId={active} canManage={true} canDrag={true} />}
+        </>
+      )}
     </div>
   );
 };

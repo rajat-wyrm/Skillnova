@@ -9,7 +9,7 @@ import KanbanBoard from './KanbanBoard';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 
-const KanbanPage = ({ canEdit = true }) => {
+const KanbanPage = ({ canManage = true, canDrag = true }) => {
   const [projects, setProjects] = useState([]);
   const [active, setActive] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,7 @@ const KanbanPage = ({ canEdit = true }) => {
               </button>
             ))}
           </div>
-          {active && <KanbanBoard projectId={active} canEdit={canEdit} />}
+          {active && <KanbanBoard projectId={active} canManage={canManage} canDrag={canDrag} />}
         </>
       )}
     </div>

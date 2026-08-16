@@ -48,7 +48,7 @@ const Kanban = () => {
               </button>
             ))}
           </div>
-          {active && <KanbanBoard projectId={active} canEdit={true} />}
+          {active && <KanbanBoard projectId={active} canManage={false} canDrag={true} />}
         </>
       )}
     </div>

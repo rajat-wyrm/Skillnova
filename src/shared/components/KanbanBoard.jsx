@@ -1,6 +1,13 @@
 // ════════════════════════════════════════════════════════════
 //  KanbanBoard — drag-and-drop task board
 //  Optimistic UI + server sync
+//
+//  Two independent permission flags:
+//  - canManage: show the "+" add button, allow opening the edit modal,
+//    and allow creating/editing tasks (assign to interns). MENTOR/ADMIN.
+//  - canDrag:   allow dragging cards between columns to change status.
+//    Both MENTOR/ADMIN and INTERN get this (interns can only change
+//    status of their own tasks — enforced server-side either way).
 // ════════════════════════════════════════════════════════════
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -10,7 +17,7 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, AlertCircle, Clock, CheckCircle, Loader2, GripVertical, Sparkles, X } from 'lucide-react';
+import { Plus, AlertCircle, Clock, CheckCircle, Loader2, GripVertical, Sparkles, X, Users } from 'lucide-react';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
@@ -30,11 +37,15 @@ const STATUS_ICON = {
   TODO: Clock, IN_PROGRESS: Loader2, REVIEW: AlertCircle, DONE: CheckCircle, BLOCKED: AlertCircle,
 };
 
-const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) => {
+// Special sentinel used only client-side to mean "fan this task out to
+// every intern on the project" — never sent to the server as-is.
+const ASSIGN_ALL = 'ALL';
+
+const TaskCard = ({ task, isOverlay = false, canDrag = true, onClick, onAI }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
-    disabled: !canEdit,
+    disabled: !canDrag,
   });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const StatusIcon = STATUS_ICON[task.status] || Clock;
@@ -48,7 +59,7 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) =>
         borderRadius: 10,
         padding: 12,
         marginBottom: 8,
-        cursor: canEdit ? 'grab' : 'default',
+        cursor: canDrag ? 'grab' : 'default',
         boxShadow: isOverlay ? '0 10px 30px rgba(0,0,0,0.18)' : 'none',
         position: 'relative',
       }}
@@ -59,7 +70,7 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) =>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_COLORS[task.priority] || '#94a3b8', flexShrink: 0 }} />
         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1, lineHeight: 1.35 }}>{task.title}</p>
-        {canEdit && <GripVertical size={12} style={{ color: 'var(--muted)', opacity: 0.4, flexShrink: 0 }} />}
+        {canDrag && <GripVertical size={12} style={{ color: 'var(--muted)', opacity: 0.4, flexShrink: 0 }} />}
       </div>
       {task.dueDate && (
         <p style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
@@ -75,37 +86,37 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) =>
         </div>
       )}
       <button
-  onClick={(e) => {
-    e.stopPropagation();
-    onAI(task);
-  }}
-  style={{
-    marginTop: 10,
-    width: '100%',
-    padding: '8px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#7C3AED',
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  }}
->
-  <Sparkles size={14} />
-  AI Learning Guide
-</button>
+        onClick={(e) => {
+          e.stopPropagation();
+          onAI(task);
+        }}
+        style={{
+          marginTop: 10,
+          width: '100%',
+          padding: '8px',
+          borderRadius: 8,
+          border: 'none',
+          background: '#7C3AED',
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+        }}
+      >
+        <Sparkles size={14} />
+        AI Learning Guide
+      </button>
     </div>
   );
 };
 
-const Column = ({ column, tasks, canEdit, onAdd, onClickTask,onAITask }) => {
+const Column = ({ column, tasks, canManage, canDrag, onAdd, onClickTask, onAITask }) => {
   const taskIds = tasks.map((t) => t.id);
-  const { setNodeRef } = useSortable({ id: column.id, data: { type: 'column' }, disabled: !canEdit });
+  const { setNodeRef } = useSortable({ id: column.id, data: { type: 'column' }, disabled: !canDrag });
   return (
     <div
       ref={setNodeRef}
@@ -126,7 +137,7 @@ const Column = ({ column, tasks, canEdit, onAdd, onClickTask,onAITask }) => {
           <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{column.title}</p>
           <span style={{ fontSize: 11, color: 'var(--muted)', background: 'var(--card)', padding: '1px 6px', borderRadius: 10 }}>{tasks.length}</span>
         </div>
-        {canEdit && onAdd && (
+        {canManage && onAdd && (
           <button onClick={() => onAdd(column.id)} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', padding: 4 }}>
             <Plus size={14} />
           </button>
@@ -134,7 +145,7 @@ const Column = ({ column, tasks, canEdit, onAdd, onClickTask,onAITask }) => {
       </div>
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 100 }}>
-          {tasks.map((t) => <TaskCard key={t.id} task={t} canEdit={canEdit} onClick={() => onClickTask?.(t)} onAI={onAITask} />)}
+          {tasks.map((t) => <TaskCard key={t.id} task={t} canDrag={canDrag} onClick={() => onClickTask?.(t)} onAI={onAITask} />)}
           {tasks.length === 0 && (
             <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 24, opacity: 0.6 }}>No tasks here.</p>
           )}
@@ -144,18 +155,28 @@ const Column = ({ column, tasks, canEdit, onAdd, onClickTask,onAITask }) => {
   );
 };
 
-const TaskModal = ({ task, onClose, onSave }) => {
+const TaskModal = ({ task, interns, onClose, onSave }) => {
   const [title, setTitle] = useState(task?.title || '');
   const [priority, setPriority] = useState(task?.priority || 'MEDIUM');
   const [dueDate, setDueDate] = useState(task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
+  const [assigneeId, setAssigneeId] = useState(task?.assigneeId || task?.assignee?.id || '');
   const [saving, setSaving] = useState(false);
   if (!task) return null;
-  const isNew = !task._id;
+  const isNew = !task.id;
+
+  // If the task's current assignee somehow isn't on the project's intern
+  // list anymore, still show them as an option so their name doesn't
+  // silently disappear from the dropdown.
+  const options = [...(interns || [])];
+  if (task?.assignee && !options.some((i) => i.id === task.assignee.id)) {
+    options.push(task.assignee);
+  }
+
   const save = async () => {
     if (!title.trim()) return notify.error('Title is required');
     setSaving(true);
     try {
-      await onSave({ ...task, title, priority, dueDate: dueDate || null });
+      await onSave({ ...task, title, priority, dueDate: dueDate || null, assigneeId: assigneeId || null });
       onClose();
     } catch (err) { notify.error(err.response?.data?.error || 'Failed'); }
     setSaving(false);
@@ -166,7 +187,7 @@ const TaskModal = ({ task, onClose, onSave }) => {
         <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: 'var(--text)' }}>{isNew ? 'New task' : 'Edit task'}</h3>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Task title"
           style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 14, marginBottom: 12 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
           <div>
             <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.04, display: 'block', marginBottom: 4 }}>Priority</label>
             <select value={priority} onChange={(e) => setPriority(e.target.value)}
@@ -180,6 +201,18 @@ const TaskModal = ({ task, onClose, onSave }) => {
               style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 13 }} />
           </div>
         </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.04, display: 'block', marginBottom: 4 }}>Assign to</label>
+          <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 13 }}>
+            <option value="">Unassigned</option>
+            {isNew && <option value={ASSIGN_ALL}>👥 Everyone (all interns)</option>}
+            {options.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+          </select>
+          {!options.length && (
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>No interns are on this project yet.</p>
+          )}
+        </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onClose} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--card)', color: 'var(--text)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Cancel</button>
           <button onClick={save} disabled={saving} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ff6d34', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{saving ? 'Saving…' : 'Save'}</button>
@@ -189,12 +222,13 @@ const TaskModal = ({ task, onClose, onSave }) => {
   );
 };
 
-const KanbanBoard = ({ projectId, canEdit = true }) => {
+const KanbanBoard = ({ projectId, canManage = true, canDrag = true }) => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTask, setActiveTask] = useState(null);
   const [modalTask, setModalTask] = useState(null);
   const [project, setProject] = useState(null);
+  const [interns, setInterns] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
   const [selectedAITask, setSelectedAITask] = useState(null);
@@ -202,24 +236,35 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
   const fetch = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
-    try {
-      const [p, t] = await Promise.all([
-        api.get(`/projects/${projectId}`).catch(() => null),
-        api.get('/tasks', { params: { projectId, limit: 200 } }),
-      ]);
-      setProject(p?.data?.project);
-      setTasks(t.data.items);
-      
-    } catch { /* ignore */ }
+    const [p, t, u] = await Promise.all([
+      api.get(`/projects/${projectId}`).catch(() => null),
+      api.get('/tasks', { params: { projectId, limit: 100 } }).catch((err) => {
+        notify.error(`Could not load tasks (${err.response?.status ?? 'network error'}): ${err.response?.data?.error || err.message}`);
+        return null;
+      }),
+      // The project.interns relation requires interns to be explicitly
+      // linked to a project, which nothing in the app currently does —
+      // so it's always empty. Pull the real intern list the same way
+      // the "My Interns" page does instead.
+      canManage
+        ? api.get('/users', { params: { role: 'INTERN', limit: 100 } }).catch((err) => {
+            notify.error(`Could not load interns (${err.response?.status ?? 'network error'}): ${err.response?.data?.error || err.message}`);
+            return null;
+          })
+        : Promise.resolve(null),
+    ]);
+    setProject(p?.data?.project);
+    setTasks(t?.data?.items || []);
+    setInterns(u?.data?.items || []);
     setLoading(false);
-  }, [projectId]);
+  }, [projectId, canManage]);
 
   const getTaskGuidance = async (task) => {
-  setSelectedAITask(task);
-  setAiLoading(true);
-  setAiResponse('');
+    setSelectedAITask(task);
+    setAiLoading(true);
+    setAiResponse('');
 
-  const prompt = `
+    const prompt = `
 You are an AI mentor helping an intern complete a task.
 
 Task Title:
@@ -248,18 +293,18 @@ Please provide:
 10. End with some motivation.
 `;
 
-  try {
-    const { data } = await api.post('/ai/chat', {
-      message: prompt,
-    });
+    try {
+      const { data } = await api.post('/ai/chat', {
+        message: prompt,
+      });
 
-    setAiResponse(data.reply);
-  } catch  {
-    notify.error('Failed to get AI guidance.');
-  } finally {
-    setAiLoading(false);
-  }
-};
+      setAiResponse(data.reply);
+    } catch {
+      notify.error('Failed to get AI guidance.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch();
@@ -301,17 +346,54 @@ Please provide:
   };
 
   const onAdd = (status) => {
-    setModalTask({ title: '', priority: 'MEDIUM', status, projectId, _id: null });
+    setModalTask({ id: null, title: '', priority: 'MEDIUM', status, projectId, assigneeId: null });
   };
 
-  const onSaveTask = async (task) => {
-    if (task._id) {
-      await api.post('/tasks', {
-        title: task.title, priority: task.priority, dueDate: task.dueDate, status: task.status, projectId: task.projectId,
+  const onSaveTask = async (payload) => {
+    // Editing an existing task
+    if (payload.id) {
+      await api.patch(`/tasks/${payload.id}`, {
+        title: payload.title,
+        priority: payload.priority,
+        dueDate: payload.dueDate,
+        assigneeId: payload.assigneeId,
       });
+      notify.success('Task updated');
+      fetch();
+      return;
     }
-    fetch();
+
+    // "Assign to everyone" — the backend doesn't fan tasks out itself,
+    // so create one task per intern.
+    if (payload.assigneeId === ASSIGN_ALL) {
+      if (!interns.length) {
+        notify.error('No interns available to assign.');
+        return;
+      }
+      await Promise.all(interns.map((intern) => api.post('/tasks', {
+        title: payload.title,
+        priority: payload.priority,
+        dueDate: payload.dueDate,
+        status: payload.status,
+        projectId: payload.projectId,
+        assigneeId: intern.id,
+      })));
+      notify.success(`Task assigned to ${interns.length} intern${interns.length === 1 ? '' : 's'}`);
+      fetch();
+      return;
+    }
+
+    // Single new task, optionally assigned to one intern
+    await api.post('/tasks', {
+      title: payload.title,
+      priority: payload.priority,
+      dueDate: payload.dueDate,
+      status: payload.status,
+      projectId: payload.projectId,
+      assigneeId: payload.assigneeId || null,
+    });
     notify.success('Task created');
+    fetch();
   };
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--muted)' }}><Loader2 size={20} className="animate-spin" style={{ display: 'inline-block', verticalAlign: 'middle' }} /></div>;
@@ -319,41 +401,45 @@ Please provide:
   return (
     <div>
       {project && (
-  <div
-    style={{
-      marginBottom: 16,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-    <div>
-      <h2
-        style={{
-          fontSize: 18,
-          fontWeight: 700,
-          color: "var(--text)",
-        }}
-      >
-        {project.name}
-      </h2>
-
-      {project.description && (
-        <p
+        <div
           style={{
-            fontSize: 13,
-            color: "var(--muted)",
-            marginTop: 4,
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          {project.description}
-        </p>
-      )}
-    </div>
+          <div>
+            <h2
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text)",
+              }}
+            >
+              {project.name}
+            </h2>
 
-  
-  </div>
-)}
+            {project.description && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--muted)",
+                  marginTop: 4,
+                }}
+              >
+                {project.description}
+              </p>
+            )}
+          </div>
+
+          {canManage && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)' }}>
+              <Users size={13} /> {interns.length} intern{interns.length === 1 ? '' : 's'} available
+            </span>
+          )}
+        </div>
+      )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
           {COLUMNS.map((c) => (
@@ -361,91 +447,92 @@ Please provide:
               key={c.id}
               column={c}
               tasks={tasks.filter((t) => t.status === c.id)}
-              canEdit={canEdit}
+              canManage={canManage}
+              canDrag={canDrag}
               onAdd={onAdd}
-              onClickTask={(t) => canEdit && setModalTask(t)}
+              onClickTask={(t) => canManage && setModalTask(t)}
               onAITask={getTaskGuidance}
             />
           ))}
         </div>
         <DragOverlay>{activeTask && <TaskCard task={activeTask} isOverlay />}</DragOverlay>
       </DndContext>
-      {modalTask && <TaskModal task={modalTask} onClose={() => setModalTask(null)} onSave={onSaveTask} />}
+      {modalTask && <TaskModal task={modalTask} interns={interns} onClose={() => setModalTask(null)} onSave={onSaveTask} />}
       {selectedAITask && (
-  <div
-    style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.45)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-    }}
-  >
-    <div
-      style={{
-        width: 'min(850px,90vw)',
-        maxHeight: '85vh',
-        overflowY: 'auto',
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: 16,
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Sparkles size={20} color="#ff6d34" />
-          <div>
-            <h2 style={{ margin: 0 }}>AI Learning Guide</h2>
-            <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
-              {selectedAITask.title}
-            </p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            setSelectedAITask(null);
-            setAiResponse('');
-          }}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-          }}
-        >
-          <X size={20} />
-        </button>
-      </div>
-
-      {aiLoading ? (
-        <div style={{ textAlign: 'center', padding: 40 }}>
-          <Loader2 className="animate-spin" />
-          <p>Generating learning guide...</p>
-        </div>
-      ) : (
         <div
           style={{
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.7,
-            color: 'var(--text)',
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
           }}
         >
-          {aiResponse}
+          <div
+            style={{
+              width: 'min(850px,90vw)',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 20,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Sparkles size={20} color="#ff6d34" />
+                <div>
+                  <h2 style={{ margin: 0 }}>AI Learning Guide</h2>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+                    {selectedAITask.title}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedAITask(null);
+                  setAiResponse('');
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {aiLoading ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <Loader2 className="animate-spin" />
+                <p>Generating learning guide...</p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.7,
+                  color: 'var(--text)',
+                }}
+              >
+                {aiResponse}
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
     </div>
   );
 };
