@@ -8,15 +8,31 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
-  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, Flame, Trophy, AlertCircle,
+  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, Flame, Trophy, AlertCircle
 } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
+import PerformanceStatusCard from '../components/PerformanceStatusCard';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 import { formatRelative } from '../../lib/utils';
 
 const MotionDiv = motion.div;
 const CHART_C = ['#ff6d34', '#00bea3', '#7C3AED', '#f59e0b', '#06b6d4'];
+
+const DashboardSkeleton = () => (
+  <div className="space-y-6 pb-16 animate-pulse px-4 sm:px-0">
+    <div className="h-[280px] sm:h-[340px] rounded-xl bg-slate-800/20" />
+    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {[1, 2, 3, 4].map(i => <div key={i} className="h-[120px] rounded-2xl bg-slate-800/10" />)}
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="h-[280px] rounded-2xl bg-slate-800/10" />
+      <div className="h-[280px] rounded-2xl bg-slate-800/10" />
+      <div className="h-[280px] rounded-2xl bg-slate-800/10" />
+      <div className="h-[280px] rounded-2xl bg-slate-800/10" />
+    </div>
+  </div>
+);
 
 const Dashboard = ({ onNavigate }) => {
   const { user } = useAuthStore();
@@ -51,11 +67,7 @@ const Dashboard = ({ onNavigate }) => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin" size={28} style={{ color: 'var(--muted)' }} />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const myTasksByStatus = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'].map((status) => ({
@@ -121,15 +133,21 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </MotionDiv>
 
-      <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+        className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+      >
         <StatCard title="Total Reports"   value={stats?.total ?? 0}    icon={ClipboardList} color="#ff6d34" />
         <StatCard title="Reviewed"        value={stats?.reviewed ?? 0} icon={CheckCircle}   color="#00bea3" />
-        <StatCard title="Attendance Rate" value={`${attendance?.rate ?? 0}%`} icon={CalendarCheck} color="#ff6d34" />
-        <StatCard title="Avg Score"       value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
-      </div>
+        <StatCard title="Attendance Rate" value={attendance?.rate ?? 0} suffix="%" icon={CalendarCheck} color={(attendance?.rate ?? 0) >= 80 ? "#00bea3" : (attendance?.rate ?? 0) >= 60 ? "#f59e0b" : "#ff6d34"} />
+        <StatCard title="Avg Score"       value={stats?.averageScore != null ? stats.averageScore : '—'} format={v => typeof v === 'number' ? v.toFixed(1) : v} icon={TrendingUp} color={(stats?.averageScore ?? 0) >= 8.5 ? "#00bea3" : (stats?.averageScore ?? 0) >= 6 ? "#f59e0b" : "#ff6d34"} subtitle="/10" />
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="p-5">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+      >
+        <Card className="p-5" hover>
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>
           {myTasksByStatus.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>No tasks yet.</p>
@@ -156,7 +174,7 @@ const Dashboard = ({ onNavigate }) => {
           )}
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-5" hover>
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>Recent Reports</h3>
           {myReports.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>No reports submitted yet.</p>
@@ -184,7 +202,7 @@ const Dashboard = ({ onNavigate }) => {
         </Card>
 
         {/* Gamified Learning Streak & Daily Checklist Card */}
-        <Card className="p-5 flex flex-col justify-between">
+        <Card className="p-5 flex flex-col justify-between" hover>
           <div>
             <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
               Learning Streak <Flame size={16} fill={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'transparent'} color={(user?.currentStreak ?? 0) > 0 ? '#ff6d34' : 'var(--muted)'} />
@@ -239,30 +257,34 @@ const Dashboard = ({ onNavigate }) => {
             )}
           </div>
         </Card>
-      </div>
+        
+        <PerformanceStatusCard />
+      </motion.div>
 
-      <Card className="p-5">
-        <SectionHeader title="Open Tasks" subtitle="What you're working on right now" />
-        {myTasks.filter((t) => t.status !== 'DONE').length === 0 ? (
-          <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>All caught up — no open tasks 🎉</p>
-        ) : (
-          <div className="space-y-2">
-            {myTasks.filter((t) => t.status !== 'DONE').slice(0, 8).map((t) => (
-              <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition"
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                <div className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: t.priority === 'HIGH' || t.priority === 'URGENT' ? '#ff6d34' : t.priority === 'MEDIUM' ? '#f59e0b' : '#94a3b8' }} />
-                <p className="text-sm flex-1 truncate" style={{ color: 'var(--text)' }}>{t.title}</p>
-                <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{ background: 'rgba(255,109,52,0.15)', color: '#ff6d34' }}>
-                  {t.status.replace('_', ' ')}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
+        <Card className="p-5">
+          <SectionHeader title="Open Tasks" subtitle="What you're working on right now" />
+          {myTasks.filter((t) => t.status !== 'DONE').length === 0 ? (
+            <p className="text-sm text-center py-8" style={{ color: 'var(--muted)' }}>All caught up — no open tasks 🎉</p>
+          ) : (
+            <div className="space-y-2">
+              {myTasks.filter((t) => t.status !== 'DONE').slice(0, 8).map((t) => (
+                <div key={t.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition"
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0"
+                    style={{ background: t.priority === 'HIGH' || t.priority === 'URGENT' ? '#ff6d34' : t.priority === 'MEDIUM' ? '#f59e0b' : '#94a3b8' }} />
+                  <p className="text-sm flex-1 truncate" style={{ color: 'var(--text)' }}>{t.title}</p>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: 'rgba(255,109,52,0.15)', color: '#ff6d34' }}>
+                    {t.status.replace('_', ' ')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </motion.div>
 
       {onNavigate && (
         <button onClick={() => onNavigate('qa')}

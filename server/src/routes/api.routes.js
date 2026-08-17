@@ -10,6 +10,7 @@ import * as attendance from '../controllers/attendance.controller.js';
 import * as projects from '../controllers/projects.controller.js';
 import * as ai from '../controllers/ai.controller.js';
 import * as notif from '../controllers/notifications.controller.js';
+import * as performance from '../controllers/performance.controller.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { validate, schemas } from '../middleware/validate.js';
@@ -311,6 +312,9 @@ api.post('/notifications/read-all', notif.markAllRead);
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
 api.get('/analytics/leaderboard', notif.leaderboard);
+
+// ── Performance Status ────────────────────────────────────
+api.get('/performance/status', requirePermission('attendance:self'), performance.status);
 
 // ── Collaborative Tasks ───────────────────────────────────
 api.use('/collab-tasks', collaborativeTasksRouter);
