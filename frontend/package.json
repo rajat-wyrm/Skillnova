@@ -9,9 +9,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "server": "cd ../backend && npm run dev",
-    "server:setup": "cd ../backend && npm run setup",
-    "server:install": "cd ../backend && npm install",
+    "server": "cd ../server && npm run dev",
+    "server:setup": "cd ../server && npm run setup",
+    "server:install": "cd ../server && npm install",
     "start": "concurrently -k -n web,api -c cyan,magenta \"npm run dev\" \"npm run server\"",
     "setup": "npm install && npm run server:install && npm run server:setup",
     "push": "bash scripts/push.sh"

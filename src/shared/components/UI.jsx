@@ -2,6 +2,8 @@
 //  SHARED — UI.jsx  (UptoSkills Branded)
 // ══════════════════════════════════════════════
 
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, X, CheckSquare } from "lucide-react";
 
 // UptoSkills Brand Colors
@@ -34,7 +36,6 @@ export const Avatar = ({ initials, size = "md" }) => {
 };
 
 /* ── Badge ───────────────────────────────────── */
-/* â”€â”€ Badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export const Badge = ({ children, variant = "default" }) => {
   const variants = {
     default: { background: "var(--badge-default-bg)", color: "var(--badge-default-fg)", border: "1px solid var(--badge-default-border)" },
@@ -85,7 +86,7 @@ export const StatCard = ({ title, value, icon: _Icon, trend, color = "#ff6d34", 
         <_Icon size={24} />
       </div>
     </div>
-    
+
     {trend && (
       <div className="flex items-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
         <TrendingUp size={12} style={{ color: "#00bea3" }} />
@@ -172,50 +173,6 @@ export const Input = ({ label, icon: Icon, error, ...props }) => (
 
 /* ── Modal ────────────────────────────────────── */
 export const Modal = ({ isOpen, onClose, title, children, footer }) => {
-  if (!isOpen) return null;
-
-  return (
-    <>
-      <div
-        onClick={onClose}
-        className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
-      />
-      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-bold text-lg text-slate-900">{title}</h3>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-              type="button"
-            >
-              <X size={18} />
-            </button>
-          </div>
-          <div className="p-6">{children}</div>
-          {footer && (
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-              {footer}
-export const Modal = ({ isOpen, onClose, title, children, footer }) => (
-  <AnimatePresence>
-    {isOpen && (
-      <>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
-        />
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
-          >
-/* â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-export const Modal = ({ isOpen, onClose, title, children, footer }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -250,38 +207,45 @@ export const Modal = ({ isOpen, onClose, title, children, footer }) => {
       {isOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
-          >
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-lg text-slate-900">{title}</h3>
-              <button 
-                onClick={onClose}
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
-                type="button"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-6">
-              {children}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-};
-      </>
-    )}
-  </AnimatePresence>
-);
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm"
+          />
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              ref={modalRef}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto"
+            >
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-lg text-slate-900">{title}</h3>
+                <button
+                  onClick={onClose}
+                  className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                  type="button"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-6">{children}</div>
+              {footer && (
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                  {footer}
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>
   );
 };
 
-/* â”€â”€ Tooltip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Tooltip ─────────────────────────────────── */
 export const Tooltip = ({ children, content, side = 'top' }) => {
   const [show, setShow] = useState(false);
   const positions = {
@@ -310,4 +274,3 @@ export const Tooltip = ({ children, content, side = 'top' }) => {
     </span>
   );
 };
-

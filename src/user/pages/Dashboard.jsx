@@ -35,8 +35,6 @@ const Dashboard = ({ onNavigate }) => {
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
-
   useEffect(() => {
     (async () => {
       try {
@@ -171,6 +169,10 @@ const Dashboard = ({ onNavigate }) => {
               <div key={label} className="bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 shadow-sm">
                 <p className="font-black text-xl text-slate-900">{value}</p>
                 <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color }}>{label}</p>
+              </div>
+            ))}
+          </div>
+
           <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
             {[
               [stats?.reviewed ?? 0, 'Reports'],
@@ -304,7 +306,6 @@ const Dashboard = ({ onNavigate }) => {
         )}
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>

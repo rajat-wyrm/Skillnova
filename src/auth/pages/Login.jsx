@@ -7,10 +7,6 @@ import { getErrorMessage } from "../../lib/api";
 import notify from "../../lib/toast";
 import { APP_CONSTANTS } from "../../shared/config/constants";
 import "../auth.css";
-import { useState, useId } from 'react';
-import { useAuthStore } from '../../lib/auth';
-import notify from '../../lib/toast';
-import '../auth.css';
 
 const Icon = {
   Mail: () => (
@@ -154,7 +150,6 @@ const Login = () => {
     }
     return "";
   });
-  const [formError, setFormError] = useState('');
   const [touched, setTouched] = useState({ email: false, password: false });
   const [fieldError, setFieldError] = useState({ email: "", password: "" });
 
@@ -219,12 +214,6 @@ const Login = () => {
           ? "success"
           : ""
       : "";
-  const emailState = touched.email
-    ? (fieldError.email ? 'error' : email ? 'success' : '')
-    : '';
-  const pwdState = touched.password
-    ? (fieldError.password ? 'error' : password ? 'success' : '')
-    : '';
 
   return (
     <div className="auth-container">
@@ -244,10 +233,6 @@ const Login = () => {
         <p className="auth-subtitle">
           Sign in to your SkillNova account to continue.
         </p>
-          <img src="/logo.png" alt="SkillNova" style={{ height: 44, mixBlendMode: 'multiply' }} />
-        </div>
-        <h1 className="auth-title">Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to your SkillNova account to continue.</p>
 
         <form
           id="main-form"
@@ -280,7 +265,6 @@ const Login = () => {
                 aria-label="Email address"
                 aria-describedby={`${emailId}-error`}
                 aria-invalid={emailState === "error" ? "true" : undefined}
-                aria-invalid={emailState === 'error' ? 'true' : undefined}
                 onChange={handleChange}
                 onBlur={handleBlur}
               />
@@ -319,13 +303,6 @@ const Login = () => {
               <span className="auth-required" aria-label="required">
                 *
               </span>
-            {emailState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.email}</p>}
-            {emailState === 'success' && <p className="auth-msg auth-msg-success"><Icon.Check /> Email looks good.</p>}
-          </div>
-
-          <div className={`auth-form-group ${pwdState === 'error' ? 'is-error' : pwdState === 'success' ? 'is-success' : ''}`}>
-            <label className="auth-label" htmlFor={passwordId}>
-              Password <span className="auth-required" aria-label="required">*</span>
             </label>
             <div className="auth-input-wrap has-icon">
               <span className="auth-input-icon">
@@ -343,7 +320,6 @@ const Login = () => {
                 aria-label="Password"
                 aria-describedby={`${passwordId}-error`}
                 style={{ paddingRight: "42px" }}
-                style={{ paddingRight: '42px' }}
                 onChange={handleChange}
                 onBlur={handleBlur}
               />
@@ -365,7 +341,6 @@ const Login = () => {
                 <Icon.Alert /> {fieldError.password}
               </p>
             )}
-            {pwdState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
           </div>
 
           {formError && (
@@ -396,7 +371,6 @@ const Login = () => {
         <div className="auth-divider">
           <span>Demo Accounts</span>
         </div>
-        <div className="auth-divider"><span>Demo Accounts</span></div>
 
         <div className="auth-demo-grid">
           {[

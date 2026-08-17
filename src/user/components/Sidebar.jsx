@@ -2,12 +2,12 @@
 //  USER — components/Sidebar.jsx
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react';
+import NotificationBell from '../../shared/components/NotificationBell';
 import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
   LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut,
-  Map, Award,
-  LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut, Target, Trophy,
+  Map, Award, Target, Trophy,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
@@ -49,6 +49,11 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
         {isCollapsed && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #ff6d34, #00bea3)' }}>U</div>
+        )}
+        {!isCollapsed && (
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
         )}
         {!forceMobileExpanded && (
           <button onClick={() => setCollapsed(!collapsed)} className="p-1.5 rounded-lg flex-shrink-0" style={{ color: '#9ca3af' }}>

@@ -1,11 +1,6 @@
 // ════════════════════════════════════════════════════════════
 //  Attendance Controller
 // ════════════════════════════════════════════════════════════
-import { z } from "zod";
-import prisma from "../utils/prisma.js";
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { audit } from "../services/audit.service.js";
 import { z } from 'zod';
 import prisma from '../utils/prisma.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -16,15 +11,15 @@ const _markSchema = z.object({
   userId: z.string().cuid(),
   date: z.coerce.date().optional(),
   status: z
-    .enum(["PRESENT", "ABSENT", "LEAVE", "HALF_DAY", "LATE"])
-    .default("PRESENT"),
+    .enum(['PRESENT', 'ABSENT', 'LEAVE', 'HALF_DAY', 'LATE'])
+    .default('PRESENT'),
   notes: z.string().max(300).optional(),
   checkIn: z.coerce.date().optional(),
   checkOut: z.coerce.date().optional(),
 });
 
 const _selfCheckInSchema = z.object({
-  status: z.enum(["PRESENT", "LEAVE"]).default("PRESENT"),
+  status: z.enum(['PRESENT', 'LEAVE']).default('PRESENT'),
   notes: z.string().max(300).optional(),
 });
 
@@ -41,14 +36,14 @@ const todayDate = () => {
 };
 
 const isPresentLike = (status) =>
-  status === "PRESENT" || status === "LATE" || status === "HALF_DAY";
+  status === 'PRESENT' || status === 'LATE' || status === 'HALF_DAY';
 const toKey = (d) => d.toISOString().slice(0, 10);
 
 export const list = asyncHandler(async (req, res) => {
-  const { page, limit, sort = "date", order } = req.validatedQuery;
+  const { page, limit, sort = 'date', order } = req.validatedQuery;
   const where = {};
   // Intern sees only themselves
-  if (req.user.role === "INTERN") where.userId = req.user.id;
+  if (req.user.role === 'INTERN') where.userId = req.user.id;
   else if (req.query.userId) where.userId = req.query.userId;
   if (req.query.date) {
     const d = new Date(req.query.date);
@@ -77,7 +72,7 @@ export const list = asyncHandler(async (req, res) => {
 export const mark = asyncHandler(async (req, res) => {
   const { userId, date, status, notes, checkIn, checkOut } = req.body;
   const target = await prisma.user.findUnique({ where: { id: userId } });
-  if (!target) throw ApiError.notFound("User not found");
+  if (!target) throw ApiError.notFound('User not found');
 
   const day = date ?? new Date();
   day.setUTCHours(0, 0, 0, 0);
@@ -97,13 +92,12 @@ export const mark = asyncHandler(async (req, res) => {
   });
   await audit({
     userId: req.user.id,
-    action: "attendance.mark",
-    resource: "attendance",
+    action: 'attendance.mark',
+    resource: 'attendance',
     resourceId: record.id,
     meta: { userId, status },
     req,
   });
-  await audit({ userId: req.user.id, action: 'attendance.mark', resource: 'attendance', resourceId: record.id, meta: { userId, status }, req });
   res.json({ attendance: record });
 });
 
@@ -131,7 +125,7 @@ export const checkInOut = asyncHandler(async (req, res) => {
 
 export const summary = asyncHandler(async (req, res) => {
   const where =
-    req.user.role === "INTERN"
+    req.user.role === 'INTERN'
       ? { userId: req.user.id }
       : req.query.userId
         ? { userId: req.query.userId }
@@ -142,17 +136,14 @@ export const summary = asyncHandler(async (req, res) => {
 
   const [present, absent, leave, total] = await Promise.all([
     prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "PRESENT" },
+      where: { ...where, date: { gte: start }, status: 'PRESENT' },
     }),
     prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "ABSENT" },
+      where: { ...where, date: { gte: start }, status: 'ABSENT' },
     }),
     prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "LEAVE" },
+      where: { ...where, date: { gte: start }, status: 'LEAVE' },
     }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'PRESENT' } }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'ABSENT' } }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'LEAVE' } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
   ]);
   res.json({
@@ -169,7 +160,7 @@ export const summary = asyncHandler(async (req, res) => {
 // of breaking it. Only ABSENT (or an unmarked working day) breaks it.
 export const streak = asyncHandler(async (req, res) => {
   const userId =
-    req.user.role === "INTERN" ? req.user.id : req.query.userId || req.user.id;
+    req.user.role === 'INTERN' ? req.user.id : req.query.userId || req.user.id;
 
   const since = new Date();
   since.setDate(since.getDate() - 60);
@@ -177,7 +168,7 @@ export const streak = asyncHandler(async (req, res) => {
 
   const records = await prisma.attendance.findMany({
     where: { userId, date: { gte: since } },
-    orderBy: { date: "asc" },
+    orderBy: { date: 'asc' },
     select: { date: true, status: true },
   });
 
@@ -205,7 +196,7 @@ export const streak = asyncHandler(async (req, res) => {
       continue;
     }
 
-    if (status === "LEAVE") {
+    if (status === 'LEAVE') {
       // paused, not broken, not counted
       cursor.setDate(cursor.getDate() - 1);
       continue;
@@ -226,7 +217,7 @@ export const streak = asyncHandler(async (req, res) => {
     if (isPresentLike(r.status)) {
       running += 1;
       longestStreak = Math.max(longestStreak, running);
-    } else if (r.status === "ABSENT") {
+    } else if (r.status === 'ABSENT') {
       running = 0;
     }
     // LEAVE: paused — running carries over unchanged
@@ -241,20 +232,20 @@ export const streak = asyncHandler(async (req, res) => {
   last7Start.setUTCHours(0, 0, 0, 0);
 
   const absences14 = records.filter(
-    (r) => r.date >= last14Start && r.status === "ABSENT",
+    (r) => r.date >= last14Start && r.status === 'ABSENT',
   ).length;
   const absences7 = records.filter(
-    (r) => r.date >= last7Start && r.status === "ABSENT",
+    (r) => r.date >= last7Start && r.status === 'ABSENT',
   ).length;
 
-  let risk = "LOW";
+  let risk = 'LOW';
   if (absences14 >= 3 || (currentStreak === 0 && absences7 >= 1)) {
-    risk = "HIGH";
+    risk = 'HIGH';
   } else if (absences14 >= 1) {
-    risk = "MEDIUM";
+    risk = 'MEDIUM';
   }
 
-  const onLeaveToday = byDate.get(todayKey) === "LEAVE";
+  const onLeaveToday = byDate.get(todayKey) === 'LEAVE';
 
   res.json({
     currentStreak,
@@ -277,11 +268,11 @@ export const requestLeave = asyncHandler(async (req, res) => {
   end.setUTCHours(0, 0, 0, 0);
 
   if (end < start)
-    throw ApiError.badRequest("End date cannot be before start date");
+    throw ApiError.badRequest('End date cannot be before start date');
 
   const spanDays = Math.round((end - start) / 86400000) + 1;
   if (spanDays > 30)
-    throw ApiError.badRequest("Leave range cannot exceed 30 days");
+    throw ApiError.badRequest('Leave range cannot exceed 30 days');
 
   const days = [];
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -290,29 +281,28 @@ export const requestLeave = asyncHandler(async (req, res) => {
     days.push(new Date(d));
   }
   if (!days.length)
-    throw ApiError.badRequest("No working days in the selected range");
+    throw ApiError.badRequest('No working days in the selected range');
 
   const records = await Promise.all(
     days.map((date) =>
       prisma.attendance.upsert({
         where: { userId_date: { userId: req.user.id, date } },
-        update: { status: "LEAVE", notes: reason },
-        create: { userId: req.user.id, date, status: "LEAVE", notes: reason },
+        update: { status: 'LEAVE', notes: reason },
+        create: { userId: req.user.id, date, status: 'LEAVE', notes: reason },
       }),
     ),
   );
 
   await audit({
     userId: req.user.id,
-    action: "attendance.leave.request",
-    resource: "attendance",
+    action: 'attendance.leave.request',
+    resource: 'attendance',
     resourceId: records[0]?.id,
     meta: { startDate, endDate, reason, days: days.length },
     req,
   });
 
   res.json({ marked: records.length, records });
-  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0 });
 });
 
 export default { list, mark, checkInOut, summary, streak, requestLeave };

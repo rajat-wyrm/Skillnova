@@ -1,11 +1,8 @@
 // ════════════════════════════════════════════════════════════
 //  Axios client with auth interceptor + CSRF + refresh
 // ════════════════════════════════════════════════════════════
-import axios from "axios";
-import { APP_CONSTANTS } from "../shared/config/constants";
-
-const BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
 import axios from 'axios';
+import { APP_CONSTANTS } from '../shared/config/constants';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
@@ -13,47 +10,50 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 export const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: APP_CONSTANTS.API_TIMEOUT,
-  headers: { "Content-Type": "application/json" },
-  timeout: 30_000,
+  timeout: APP_CONSTANTS.API_TIMEOUT || 30000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 // ── Helpers ──────────────────────────────────────────────
 const getCookie = (name) => {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(
-    new RegExp("(^|;)\\s*" + name + "=([^;]+)"),
-  );
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
   return match ? decodeURIComponent(match[2]) : null;
+};
+
+const getStoredAccessToken = () => {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('skillnova.auth');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.accessToken || null;
+  } catch (e) {
+    return null;
+  }
 };
 
 // ── Request interceptor — CSRF + Authorization header ────
 api.interceptors.request.use((config) => {
   // Attach access token from persisted auth store
-  try {
-    const raw = localStorage.getItem('skillnova.auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.accessToken) {
-        config.headers['Authorization'] = `Bearer ${parsed.accessToken}`;
-      }
-    }
-  } catch { /* ignore */ }
-  const csrf = getCookie('sn_csrf');
   const token = getStoredAccessToken();
-  if (token && !config.headers.Authorization) {
+  if (token && !config.headers?.Authorization) {
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 
   // Attach CSRF token for state-changing requests
-  const csrf = getCookie('sn_csrf');
-  const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE);
-  if (csrf && ["post", "put", "patch", "delete"].includes(config.method)) {
-    config.headers[APP_CONSTANTS.CSRF_HEADER] = csrf;
-  if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
-    config.headers['X-CSRF-Token'] = csrf;
+  const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE || 'sn_csrf');
+  const method = (config.method || '').toLowerCase();
+  if (csrf && ['post', 'put', 'patch', 'delete'].includes(method)) {
+    config.headers = config.headers || {};
+    if (APP_CONSTANTS?.CSRF_HEADER) {
+      config.headers[APP_CONSTANTS.CSRF_HEADER] = csrf;
+    } else {
+      config.headers['X-CSRF-Token'] = csrf;
+    }
   }
+
   return config;
 });
 
@@ -64,44 +64,37 @@ const REFRESH_EXCLUDED_URLS = new Set(['/auth/refresh', '/auth/login', '/auth/ve
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
-    const original = error.config;
+    const original = error.config || {};
     const status = error.response?.status;
 
-    if (status === 401 && !original._retry && !REFRESH_EXCLUDED_URLS.has(original.url)) {
     if (
       status === 401 &&
       !original._retry &&
-      original.url !== "/auth/refresh" &&
-      original.url !== "/auth/login"
+      !REFRESH_EXCLUDED_URLS.has(original.url)
     ) {
       original._retry = true;
       try {
         refreshing =
           refreshing ||
           axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-        await refreshing;
-    if (status === 401 && !original._retry && original.url !== '/auth/refresh' && original.url !== '/auth/login') {
-      original._retry = true;
-      try {
-        refreshing = refreshing || axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
         const refreshRes = await refreshing;
         refreshing = null;
 
         // Persist the new access token so the interceptor picks it up on the retry
         try {
           const newToken = refreshRes.data?.accessToken;
-          if (newToken) {
+          if (newToken && typeof localStorage !== 'undefined') {
             const raw = localStorage.getItem('skillnova.auth');
             const stored = raw ? JSON.parse(raw) : {};
             localStorage.setItem('skillnova.auth', JSON.stringify({ ...stored, accessToken: newToken }));
           }
-        } catch { /* ignore */ }
+        } catch (e) { /* ignore */ }
 
         return api(original);
       } catch (refreshErr) {
         refreshing = null;
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("skillnova:logout"));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('skillnova:logout'));
         }
         return Promise.reject(refreshErr);
       }

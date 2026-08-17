@@ -4,10 +4,8 @@
 import { create } from "zustand";
 import api, { getErrorMessage } from "./api";
 import { APP_CONSTANTS } from "../shared/config/constants";
-import { create } from 'zustand';
-import api, { getErrorMessage } from './api';
 
-const STORAGE_KEY = 'skillnova.auth';
+const STORAGE_KEY = "skillnova.auth";
 const STORAGE_ENABLED = !import.meta.env.DEV;
 
 const loadFromStorage = () => {
@@ -29,8 +27,6 @@ const persist = (state) => {
   try {
     if (state.user && state.accessToken) {
       localStorage.setItem(
-        APP_CONSTANTS.AUTH_STORAGE_KEY,
-        JSON.stringify({ user: state.user, accessToken: state.accessToken }),
         STORAGE_KEY,
         JSON.stringify({ user: state.user, accessToken: state.accessToken })
       );
@@ -49,7 +45,7 @@ export const useAuthStore = create((set, get) => ({
   step: "login", // 'login' | 'signup' | 'signup_otp' | 'otp' | 'authenticated'
   challengeToken: null,
   devCode: null,
-  otpMode: 'admin',
+  otpMode: "admin",
   contactHint: null,
   internStartDate: null,
   internEndDate: null,
@@ -79,36 +75,25 @@ export const useAuthStore = create((set, get) => ({
         user: persisted.user,
         accessToken: persisted.accessToken,
         permissions: derivePermissions(persisted.user.role),
-        step: "authenticated",
-        hydrated: true,
-      });
-
-      persist(get());
-    const persisted = loadFromStorage();
-    if (persisted?.user && persisted?.accessToken) {
-      set({
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        permissions: derivePermissions(persisted.user.role),
-        step: 'auth-checking',
+        step: "auth-checking",
         hydrated: true,
       });
       try {
-        const { data } = await api.get('/auth/me');
+        const { data } = await api.get("/auth/me");
         set({
           user: data.user,
           accessToken: get().accessToken,
           permissions: data.permissions || derivePermissions(data.user?.role),
-          step: 'authenticated',
+          step: "authenticated",
           hydrated: true,
         });
         persist(get());
       } catch {
-        set({ user: null, accessToken: null, permissions: [], step: 'login', hydrated: true });
+        set({ user: null, accessToken: null, permissions: [], step: "login", hydrated: true });
         persist(get());
       }
     } else {
-      set({ user: null, accessToken: null, permissions: [], step: 'login', hydrated: true });
+      set({ user: null, accessToken: null, permissions: [], step: "login", hydrated: true });
     }
   },
 
@@ -126,11 +111,10 @@ export const useAuthStore = create((set, get) => ({
           challengeToken: data.challengeToken,
           devCode: data.devCode ?? null,
           contactHint: data.contactHint,
-          otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin'),
+          otpMode: data.otpMode ?? (data.user?.role === "INTERN" ? "user" : "admin"),
           loading: false,
         });
-        return { step: 'otp', otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin') };
-        return { step: "otp" };
+        return { step: "otp", otpMode: data.otpMode ?? (data.user?.role === "INTERN" ? "user" : "admin") };
       }
       set({
         user: data.user,
@@ -169,6 +153,7 @@ export const useAuthStore = create((set, get) => ({
       throw err;
     }
   },
+
   signupStart: async ({
     name,
     email,
@@ -209,6 +194,7 @@ export const useAuthStore = create((set, get) => ({
       throw err;
     }
   },
+
   signupVerify: async ({ code }) => {
     set({ loading: true, error: null });
     const { internStartDate, internEndDate } = get();
@@ -263,20 +249,14 @@ export const useAuthStore = create((set, get) => ({
   },
 
   reset: () => {
-    set({ user: null, accessToken: null, permissions: [], step: 'login', challengeToken: null, error: null, otpMode: 'admin' });
-    persist(get());
-  },
-
-  goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null, otpMode: 'admin' }),
     set({
       user: null,
       accessToken: null,
       permissions: [],
       step: "login",
       challengeToken: null,
-      devCode: null,
-      contactHint: null,
       error: null,
+      otpMode: "admin",
     });
     persist(get());
   },
@@ -297,6 +277,7 @@ export const useAuthStore = create((set, get) => ({
       challengeToken: null,
       devCode: null,
       contactHint: null,
+      otpMode: "admin",
     }),
 
   hasPermission: (perm) => get().permissions.includes(perm),

@@ -81,6 +81,18 @@ export function verifyCsrf(token, sessionId) {
   }
 }
 
+// ── OAuth state (short-lived, purpose-scoped JWT) ─────────
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign({ purpose: 'oauth_state', returnTo }, config.jwt.secret, {
+    expiresIn: '10m',
+    algorithm: ALGO,
+  });
+}
+
+export function verifyOAuthState(token) {
+  return jwt.verify(token, config.jwt.secret, { algorithms: [ALGO] });
+}
+
 // ── Random helpers ─────────────────────────────────────────
 export const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
 
