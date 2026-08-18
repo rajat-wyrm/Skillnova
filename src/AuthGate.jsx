@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════
 import { useEffect } from "react";
 import Login from "./auth/pages/Login";
-import Signup from "./auth/pages/Signup";
+import Signup from "./auth/pages/signup";
 import SignupOTP from "./auth/pages/SignupOTP";
 import AdminOTP from "./auth/pages/AdminOTP";
 import User2FA from "./auth/pages/User2FA";

@@ -11,7 +11,16 @@ import { evaluateBadgesForUser, evaluateTopPerformers } from '../services/badge.
 export const list = asyncHandler(async (req, res) => {
   const badges = await prisma.badge.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { awards: true } } },
+    include: {
+      awards: {
+        include: {
+          user: {
+            select: { id: true, name: true, avatarUrl: true, department: true }
+          }
+        }
+      },
+      _count: { select: { awards: true } }
+    },
   });
   res.json({ items: badges });
 });
