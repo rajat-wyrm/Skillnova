@@ -79,6 +79,9 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  learningTrackers  LearningTracker[]
+  learningStreak    LearningStreak?
+  badges            UserBadge[]
   internRatingsReceived InternRating[] @relation("InternRatings")
   internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
 
@@ -182,6 +185,14 @@ model InviteCode {
   createdAt   DateTime  @default(now())
 
   @@index([code])
+}
+
+// ── Reports ─────────────────────────────────────────────────
+enum ReportStatus {
+  DRAFT
+  PENDING
+  REVIEWED
+  REJECTED
 }
 
 // ── Reports ─────────────────────────────────────────────────
@@ -668,7 +679,58 @@ model MeetingAttendee {
   @@unique([meetingId, userId])
   @@index([userId])
 }
+// ── Learning Streak & Tracker ──────────────────────────────
+model LearningTracker {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
+
+model LearningStreak {
+  id                 String    @id @default(cuid())
+  internId           String    @unique
+  user               User      @relation(fields: [internId], references: [id], onDelete: Cascade)
+  currentStreak      Int       @default(0)
+  longestStreak      Int       @default(0)
+  lastCompletedDate  DateTime? @db.Date
+  streakStartedAt    DateTime?
+  lastResetDate      DateTime? @db.Date
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  description String
+  icon        String
+  category    String
+  requirement Int
+  createdAt   DateTime    @default(now())
+  userBadges  UserBadge[]
+
+  @@index([category])
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  internId String
+  user     User     @relation(fields: [internId], references: [id], onDelete: Cascade)
+  badgeId  String
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  earnedAt DateTime @default(now())
+
+  @@unique([internId, badgeId])
+  @@index([internId])
+  @@index([badgeId])
 // ════════════════════════════════════════════════════════════
 //  PHASE 1 — Learning Roadmap, Achievement Badges,
 //  Internship Completion Tracker
