@@ -48,17 +48,6 @@ router.post("/login", loginLimiter, validate(loginSchema), auth.login);
 router.post("/verify-otp", loginLimiter, validate(otpSchema), auth.verifyOtp);
 router.get('/me', authenticate, requireAuth, auth.me);
 router.post('/2fa/setup', authenticate, requireAuth, auth.setupTotp);
-const internDatesSchema = {
-  internStartDate: z
-    .string()
-    .refine((val) => !val || !isNaN(new Date(val).getTime()))
-    .optional(),
-  internEndDate: z
-    .string()
-    .refine((val) => !val || !isNaN(new Date(val).getTime()))
-    .optional(),
-};
-
 router.post(
   "/signup/start",
   loginLimiter,
@@ -68,7 +57,14 @@ router.post(
       email: schemas.email,
       password: schemas.password,
       isIntern: z.boolean().default(true),
-      ...internDatesSchema,
+      internStartDate: z
+        .string()
+        .refine((val) => !val || !isNaN(new Date(val).getTime()))
+        .optional(),
+      internEndDate: z
+        .string()
+        .refine((val) => !val || !isNaN(new Date(val).getTime()))
+        .optional(),
     }),
   ),
   auth.signupStart,
@@ -81,7 +77,14 @@ router.post(
     z.object({
       challengeToken: z.string(),
       code: z.string().min(4).max(8),
-      ...internDatesSchema,
+      internStartDate: z
+        .string()
+        .refine((val) => !val || !isNaN(new Date(val).getTime()))
+        .optional(),
+      internEndDate: z
+        .string()
+        .refine((val) => !val || !isNaN(new Date(val).getTime()))
+        .optional(),
     }),
   ),
   auth.signupVerify,
@@ -123,6 +126,8 @@ router.post(
   auth.setInternAsTeamLead,
 );
 
+router.get("/me", authenticate, requireAuth, auth.me);
+router.post("/2fa/setup", authenticate, requireAuth, auth.setupTotp);
 router.post(
   "/2fa/enable",
   authenticate,
@@ -143,9 +148,9 @@ router.get('/demo-accounts', (req, res) => {
   res.json({
     accounts: [
       { label: 'Senior Team Leader', email: 'superadmin@skillnova.com', pwd: 'SuperAdmin#2026', color: '#7C3AED' },
-      { label: 'Team Leader', email: 'admin@skillnova.com', pwd: 'Admin#2026', color: '#ff6d34' },
-      { label: 'Captain', email: 'mentor@skillnova.com', pwd: 'Mentor#2026', color: '#7C3AED' },
-      { label: 'Intern', email: 'rahul@skillnova.com', pwd: 'User#2026', color: '#00bea3' },
+      { label: 'Team Leader',        email: 'admin@skillnova.com',      pwd: 'Admin#2026',      color: '#ff6d34' },
+      { label: 'Captain',            email: 'mentor@skillnova.com',     pwd: 'Mentor#2026',     color: '#7C3AED' },
+      { label: 'Intern',             email: 'rahul@skillnova.com',      pwd: 'User#2026',       color: '#00bea3' },
     ],
   });
 });

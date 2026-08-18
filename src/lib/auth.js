@@ -1,392 +1,295 @@
+
 // ════════════════════════════════════════════════════════════
-//  Auth Store — Zustand
+// Auth Store — Zustand
 // ════════════════════════════════════════════════════════════
+
 import { create } from "zustand";
 import api, { getErrorMessage } from "./api";
 import { APP_CONSTANTS } from "../shared/config/constants";
-const STORAGE_KEY = 'skillnova.auth';
+
+
+const STORAGE_KEY = APP_CONSTANTS.AUTH_STORAGE_KEY || "skillnova.auth";
+
 const STORAGE_ENABLED = !import.meta.env.DEV;
+
 
 const loadFromStorage = () => {
   if (!STORAGE_ENABLED) return null;
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch {
+  } catch (_e) {
+    void _e;
     return null;
   }
 };
 
+
 const persist = (state) => {
-  if (!STORAGE_ENABLED) {
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-    return;
-  }
 
   try {
-    if (state.user && state.accessToken) {
-      localStorage.setItem(
-        APP_CONSTANTS.AUTH_STORAGE_KEY,
-        JSON.stringify({ user: state.user, accessToken: state.accessToken }),
-        STORAGE_KEY,
-        JSON.stringify({ user: state.user, accessToken: state.accessToken })
-      );
-    } else {
+
+    if (!state.user || !state.accessToken) {
       localStorage.removeItem(STORAGE_KEY);
+      return;
     }
-  } catch {
-    /* ignore */
-  }
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        user: state.user,
+        accessToken: state.accessToken,
+      })
+    );
+
+  } catch (_e) { void _e; /* ignore storage errors */ }
+
 };
 
+
+// Minimal client-side derivePermissions fallback. The server returns
+// `permissions` for authenticated users; this is only used when the
+// server response doesn't include permissions (e.g., during dev).
+const derivePermissions = (role) => {
+  if (!role) return [];
+  // Role names in server are uppercase; normalize to be safe.
+  const r = String(role).toUpperCase();
+  // Simple defaults: interns have limited access, others have broader access.
+  if (r === "INTERN") return ["reports:read", "kb:read", "ai:use"];
+  if (r === "MENTOR") return ["reports:read", "reports:review", "kb:read", "ai:use"];
+  if (r === "ADMIN" || r === "SUPER_ADMIN") return ["users:read", "reports:read", "kb:read", "ai:use", "settings:read"];
+  return [];
+};
+
+
 export const useAuthStore = create((set, get) => ({
+
   user: null,
   accessToken: null,
   permissions: [],
-  step: "login", // 'login' | 'signup' | 'signup_otp' | 'otp' | 'authenticated'
+
+  step: "login",
+
   challengeToken: null,
   devCode: null,
-  otpMode: 'admin',
+  otpMode: "admin",
   contactHint: null,
+
   internStartDate: null,
   internEndDate: null,
-  loading: false,
-  error: null,
-  hydrated: false,
 
-  hydrate: async () => {
-    if (get().hydrated) return;
-    // Always try /auth/me first — validates httpOnly cookies (Google OAuth uses these)
-    set({ step: 'auth-checking' });
-    try {
-      const { data } = await api.get("/auth/me");
+  loading:false,
+  error:null,
+  hydrated:false,
+
+
+  hydrate: async()=>{
+
+    if(get().hydrated) return;
+
+
+    try{
+
+      const {data}=await api.get("/auth/me");
+
+
       set({
-        user: data.user,
-        permissions: data.permissions ?? derivePermissions(data.user.role),
-        step: "authenticated",
-        hydrated: true,
+
+        user:data.user,
+
+        permissions:
+          data.permissions ??
+          derivePermissions(data.user?.role),
+
+        step:"authenticated",
+
+        hydrated:true
+
       });
+
+
       persist(get());
+
       return;
-    } catch {
-      // No valid cookie — fall back to localStorage
-    }
-    const persisted = loadFromStorage();
-    if (persisted?.user && persisted?.accessToken) {
+
+
+    } catch (_e) { void _e; /* ignore */ }
+
+
+    const stored=loadFromStorage();
+
+
+    if(stored?.user && stored?.accessToken){
+
       set({
-        user: persisted.user,
-        accessToken: persisted.accessToken,
-        permissions: derivePermissions(persisted.user.role),
-        step: "authenticated",
-        hydrated: true,
+
+        user:stored.user,
+
+        accessToken:stored.accessToken,
+
+        permissions:
+          derivePermissions(stored.user.role),
+
+        step:"authenticated",
+
+        hydrated:true
+
       });
-      persist(get());
-    } else {
-      set({ user: null, accessToken: null, permissions: [], step: 'login', hydrated: true });
+
+
+    }else{
+
+      set({
+
+        user:null,
+        accessToken:null,
+        permissions:[],
+        step:"login",
+        hydrated:true
+
+      });
+
     }
+
   },
 
-  login: async ({ email, password, rememberMe = true }) => {
-    set({ loading: true, error: null });
-    try {
-      const { data } = await api.post("/auth/login", {
-        email,
-        password,
-        rememberMe,
-      });
-      if (data.step === "otp_required") {
+
+
+  login:async({email,password,rememberMe=true})=>{
+
+    set({
+      loading:true,
+      error:null
+    });
+
+
+    try{
+
+
+      const {data}=await api.post(
+        "/auth/login",
+        {
+          email,
+          password,
+          rememberMe
+        }
+      );
+
+
+      if(data.step==="otp_required"){
+
+
         set({
-          step: "otp",
-          challengeToken: data.challengeToken,
-          devCode: data.devCode ?? null,
-          contactHint: data.contactHint,
-          otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin'),
+
+          step:"otp",
+
+          challengeToken:data.challengeToken,
+
+          devCode:data.devCode ?? null,
+
+          contactHint:data.contactHint,
+
+          otpMode:
+            data.otpMode ??
+            (
+              data.user?.role==="INTERN"
+              ?"user"
+              :"admin"
+            ),
+
+          loading:false
+
+        });
+
+
+        return {
+          step:"otp"
+        };
+
+      }
+
+
+
+      set({
+
+        user:data.user,
+
+        accessToken:data.accessToken,
+
+        permissions:
+          derivePermissions(data.user.role),
+
+        step:"authenticated",
+
+        loading:false
+
+      });
+
+
+      persist(get());
+
+
+      return {
+        step:"authenticated"
+      };
+
+
+    }catch(err){
+
+      set({
+
+        loading:false,
+
+        error:getErrorMessage(err)
+
+      });
+
+
+      throw err;
+
+    }
+
+    },
+
+    // Verify OTP (admin / 2FA) using the challenge token from `login`
+    verifyOtp: async ({ code, useTotp = false }) => {
+      set({ loading: true, error: null });
+      try {
+        const challengeToken = get().challengeToken;
+        if (!challengeToken) throw new Error("Missing challenge token");
+
+        const { data } = await api.post("/auth/verify-otp", {
+          challengeToken,
+          code,
+          useTotp,
+        });
+
+        set({
+          user: data.user,
+          accessToken: data.accessToken,
+          permissions: data.permissions ?? derivePermissions(data.user?.role),
+          step: "authenticated",
+          challengeToken: null,
+          devCode: null,
           loading: false,
         });
-        return { step: 'otp', otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin') };
-        return { step: "otp" };
+
+        persist(get());
+
+        return { step: "authenticated" };
+      } catch (err) {
+        set({ loading: false, error: getErrorMessage(err) });
+        throw err;
       }
-      set({
-        user: data.user,
-        accessToken: data.accessToken,
-        permissions: derivePermissions(data.user.role),
-        step: "authenticated",
-        loading: false,
-      });
-      persist(get());
-      return { step: "authenticated" };
-    } catch (err) {
-      set({ loading: false, error: getErrorMessage(err) });
-      throw err;
+    },
+
+    // Basic logout helper
+    logout: () => {
+      set({ user: null, accessToken: null, permissions: [], step: 'login' });
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_e) { void _e; /* ignore */ }
     }
-  },
 
-  verifyOtp: async ({ code, useTotp = false }) => {
-    set({ loading: true, error: null });
-    try {
-      const { data } = await api.post("/auth/verify-otp", {
-        challengeToken: get().challengeToken,
-        code,
-        useTotp,
-      });
-      set({
-        user: data.user,
-        accessToken: data.accessToken,
-        permissions: derivePermissions(data.user.role),
-        step: "authenticated",
-        loading: false,
-      });
-      persist(get());
-      return data;
-    } catch (err) {
-      set({ loading: false, error: getErrorMessage(err) });
-      throw err;
-    }
-  },
-  signupStart: async ({
-    name,
-    email,
-    password,
-    isIntern = true,
-    internStartDate,
-    internEndDate,
-  }) => {
-    set({ loading: true, error: null });
+  }));
 
-    try {
-      const { data } = await api.post("/auth/signup/start", {
-        name,
-        email,
-        password,
-        isIntern,
-        internStartDate,
-        internEndDate,
-      });
-
-      set({
-        step: "signup_otp",
-        challengeToken: data.challengeToken,
-        devCode: data.devCode ?? null,
-        contactHint: data.contactHint,
-        internStartDate,
-        internEndDate,
-        loading: false,
-      });
-
-      return data;
-    } catch (err) {
-      set({
-        loading: false,
-        error: getErrorMessage(err),
-      });
-
-      throw err;
-    }
-  },
-  signupVerify: async ({ code }) => {
-    set({ loading: true, error: null });
-    const { internStartDate, internEndDate } = get();
-
-    try {
-      const { data } = await api.post("/auth/signup/verify", {
-        challengeToken: get().challengeToken,
-        code,
-        internStartDate,
-        internEndDate,
-      });
-
-      set({
-        user: data.user,
-        accessToken: data.accessToken,
-        permissions: derivePermissions(data.user.role),
-        step: "authenticated",
-        loading: false,
-        internStartDate: null,
-        internEndDate: null,
-      });
-
-      persist(get());
-
-      return data;
-    } catch (err) {
-      set({
-        loading: false,
-        error: getErrorMessage(err),
-      });
-
-      throw err;
-    }
-  },
-
-  logout: async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      /* ignore */
-    }
-    set({
-      user: null,
-      accessToken: null,
-      permissions: [],
-      step: "login",
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-    });
-    persist(get());
-  },
-
-  reset: () => {
-    set({ user: null, accessToken: null, permissions: [], step: 'login', challengeToken: null, error: null, otpMode: 'admin' });
-    persist(get());
-  },
-
-  goToSignup: () =>
-    set({
-      step: "signup",
-      error: null,
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-    }),
-
-  goBackToLogin: () =>
-    set({
-      step: "login",
-      error: null,
-      challengeToken: null,
-      devCode: null,
-      contactHint: null,
-    }),
-
-  hasPermission: (perm) => get().permissions.includes(perm),
-  hasRole: (...roles) => roles.includes(get().user?.role),
-
-  isAdmin: () => ["SUPER_ADMIN", "ADMIN"].includes(get().user?.role),
-  isIntern: () => get().user?.role === "INTERN",
-  isMentor: () => get().user?.role === "MENTOR",
-}));
-
-// Role → permission list (mirrors backend PERMISSIONS map)
-const ROLE_PERMISSIONS = {
-  SUPER_ADMIN: [
-    "users:read",
-    "users:create",
-    "users:update",
-    "users:delete",
-    "users:role:change",
-    "reports:read",
-    "reports:create",
-    "reports:update",
-    "reports:review",
-    "reports:delete",
-    "kb:read",
-    "kb:create",
-    "kb:update",
-    "kb:verify",
-    "kb:delete",
-    "announcements:read",
-    "announcements:create",
-    "announcements:update",
-    "announcements:delete",
-    "attendance:read",
-    "attendance:mark",
-    "attendance:self",
-    "projects:read",
-    "projects:create",
-    "projects:update",
-    "projects:delete",
-    "tasks:read",
-    "tasks:create",
-    "tasks:update",
-    "tasks:delete",
-    "qa:read",
-    "qa:create",
-    "qa:update",
-    "qa:delete",
-    "ai:use",
-    "settings:read",
-    "settings:update",
-    "audit:read",
-  ],
-  ADMIN: [
-    "users:read",
-    "users:create",
-    "users:update",
-    "reports:read",
-    "reports:create",
-    "reports:update",
-    "reports:review",
-    "reports:delete",
-    "kb:read",
-    "kb:create",
-    "kb:update",
-    "kb:verify",
-    "kb:delete",
-    "announcements:read",
-    "announcements:create",
-    "announcements:update",
-    "announcements:delete",
-    "attendance:read",
-    "attendance:mark",
-    "attendance:self",
-    "projects:read",
-    "projects:create",
-    "projects:update",
-    "projects:delete",
-    "tasks:read",
-    "tasks:create",
-    "tasks:update",
-    "tasks:delete",
-    "qa:read",
-    "qa:create",
-    "qa:update",
-    "qa:delete",
-    "ai:use",
-    "settings:read",
-  ],
-  MENTOR: [
-    "users:read",
-    "reports:read",
-    "reports:create",
-    "reports:update",
-    "reports:review",
-    "kb:read",
-    "kb:create",
-    "kb:update",
-    "announcements:read",
-    "attendance:read",
-    "attendance:mark",
-    "attendance:self",
-    "projects:read",
-    "projects:create",
-    "projects:update",
-    "tasks:read",
-    "tasks:create",
-    "tasks:update",
-    "tasks:delete",
-    "qa:read",
-    "qa:create",
-    "qa:update",
-    "ai:use",
-  ],
-  INTERN: [
-    "reports:read",
-    "reports:create",
-    "reports:update",
-    "kb:read",
-    "announcements:read",
-    "attendance:self",
-    "projects:read",
-    "tasks:read",
-    "tasks:update",
-    "qa:read",
-    "qa:create",
-    "qa:update",
-    "ai:use",
-  ],
-};
-
-function derivePermissions(role) {
-  return ROLE_PERMISSIONS[role] ?? [];
-}
+  

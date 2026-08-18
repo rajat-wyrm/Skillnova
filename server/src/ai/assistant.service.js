@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
 
 let client = null;
 function getClient() {
-  if (!config.groq.apiKey) throw new Error('GROQ_API_KEY not configured');
+  if (!config.groq.apiKey) throw new Error('GROQ_API_KEY not configured. Set GROQ_API_KEY in server/.env.');
   if (!client) client = new Groq({ apiKey: config.groq.apiKey });
   return client;
 }
@@ -117,21 +117,51 @@ ${live.myReports.map((r) => `- "${r.title}" — status=${r.status}, score=${r.sc
 }
 
 // ── Local KB fallback (when Groq unavailable) ─────────────
+function findFaqAnswer(q) {
+  return UPTOSKILLS_KB.faqs.find((f) => {
+    const normalized = f.q.toLowerCase().replace(/[?\.]/g, '');
+    if (q.includes(normalized)) return true;
+    const terms = normalized.split(/\s+/).filter(Boolean);
+    return terms.length > 3 && terms.slice(0, 4).every((term) => q.includes(term));
+  });
+}
+
 function localFallback(question) {
   const kb = UPTOSKILLS_KB;
   const q = (question || '').toLowerCase();
+  const faq = findFaqAnswer(q);
+  if (faq) {
+    return `${faq.a}\n\n<actions>[{"label":"View Knowledge Base","action":"navigate","path":"/knowledge"}]</actions>`;
+  }
+
   const reply = (() => {
-    if (q.includes('report')) return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]}`;
-    if (q.includes('attend')) return kb.attendance.policy;
-    if (q.includes('mentor') || q.includes('meeting')) return `${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(', ')}.`;
-    if (q.includes('code of conduct') || q.includes('conduct')) return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n');
-    if (q.includes('contact') || q.includes('email') || q.includes('phone')) return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
-    if (q.includes('project') || q.includes('task')) return 'Open the **Project Flow** page to see your roadmap and current sprint. Tasks are managed in the **Tasks** section of your dashboard.';
-    if (q.includes('task') || q.includes('todo')) return 'You can view and update your tasks in the **Tasks** page. Mark them as DONE once completed.';
-    const faq = kb.faqs.find((f) => q.includes(f.q.toLowerCase().slice(0, 12)));
-    if (faq) return faq.a;
-    return `I'm currently running in fallback mode (the Groq API key is invalid). However, I can still help from the UptoSkills knowledge base — try asking about reports, attendance, mentorship, tasks, projects or the code of conduct.`;
+    if (q.match(/report|weekly report|submit.*report|reporting/)) {
+      return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]} Review the report structure: ${kb.reports.sections.join(', ')}.`;
+    }
+    if (q.match(/attend|attendance|check-in|check out|leave|time/)) {
+      return kb.attendance.policy;
+    }
+    if (q.match(/mentor|mentorship|1:1|meeting|feedback|mentor meeting/)) {
+      return `Mentorship happens ${kb.mentorship.cadence}. Typical agenda items are ${kb.mentorship.agenda.join(', ')}.`;
+    }
+    if (q.match(/code of conduct|conduct|behavior|respect|confidential/)) {
+      return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n');
+    }
+    if (q.match(/contact|email|phone|support|help/)) {
+      return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
+    }
+    if (q.match(/project|task|roadmap|tasks|sprint|deliverable/)) {
+      return 'Open the **Project Flow** page to see your roadmap and current sprint. Tasks are managed in the **Tasks** section of your dashboard.';
+    }
+    if (q.match(/knowledge base|kb|article|documentation|docs/)) {
+      return `The Knowledge Base contains onboarding guides, reports help, mentorship templates and platform FAQs. Use the Knowledge Base page for searchable documentation.`;
+    }
+    if (q.match(/faq|frequently asked|question/)) {
+      return 'Browse the Knowledge Base or ask a specific question about reports, attendance, mentorship, tasks, projects or the code of conduct.';
+    }
+    return `I'm currently running in fallback mode because the GROQ API key is missing or invalid. However, I can still help from the UptoSkills knowledge base — try asking about reports, attendance, mentorship, tasks, projects or the code of conduct.`;
   })();
+
   return `${reply}\n\n<actions>[{"label":"Open Dashboard","action":"navigate","path":"/dashboard"},{"label":"View Knowledge Base","action":"navigate","path":"/knowledge"}]</actions>`;
 }
 

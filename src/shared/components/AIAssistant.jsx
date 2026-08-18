@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 const APP_NAME = 'AIAssistant';
-const API_BASE = '/api/aiassistant';
+const API_BASE = (import.meta.env.VITE_API_URL || '/api/v1') + '/ai';
 const MAX_MESSAGE_LENGTH = 2000;
 const STORAGE_PREFIX = 'aiassistant:session:';
 
@@ -90,13 +90,9 @@ export default function AIAssistant({ role = 'INTERN', userName = null }) {
     try {
       const res = await fetch(`${API_BASE}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          session_id: sessionRef.current,
-          user_role: role,
-          user_name: userName,
-        }),
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('sn_csrf') || '' },
+        body: JSON.stringify({ message: text }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -129,6 +125,12 @@ export default function AIAssistant({ role = 'INTERN', userName = null }) {
       },
     ]);
   }
+
+function getCookie(name) {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
+  return m ? decodeURIComponent(m[2]) : '';
+}
 
   return (
     <>

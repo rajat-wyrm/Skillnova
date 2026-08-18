@@ -7,7 +7,7 @@ import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 
-const MentorDashboard = () => {
+const MentorDashboard = ({ onNavigate }) => {
   const { user } = useAuthStore();
   const [interns, setInterns] = useState([]);
   const [reports, setReports] = useState([]);
@@ -88,6 +88,7 @@ const MentorDashboard = () => {
 
   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
     <button
+      onClick={() => onNavigate?.('reports')}
       className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
       style={{ background: "#ff6d34" }}
     >
@@ -95,6 +96,7 @@ const MentorDashboard = () => {
     </button>
 
     <button
+      onClick={() => onNavigate?.('projects')}
       className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
       style={{ background: "#00bea3" }}
     >
@@ -102,6 +104,7 @@ const MentorDashboard = () => {
     </button>
 
     <button
+      onClick={() => onNavigate?.('interns')}
       className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
       style={{ background: "#7C3AED" }}
     >
@@ -109,6 +112,7 @@ const MentorDashboard = () => {
     </button>
 
     <button
+      onClick={() => onNavigate?.('roadmap')}
       className="rounded-xl p-4 text-white font-semibold transition hover:scale-105"
       style={{ background: "#2563eb" }}
     >

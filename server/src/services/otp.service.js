@@ -6,6 +6,7 @@ import prisma from "../utils/prisma.js";
 import { hashPassword } from "../utils/auth.js";
 import { sendEmail } from "./email.service.js";
 import { logger } from "../utils/logger.js";
+import bcrypt from "bcryptjs";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
@@ -145,14 +146,12 @@ export async function verifyOtp(email, code, purpose = "signup") {
  * (Using crypto for timing-safe comparison)
  */
 async function compareOtp(plain, hash) {
-  const crypto_module = await import("crypto");
-  const plainHash = crypto_module.default
-    .createHash("sha256")
-    .update(plain)
-    .digest("hex");
-  return crypto
-    .timingSafeEqual(Buffer.from(plainHash), Buffer.from(hash))
-    .valueOf();
+  try {
+    return await bcrypt.compare(plain, hash);
+  } catch (err) {
+    logger.error("compareOtp failed", { error: err?.message });
+    return false;
+  }
 }
 
 /**
