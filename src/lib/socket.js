@@ -1,10 +1,6 @@
-// ════════════════════════════════════════════════════════════
-//  Socket.io client with auth + auto-reconnect
-// ════════════════════════════════════════════════════════════
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
-
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "";
 let socket = null;
 let activeToken = null;
 
@@ -15,15 +11,17 @@ export function connectSocket(token) {
       socket.disconnect();
       socket = null;
       activeToken = null;
+    } else if (socket.connected) {
+      return socket;
     } else {
       return socket;
     }
   }
 
   activeToken = token ?? null;
-  socket = io(SOCKET_URL || '/', {
-    path: '/socket.io',
-    transports: ['websocket', 'polling'],
+  socket = io(SOCKET_URL || undefined, {
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
     auth: { token },
     withCredentials: true,
     reconnection: true,
@@ -32,25 +30,17 @@ export function connectSocket(token) {
     reconnectionAttempts: Infinity,
   });
 
-  socket.on('connect', () => {
-    console.info('[socket] connected', socket.id);
-  });
-  socket.on('disconnect', (reason) => {
-    console.warn('[socket] disconnected:', reason);
-  });
-  socket.on('connect_error', (err) => {
-    console.warn('[socket] connect_error:', err.message);
-  });
+  socket.on("connect", () => console.info("[socket] connected", socket.id));
+  socket.on("disconnect", (reason) => console.warn("[socket] disconnected:", reason));
+  socket.on("connect_error", (err) => console.warn("[socket] connect_error:", err.message));
 
   return socket;
 }
 
 export function disconnectSocket() {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-    activeToken = null;
-  }
+  if (socket) socket.disconnect();
+  socket = null;
+  activeToken = null;
 }
 
 export function getSocket() {

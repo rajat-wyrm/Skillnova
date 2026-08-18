@@ -8,6 +8,17 @@ import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
 import { formatRelative } from '../../lib/utils';
 
+function getStoredAccessToken() {
+  if (typeof window === 'undefined') return '';
+  try {
+    const raw = window.localStorage.getItem('skillnova.auth') || window.localStorage.getItem('auth');
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed?.accessToken || '';
+  } catch {
+    return '';
+  }
+}
+
 const SUGGESTIONS = [
   'How do I submit my weekly report?',
   'Summarise my recent reports',
@@ -252,10 +263,15 @@ Please provide:
     abortRef.current = ctrl;
 
     try {
+      const accessToken = getStoredAccessToken();
       const res = await fetch(`${import.meta.env.VITE_API_URL || '/api/v1'}/ai/chat/stream`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCookie('sn_csrf') || '' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCookie('sn_csrf') || '',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ message: msg, sessionId: sessionId ?? undefined }),
         signal: ctrl.signal,
       });

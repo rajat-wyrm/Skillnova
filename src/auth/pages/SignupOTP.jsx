@@ -25,7 +25,10 @@ const SignupOTP = () => {
     inputs.current[0]?.focus();
     if (devCode) {
       const arr = devCode.split("");
-      setDigits(arr.concat(Array(LEN - arr.length).fill("")));
+      // Defer setting digits to avoid synchronous setState inside effect
+      setTimeout(() => {
+        setDigits(arr.concat(Array(LEN - arr.length).fill("")));
+      }, 0);
     }
   }, [devCode]);
 

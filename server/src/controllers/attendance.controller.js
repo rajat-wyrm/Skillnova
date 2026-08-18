@@ -303,6 +303,7 @@ export const requestLeave = asyncHandler(async (req, res) => {
   });
 
   res.json({ marked: records.length, records });
+  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0 });
 });
 
 export default { list, mark, checkInOut, summary, streak, requestLeave };
