@@ -58,6 +58,8 @@ const UserApp = () => {
     files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
     reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
     attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
+    roadmap:        <Suspense fallback={<PageLoader />}><Roadmap /></Suspense>,
+    badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
     ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
     notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
     announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,

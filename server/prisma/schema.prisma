@@ -88,12 +88,6 @@ model User {
   badgeAwards        BadgeAward[]
   internshipProgress InternshipProgress?
 
-  // Phase 1: Learning / Badges / Completion
-  roadmapAssignments RoadmapAssignment[]
-  milestoneProgress  MilestoneProgress[]
-  badgeAwards        BadgeAward[]
-  internshipProgress InternshipProgress?
-
   @@index([role])
   @@index([status])
   @@index([department])
@@ -117,8 +111,6 @@ model InternProfile {
   updatedAt     DateTime @updatedAt
 
   @@index([isTL])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model MentorProfile {
@@ -709,6 +701,7 @@ model LearningMilestone {
   description String?
   resourceUrl String?
   order       Int      @default(0)
+  duration    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

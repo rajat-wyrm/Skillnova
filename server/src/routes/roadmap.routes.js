@@ -35,6 +35,7 @@ const pathCreateSchema = z.object({
         description: z.string().max(1000).optional(),
         resourceUrl: z.string().url().optional(),
         order: z.number().int().min(0).optional(),
+        duration: z.string().max(100).optional(),
       })
     )
     .max(50)
@@ -50,6 +51,14 @@ const milestoneCreateSchema = z.object({
   description: z.string().max(1000).optional(),
   resourceUrl: z.string().url().optional(),
   order: z.number().int().min(0).optional(),
+  duration: z.string().max(100).optional(),
+});
+const milestoneUpdateSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  resourceUrl: z.string().url().nullable().optional(),
+  order: z.number().int().min(0).optional(),
+  duration: z.string().max(100).nullable().optional(),
 });
 const assignSchema = z.object({
   userId: z.string().cuid(),
@@ -62,6 +71,7 @@ api.patch('/roadmap/:id', requireRole('SUPER_ADMIN', 'ADMIN', 'MENTOR'), validat
 api.delete('/roadmap/:id', requireRole('SUPER_ADMIN', 'ADMIN'), validate(idParam, 'params'), roadmap.deletePath);
 
 api.post('/roadmap/:id/milestones', requireRole('SUPER_ADMIN', 'ADMIN', 'MENTOR'), validate(idParam, 'params'), validate(milestoneCreateSchema), roadmap.addMilestone);
+api.patch('/roadmap/:id/milestones/:milestoneId', requireRole('SUPER_ADMIN', 'ADMIN', 'MENTOR'), validate(milestoneIdParam, 'params'), validate(milestoneUpdateSchema), roadmap.updateMilestone);
 api.delete('/roadmap/:id/milestones/:milestoneId', requireRole('SUPER_ADMIN', 'ADMIN', 'MENTOR'), validate(milestoneIdParam, 'params'), roadmap.removeMilestone);
 
 api.post('/roadmap/:id/assign', requireRole('SUPER_ADMIN', 'ADMIN', 'MENTOR'), validate(idParam, 'params'), validate(assignSchema), roadmap.assignPath);
