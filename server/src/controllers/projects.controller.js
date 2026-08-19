@@ -8,6 +8,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
 import { emitToRoom } from '../sockets/index.js';
+import { getTaskRecommendations } from '../services/taskRecommendation.service.js';
 
 // Local schemas (validators live in routes; kept here for documentation & reuse)
 const _projectSchema = z.object({
@@ -156,6 +157,21 @@ export const deleteTask = asyncHandler(async (req, res) => {
   await audit({ userId: req.user.id, action: 'task.delete', resource: 'task', resourceId: id, req });
   res.json({ ok: true });
 });
+export const recommendTask = asyncHandler(async (req, res) => {
+  const { internId } = req.validatedParams;
+
+  const result = await getTaskRecommendations(prisma, internId);
+
+  if (!result) {
+    throw ApiError.notFound('Intern not found');
+  }
+
+  if (result.error) {
+    throw ApiError.badRequest(result.error);
+  }
+
+  res.json(result);
+});
 
 export default {
   listProjects,
@@ -167,4 +183,5 @@ export default {
   createTask,
   updateTask,
   deleteTask,
+  recommendTask,
 };
