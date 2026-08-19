@@ -1,37 +1,8 @@
-import React from "react";
-import { Card } from "../../shared/components/UI";
-
-const Reports = () => {
-  return (
-    <Card className="p-5">
-      <h2>Reports</h2>
-      <p>Reports page is temporarily working.</p>
-    </Card>
 // ════════════════════════════════════════════════════════════
 //  USER — pages/Reports.jsx (API-driven)
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import { Search, FileText, Download, Upload, Loader2, X } from 'lucide-react';
-import { Card, Badge, SectionHeader, Input, GreenButton, Modal } from '../../shared/components/UI';
-import api from '../../lib/api';
-import notify from '../../lib/toast';
-import { formatDate } from '../../lib/utils';
-
-// User - pages/Reports.jsx
-import { useEffect, useMemo, useState } from 'react';
-import {
-  AlertCircle,
-  CalendarDays,
-  Clock3,
-  FileText,
-  History,
-  Loader2,
-  PencilLine,
-  RefreshCw,
-  Send,
-  Sparkles,
-  Star,
-} from 'lucide-react';
 import { Card, Badge, SectionHeader, Input, GreenButton, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
@@ -58,76 +29,6 @@ const Reports = () => {
   };
 
   useEffect(() => { fetch(); }, []);
-
-  const filtered = reports.filter((r) =>
-    !search || r.title.toLowerCase().includes(search.toLowerCase())
-  );
-  useEffect(() => {
-    load();
-  }, []);
-
-  const currentReport =
-  selectedReport ||
-  currentWeek?.report ||
-  null;
-  const currentPreview = currentWeek?.preview || null;
-  const todayLog = currentWeek?.todayLog || dailyLogs.find((item) => item.date?.slice(0, 10) === todayKey()) || null;
-  const needsReminder = currentWeek?.missingToday ?? !todayLog;
-  const editableReport = currentReport && ['DRAFT', 'NEEDS_REVISION', 'REJECTED'].includes(currentReport.status); console.log(currentReport);
-  const weeklySummary = currentReport?.summary || currentPreview?.summary || {
-    totalHours: 0,
-    challenges: [],
-    achievements: [],
-    technologies: [],
-    nextSteps: [],
-  };
-
-
-  const openLogEditor = (log) => {
-    setLogEditor(log);
-    setLogForm({
-      workDone: log.workDone || '',
-      hoursWorked: log.hoursWorked ?? '',
-      technologiesUsed: log.technologiesUsed || '',
-      challenges: log.challenges || '',
-      tomorrowPlan: log.tomorrowPlan || '',
-    });
-  };
-
-  const clearLogEditor = () => {
-    setLogEditor(null);
-    setLogForm(emptyLogForm);
-  };
-
-  const saveLog = async () => {
-    if (!logForm.workDone.trim()) {
-      notify.error('Please add what you worked on today.');
-      return;
-    }
-    setSavingLog(true);
-    try {
-      const payload = {
-        date: logEditor?.date || new Date().toISOString(),
-        workDone: logForm.workDone.trim(),
-        hoursWorked: Number(logForm.hoursWorked || 0),
-        technologiesUsed: logForm.technologiesUsed.trim() || undefined,
-        challenges: logForm.challenges.trim() || undefined,
-        tomorrowPlan: logForm.tomorrowPlan.trim() || undefined,
-      };
-      if (logEditor?.id) {
-        await api.put(`/reports/daily-logs/${logEditor.id}`, payload);
-      } else {
-        await api.post('/reports/daily-logs', payload);
-      }
-      notify.success('Daily log saved.');
-      clearLogEditor();
-      load();
-    } catch (err) {
-      notify.error(err.response?.data?.error || 'Failed to save log.');
-    } finally {
-      setSavingLog(false);
-    }
-  };
 
   const filtered = reports.filter((r) =>
     !search || r.title.toLowerCase().includes(search.toLowerCase())

@@ -13,6 +13,7 @@ import {
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
+import { useDeadlineChecker } from '../../shared/hooks/useDeadlineChecker';
 import { formatRelative } from '../../lib/utils';
 
 const MotionDiv = motion.div;
@@ -20,6 +21,7 @@ const CHART_C = ['#ff6d34', '#00bea3', '#7C3AED', '#f59e0b', '#06b6d4'];
 
 const Dashboard = ({ onNavigate }) => {
   const { user } = useAuthStore();
+  const { overdue, dueSoon } = useDeadlineChecker();
   const [stats, setStats] = useState(null);
   const [myReports, setMyReports] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
@@ -69,6 +71,33 @@ const Dashboard = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6 pb-16">
+    {(overdue.length > 0 || dueSoon.length > 0) && (
+  <div className="rounded-xl p-4 border border-red-500/30 bg-red-500/10">
+    <p className="text-red-400 font-semibold mb-2">
+      ⏰ Task Deadline Alert
+    </p>
+    {overdue.length > 0 && (
+      <div className="mb-2">
+        <p className="text-red-400 text-sm font-medium">🔴 Overdue ({overdue.length})</p>
+        {overdue.map((t) => (
+          <p key={t.id} className="text-red-300 text-xs mt-1">
+            • {t.title} — {t.project?.name} (was due {new Date(t.dueDate).toLocaleDateString()})
+          </p>
+        ))}
+      </div>
+    )}
+    {dueSoon.length > 0 && (
+      <div>
+        <p className="text-yellow-400 text-sm font-medium">🟡 Due in 24 hours ({dueSoon.length})</p>
+        {dueSoon.map((t) => (
+          <p key={t.id} className="text-yellow-300 text-xs mt-1">
+            • {t.title} — {t.project?.name} (due {new Date(t.dueDate).toLocaleTimeString()})
+          </p>
+        ))}
+      </div>
+    )}
+  </div>
+)}
       <MotionDiv
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

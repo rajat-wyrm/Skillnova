@@ -151,6 +151,31 @@ export const deleteTask = asyncHandler(async (req, res) => {
   await audit({ userId: req.user.id, action: 'task.delete', resource: 'task', resourceId: id, req });
   res.json({ ok: true });
 });
+// Get tasks with upcoming or overdue deadlines for the logged-in intern
+export const getDeadlineTasks = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const tasks = await prisma.projectTask.findMany({
+    where: {
+      assigneeId: req.user.id,
+      status: { not: 'DONE' },
+      dueDate: { not: null },
+    },
+    include: {
+      project: { select: { name: true } },
+    },
+    orderBy: { dueDate: 'asc' },
+  });
+
+  const overdue = tasks.filter((t) => new Date(t.dueDate) < now);
+  const dueSoon = tasks.filter((t) => {
+    const due = new Date(t.dueDate);
+    return due >= now && due <= in24h;
+  });
+
+  res.json({ overdue, dueSoon });
+});
 
 export default {
   listProjects,

@@ -1,9 +1,3 @@
-// ════════════════════════════════════════════════════════════
-//  App.jsx — Root component
-//  Hydrates auth, mounts the right app (admin/mentor/intern)
-//  based on the authenticated user's role. Mounts the global
-//  AIAssistant widget so every logged-in user has access.
-// ════════════════════════════════════════════════════════════
 import { useEffect } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
@@ -30,7 +24,7 @@ const App = () => {
     };
   }, [user, step]);
 
-  if (!hydrated) return <LoaderScreen label="Initialising SkillNova…" />;
+  if (!hydrated) return <LoaderScreen label="Initialising SkillNova..." />;
   if (!user || step !== 'authenticated') return <AuthGate />;
 
   return (

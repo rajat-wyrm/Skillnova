@@ -28,6 +28,12 @@ import { audit } from "../services/audit.service.js";
 import { logger } from "../utils/logger.js";
 import { notify } from "../services/notification.service.js";
 import { PERMISSIONS } from "../middleware/rbac.js";
+import { resolveOtpMode } from "../utils/authFlow.js";
+
+const MAX_FAILED = 5;
+const LOCK_MS = 15 * 60 * 1000;
+const REFRESH_DEDUP_TTL = 30_000;
+const recentlyRefreshed = new Set();
 
 function parseDurationToMs(val) {
   if (typeof val === "number") return val;
@@ -38,24 +44,16 @@ function parseDurationToMs(val) {
   const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
   return n * multipliers[unit];
 }
+
 function generateInviteCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < 8; i += 1) {
     code += chars[crypto.randomInt(chars.length)];
     if (i === 3) code += "-";
   }
-  return code; // e.g. "K3F9-7GQX"
+  return code;
 }
-} from '../utils/auth.js';
-import { config } from '../config/index.js';
-import { memoryStore } from '../utils/redis.js';
-import { sendEmail } from '../services/email.services.js';
-import { getClientIp, getUserAgent } from '../middleware/auth.js';
-import { audit } from '../services/audit.service.js';
-import { logger } from '../utils/logger.js';
-import { notify } from '../services/notification.service.js';
-import { resolveOtpMode } from '../utils/authFlow.js';
 
 // ── Cookie options ───────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
@@ -63,10 +61,8 @@ const REFRESH_COOKIE_OPTS = {
   sameSite: "lax",
   secure: config.isProd,
   path: "/api/v1/auth",
-  maxAge: config.security.refreshCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
-  path: '/api/v1/auth',
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  domain: config.isProd ? undefined : "localhost",
 };
 
 const ACCESS_COOKIE_OPTS = {
@@ -74,10 +70,8 @@ const ACCESS_COOKIE_OPTS = {
   sameSite: "lax",
   secure: config.isProd,
   path: "/",
-  maxAge: config.security.accessCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
-  path: '/',
   maxAge: 15 * 60 * 1000,
+  domain: config.isProd ? undefined : "localhost",
 };
 
 const CSRF_COOKIE_OPTS = {
@@ -85,14 +79,9 @@ const CSRF_COOKIE_OPTS = {
   sameSite: "lax",
   secure: config.isProd,
   path: "/",
-  maxAge: config.security.csrfCookieMaxAge,
-  domain: config.isProd ? undefined : "localhost",
-  path: '/',
   maxAge: 24 * 60 * 60 * 1000,
+  domain: config.isProd ? undefined : "localhost",
 };
-
-const MAX_FAILED = 5;
-const LOCK_MS = 15 * 60 * 1000;
 
 // ── Helpers ──────────────────────────────────────────────
 function issueTokens(res, user, req, { rememberMe = true } = {}) {
@@ -131,13 +120,11 @@ function issueTokens(res, user, req, { rememberMe = true } = {}) {
   memoryStore.set(
     `session:${sessionId}`,
     { uid: user.id, role: user.role },
-    config.security.refreshCookieMaxAge / 1000,
+    7 * 24 * 60 * 60,
   );
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role }, 7 * 24 * 60 * 60);
   return { accessToken, refreshToken, sessionId };
 }
 
-// Issue a SHORT-LIVED "pending auth" session so the OTP step has CSRF set up
 function issuePendingSession(res, user) {
   const sessionId = crypto.randomBytes(16).toString("hex");
   res.cookie(COOKIE_NAMES.session + "_sid", sessionId, {
@@ -148,9 +135,8 @@ function issuePendingSession(res, user) {
   memoryStore.set(
     `session:${sessionId}`,
     { uid: user.id, role: user.role, pending: true },
-    config.security.pendingSessionTtlSeconds,
+    15 * 60,
   );
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, 15 * 60);
   return sessionId;
 }
 
@@ -168,19 +154,12 @@ export const login = asyncHandler(async (req, res) => {
     );
   }
 
-  if (user.status === "SUSPENDED")
-    throw ApiError.forbidden("Account suspended");
+  if (user.status === "SUSPENDED") throw ApiError.forbidden("Account suspended");
   if (user.status === "INACTIVE") throw ApiError.forbidden("Account inactive");
-  if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
-  if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
 
   const ok = verifyPassword(password, user.passwordHash);
   if (!ok) {
     const failed = user.failedAttempts + 1;
-    const lockedUntil =
-      failed >= config.security.maxFailedAttempts
-        ? new Date(Date.now() + config.security.lockDurationMs)
-        : null;
     const lockedUntil = failed >= MAX_FAILED ? new Date(Date.now() + LOCK_MS) : null;
     await prisma.user.update({
       where: { id: user.id },
@@ -212,26 +191,18 @@ export const login = asyncHandler(async (req, res) => {
     user.twoFactorEnabled;
 
   if (requireSecondFactor) {
-    // Issue a pending session (cookies + CSRF) so the next request is authenticated for the OTP step
     const sessionId = issuePendingSession(res, user);
 
     const code = generateOtp(6);
     await prisma.otpChallenge.create({
       data: {
         email: user.email,
-        purpose:
-          user.role === "SUPER_ADMIN" || user.role === "ADMIN"
-            ? "login_admin"
-            : "login_2fa",
-        codeHash: await bcrypt.hash(code, config.security.otpHashRounds),
-        expiresAt: new Date(Date.now() + parseDurationToMs(config.jwt.otpTtl)),
-        purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
+        purpose: user.role === "SUPER_ADMIN" || user.role === "ADMIN" ? "login_admin" : "login_2fa",
         codeHash: await bcrypt.hash(code, 8),
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
 
-    // Sign a SHORT-LIVED challenge token (used only to identify the OTP step)
     const challengeToken = signAccessToken({
       sub: user.id,
       purpose: "otp",
@@ -244,7 +215,6 @@ export const login = asyncHandler(async (req, res) => {
       challengeToken,
       sessionId,
       otpMode: resolveOtpMode(user.role),
-      contactHint: user.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
       contactHint: user.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
     };
     if (!config.isProd) responsePayload.devCode = code;
@@ -253,9 +223,7 @@ export const login = asyncHandler(async (req, res) => {
     return res.json(responsePayload);
   }
 
-  const { accessToken, refreshToken } = issueTokens(res, user, req, {
-    rememberMe,
-  });
+  const { accessToken, refreshToken } = issueTokens(res, user, req, { rememberMe });
   await audit({ userId: user.id, action: "auth.login.success", req });
   await notify(user.id, {
     type: "security",
@@ -263,11 +231,7 @@ export const login = asyncHandler(async (req, res) => {
     body: `From ${getClientIp(req)}`,
   });
 
-  res.json({
-    user: sanitize(user),
-    accessToken,
-    refreshToken,
-  });
+  res.json({ user: sanitize(user), accessToken, refreshToken });
 });
 
 // ── POST /auth/verify-otp ────────────────────────────────
@@ -277,7 +241,6 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   let payload;
   try {
-    // BUG FIX: the challenge token is signed with the ACCESS secret
     payload = verifyAccessToken(challengeToken);
     if (payload.purpose !== "otp") throw new Error("bad purpose");
   } catch {
@@ -325,21 +288,16 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     data: { lastLoginAt: new Date(), lastLoginIp: getClientIp(req) },
   });
 
-  // Clear the pending session and issue real tokens
   if (payload.sid && payload.sid !== "pending") {
     memoryStore.del(`session:${payload.sid}`);
   }
   const { accessToken, refreshToken } = issueTokens(res, user, req);
   await audit({ userId: user.id, action: "auth.otp.verified", req });
 
-  res.json({
-    user: sanitize(user),
-    accessToken,
-    refreshToken,
-  });
+  res.json({ user: sanitize(user), accessToken, refreshToken });
 });
 
-// ── POST /auth/invite-codes — admin/mentor generates a code ──
+// ── POST /auth/invite-codes ──────────────────────────────
 export const createInviteCode = asyncHandler(async (req, res) => {
   const role = req.body?.role || "INTERN";
   let code;
@@ -366,7 +324,7 @@ export const createInviteCode = asyncHandler(async (req, res) => {
   res.status(201).json({ inviteCode: invite });
 });
 
-// ── GET /auth/invite-codes — admin/mentor views issued codes ──
+// ── GET /auth/invite-codes ───────────────────────────────
 export const listInviteCodes = asyncHandler(async (req, res) => {
   const codes = await prisma.inviteCode.findMany({
     orderBy: { createdAt: "desc" },
@@ -376,17 +334,15 @@ export const listInviteCodes = asyncHandler(async (req, res) => {
   res.json({ items: codes });
 });
 
-// ── POST /auth/signup/start — public: OTP-based signup ──
+// ── POST /auth/signup/start ──────────────────────────────
 export const signupStart = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
   const existing = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
   });
-  if (existing)
-    throw ApiError.conflict("An account with this email already exists.");
+  if (existing) throw ApiError.conflict("An account with this email already exists.");
 
-  // Create user with PENDING status
   const user = await prisma.user.create({
     data: {
       email: email.toLowerCase(),
@@ -395,11 +351,9 @@ export const signupStart = asyncHandler(async (req, res) => {
       role: "INTERN",
       status: "PENDING",
       emailVerified: false,
-      // Will create InternProfile after email verification
     },
   });
 
-  // Create OTP and send via email
   const { createAndSendOtp } = await import("../services/otp.service.js");
   const otpResult = await createAndSendOtp(user.email, "signup");
 
@@ -422,7 +376,7 @@ export const signupStart = asyncHandler(async (req, res) => {
   res.status(201).json(responsePayload);
 });
 
-// ── POST /auth/signup/verify ──
+// ── POST /auth/signup/verify ─────────────────────────────
 export const signupVerify = asyncHandler(async (req, res) => {
   const { challengeToken, code, internStartDate, internEndDate } = req.body;
   if (!challengeToken) throw ApiError.badRequest("challengeToken required");
@@ -438,12 +392,10 @@ export const signupVerify = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) throw ApiError.unauthorized("Invalid user");
 
-  // Verify OTP using the new OTP service
-  const { verifyOtp } = await import("../services/otp.service.js");
-  const isValid = await verifyOtp(user.email, code, "signup");
+  const { verifyOtp: verifyOtpService } = await import("../services/otp.service.js");
+  const isValid = await verifyOtpService(user.email, code, "signup");
   if (!isValid) throw ApiError.unauthorized("Incorrect or expired code.");
 
-  // Create InternProfile with start/end dates
   const verifiedUser = await prisma.$transaction(async (tx) => {
     const updated = await tx.user.update({
       where: { id: user.id },
@@ -456,13 +408,12 @@ export const signupVerify = asyncHandler(async (req, res) => {
       },
     });
 
-    // Create InternProfile with dates
     await tx.internProfile.create({
       data: {
         userId: user.id,
         startDate: internStartDate ? new Date(internStartDate) : new Date(),
         endDate: internEndDate ? new Date(internEndDate) : null,
-        isTL: false, // Default to regular intern; can be promoted to TL later
+        isTL: false,
       },
     });
 
@@ -472,17 +423,12 @@ export const signupVerify = asyncHandler(async (req, res) => {
   if (payload.sid) memoryStore.del(`session:${payload.sid}`);
   const { accessToken, refreshToken } = issueTokens(res, verifiedUser, req);
 
-  // Send welcome email
   const { sendWelcomeEmail } = await import("../services/email.service.js");
-  await sendWelcomeEmail(verifiedUser.email, verifiedUser.name).catch(err => {
-    logger.warn('Failed to send welcome email', { userId: verifiedUser.id, error: err.message });
+  await sendWelcomeEmail(verifiedUser.email, verifiedUser.name).catch((err) => {
+    logger.warn("Failed to send welcome email", { userId: verifiedUser.id, error: err.message });
   });
 
-  await audit({
-    userId: verifiedUser.id,
-    action: "auth.signup.completed",
-    req,
-  });
+  await audit({ userId: verifiedUser.id, action: "auth.signup.completed", req });
   await notify(verifiedUser.id, {
     type: "welcome",
     title: `Welcome to SkillNova, ${verifiedUser.name}!`,
@@ -509,7 +455,6 @@ export const refresh = asyncHandler(async (req, res) => {
     throw ApiError.unauthorized("Invalid refresh token");
   }
 
-  const tokenHash = hashToken(token);
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
   if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
     throw ApiError.unauthorized("Refresh token revoked or expired");
@@ -529,7 +474,6 @@ export const refresh = asyncHandler(async (req, res) => {
   recentlyRefreshed.add(tokenHash);
   setTimeout(() => recentlyRefreshed.delete(tokenHash), REFRESH_DEDUP_TTL);
   await audit({ userId: user.id, action: "auth.refresh", req });
-  await audit({ userId: user.id, action: 'auth.refresh', req });
 
   res.json({ user: sanitize(user), accessToken, refreshToken: newRefresh });
 });
@@ -553,8 +497,7 @@ export const logout = asyncHandler(async (req, res) => {
   res.clearCookie(COOKIE_NAMES.session + "_sid", { path: "/" });
   res.clearCookie(COOKIE_NAMES.csrf, { path: "/" });
 
-  if (req.user)
-    await audit({ userId: req.user.id, action: "auth.logout", req });
+  if (req.user) await audit({ userId: req.user.id, action: "auth.logout", req });
 
   res.json({ ok: true });
 });
@@ -617,10 +560,8 @@ export const setupTotp = asyncHandler(async (req, res) => {
 export const enableTotp = asyncHandler(async (req, res) => {
   const { code } = req.body;
   const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-  if (!user?.twoFactorSecret)
-    throw ApiError.badRequest("Start TOTP setup first");
-  if (!verifyTotp(code, user.twoFactorSecret))
-    throw ApiError.badRequest("Invalid code");
+  if (!user?.twoFactorSecret) throw ApiError.badRequest("Start TOTP setup first");
+  if (!verifyTotp(code, user.twoFactorSecret)) throw ApiError.badRequest("Invalid code");
   await prisma.user.update({
     where: { id: user.id },
     data: { twoFactorEnabled: true },
@@ -628,39 +569,20 @@ export const enableTotp = asyncHandler(async (req, res) => {
   await audit({ userId: req.user.id, action: "auth.2fa.enabled", req });
   res.json({ ok: true });
 });
+
 export const demoAccounts = asyncHandler(async (_req, res) => {
   if (config.isProd) return res.json({ accounts: [] });
   res.json({
     accounts: [
-      {
-        label: "Super Admin",
-        email: "superadmin@skillnova.com",
-        pwd: "SuperAdmin#2026",
-        color: "#dc2626",
-      },
-      {
-        label: "Admin",
-        email: "admin@skillnova.com",
-        pwd: "Admin#2026",
-        color: "#f59e0b",
-      },
-      {
-        label: "Mentor",
-        email: "mentor@skillnova.com",
-        pwd: "Mentor#2026",
-        color: "#8b5cf6",
-      },
-      {
-        label: "Intern",
-        email: "user@skillnova.com",
-        pwd: "User#2026",
-        color: "#00bea3",
-      },
+      { label: "Senior Team Leader", email: "superadmin@skillnova.com", pwd: "SuperAdmin#2026", color: "#dc2626" },
+      { label: "Team Leader", email: "admin@skillnova.com", pwd: "Admin#2026", color: "#f59e0b" },
+      { label: "Captain", email: "mentor@skillnova.com", pwd: "Mentor#2026", color: "#8b5cf6" },
+      { label: "Intern", email: "user@skillnova.com", pwd: "User#2026", color: "#00bea3" },
     ],
   });
 });
 
-// ── POST /auth/intern/:userId/set-tl — Admin: Mark intern as Team Lead ──
+// ── POST /auth/intern/:userId/set-tl ────────────────────
 export const setInternAsTeamLead = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const { isTL } = req.body;
@@ -688,7 +610,6 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
     req,
   });
 
-  // Notify the intern
   await notify(userId, {
     type: "info",
     title: isTL ? "You are now a Team Lead! 🎉" : "Team Lead status removed",
@@ -701,30 +622,29 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
     message: `${user.name} is now ${isTL ? "a" : "not a"} Team Lead`,
     internProfile: updated,
   });
-// @desc    Forgot Password - sends email
-// @route   POST /api/auth/forgot-password
+});
+
+// ── POST /auth/forgot-password ───────────────────────────
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  if (!email) throw ApiError.badRequest('Email is required');
+  if (!email) throw ApiError.badRequest("Email is required");
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw ApiError.notFound('User not found');
+  if (!user) throw ApiError.notFound("User not found");
 
-  // 1. Generate token
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-  // 2. Save to DB with 15 min expiry
   await prisma.user.update({
     where: { id: user.id },
-    data: { 
+    data: {
       resetPasswordToken: hashedToken,
-      resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000)
-    }
+      resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000),
+    },
   });
 
-  // 3. Send email
   const resetLink = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+  const { sendEmail } = await import("../services/email.services.js");
   const html = `
     <h2>Reset Your SkillNova Password</h2>
     <p>Hi ${user.name},</p>
@@ -733,34 +653,33 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   `;
   await sendEmail(user.email, "Reset Your SkillNova Password", html);
 
-  res.json({ message: 'Password reset email sent' });
+  res.json({ message: "Password reset email sent" });
 });
 
-// @desc    Reset Password with token
-// @route   POST /api/auth/reset-password/:token
+// ── POST /auth/reset-password/:token ────────────────────
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await prisma.user.findFirst({
-    where: { 
+    where: {
       resetPasswordToken: hashedToken,
-      resetPasswordExpire: { gt: new Date() }
-    }
+      resetPasswordExpire: { gt: new Date() },
+    },
   });
 
-  if (!user) throw ApiError.badRequest('Invalid or expired token');
+  if (!user) throw ApiError.badRequest("Invalid or expired token");
 
   const hashedPassword = await bcrypt.hash(password, 10);
   await prisma.user.update({
     where: { id: user.id },
-    data: { 
+    data: {
       passwordHash: hashedPassword,
       resetPasswordToken: null,
-      resetPasswordExpire: null
-    }
+      resetPasswordExpire: null,
+    },
   });
 
-  res.json({ message: 'Password reset successful' });
+  res.json({ message: "Password reset successful" });
 });

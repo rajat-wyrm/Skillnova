@@ -53,6 +53,47 @@ const MessageBubble = ({ msg }) => {
     setTimeout(() => setCopied(false), 1800);
   };
 
+  // Parse action buttons from AI response
+  const renderContent = () => {
+    if (isUser) return <span>{msg.content}</span>;
+
+    const actionMatch = msg.content.match(/<actions>([\s\S]*?)<\/actions>/);
+    const cleanContent = msg.content.replace(/<actions>[\s\S]*?<\/actions>/g, '').trim();
+    let actions = [];
+
+    if (actionMatch) {
+      try {
+        actions = JSON.parse(actionMatch[1]);
+      } catch {
+        /* ignore parse errors */
+      }
+    }
+
+    return (
+      <>
+        <span>{cleanContent}</span>
+        {actions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {actions.map((a, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  if (a.action === 'navigate' && a.path) {
+                    window.location.href = a.path;
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-full font-medium transition"
+                style={{ background: 'linear-gradient(135deg, #ff6d34, #ff8c5f)', color: '#fff' }}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className={`flex items-end gap-2 group ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       style={{ animation: 'chatFadeUp 0.22s ease both' }}>
@@ -73,7 +114,7 @@ const MessageBubble = ({ msg }) => {
           style={isUser
             ? { background: 'linear-gradient(135deg, #ff6d34, #ff8c5f)', color: '#ffffff' }
             : { background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--text)' }}>
-          {msg.content}
+          {renderContent()}
           {!isUser && (
             <button onClick={handleCopy}
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -95,9 +136,6 @@ const MessageBubble = ({ msg }) => {
 const AIAssistant = () => {
   const { user } = useAuthStore();
   const [messages, setMessages] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState('');
-  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -108,59 +146,17 @@ const AIAssistant = () => {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  //Initial greeting + load sessions
-  // useEffect(() => {
-  //   setMessages([
-  //     {
-  //       role: 'assistant',
-  //       content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. I'm grounded on the UptoSkills knowledge base, so ask me anything about reports, attendance, mentorship, the platform or your career.`,
-  //       createdAt: new Date().toISOString(),
-  //     },
-  //   ]);
-  //   api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
-  // }, [user]);
   useEffect(() => {
     setMessages([
       {
         role: 'assistant',
-        content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. Select one of your assigned tasks above and I'll recommend courses, documentation, learning resources and a step-by-step approach to complete it.`,
+        content: `Hello ${user?.name?.split(' ')[0] ?? 'there'}! 👋 I'm the SkillNova AI Assistant. I'm grounded on the UptoSkills knowledge base, so ask me anything about reports, attendance, mentorship, the platform or your career.`,
         createdAt: new Date().toISOString(),
       },
     ]);
+    api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
+  }, [user]);
 
-    api.get('/ai/sessions')
-      .then((r) => setSessions(r.data.items))
-      .catch(() => {});
-
-    api.get('/tasks', { params: { limit: 100 } })
-      .then((r) => {
-          setTasks(r.data.items || []);
-      })
-      .catch(() => {});
-//     setTasks([
-//   {
-//     id: "1",
-//     title: "Build Login Page",
-//     description: "Create login UI using React",
-//     priority: "HIGH",
-//     status: "TODO",
-//   },
-//   {
-//     id: "2",
-//     title: "Attendance Management API",
-//     description: "Develop attendance backend APIs",
-//     priority: "MEDIUM",
-//     status: "IN_PROGRESS",
-//   },
-//   {
-//     id: "3",
-//     title: "Integrate AI Assistant",
-//     description: "Connect frontend with AI backend",
-//     priority: "HIGH",
-//     status: "TODO",
-//   },
-// ]);
-}, [user]);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, streamingText]);
@@ -171,9 +167,7 @@ const AIAssistant = () => {
       setMessages(data.session.messages);
       setSessionId(id);
       setShowHistory(false);
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   };
 
   const newSession = () => {
@@ -192,51 +186,6 @@ const AIAssistant = () => {
   const deleteSession = async (id) => {
     try { await api.delete(`/ai/sessions/${id}`); setSessions((s) => s.filter((x) => x.id !== id)); } catch { /* ignore */ }
   };
-
-  const recommendForTask = async () => {
-  if (!selectedTask) return;
-
-  const task = tasks.find((t) => t.id === selectedTask);
-
-  if (!task) return;
-
-  const prompt = `
-You are an AI mentor.
-
-My assigned internship task is:
-
-Title:
-${task.title}
-
-Description:
-${task.description || "No description provided"}
-
-Priority:
-${task.priority}
-
-Status:
-${task.status}
-
-Please provide:
-
-1. Explain what this task means.
-2. Skills required.
-3. Technologies required.
-4. Beginner-friendly YouTube tutorials.
-5. Official documentation.
-6. Step-by-step roadmap.
-7. Estimated completion time.
-8. Common mistakes.
-9. Best practices.
-10. End with some motivation.
-`;
-
-  setLoadingRecommendations(true);
-
-  await send(prompt);
-
-  setLoadingRecommendations(false);
-};
 
   const send = async (text) => {
     const msg = (text ?? input).trim();
@@ -278,13 +227,8 @@ Please provide:
           if (!line.startsWith('data: ')) continue;
           try {
             const payload = JSON.parse(line.slice(6));
-            if (payload.delta) {
-              accumulated += payload.delta;
-              setStreamingText(accumulated);
-            }
-            if (payload.done && payload.sessionId) {
-              detectedSession = payload.sessionId;
-            }
+            if (payload.delta) { accumulated += payload.delta; setStreamingText(accumulated); }
+            if (payload.done && payload.sessionId) { detectedSession = payload.sessionId; }
             if (payload.error) throw new Error(payload.error);
           } catch (e) {
             if (e instanceof Error) throw e;
@@ -292,21 +236,17 @@ Please provide:
         }
       }
 
-      const aiMsg = {
+      setMessages((m) => [...m, {
         role: 'assistant',
         content: accumulated || "I couldn't generate a response.",
         createdAt: new Date().toISOString(),
-      };
-      setMessages((m) => [...m, aiMsg]);
+      }]);
       setStreamingText('');
       setSessionId(detectedSession);
-
-      // Refresh session list
       api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
     } catch (err) {
       if (err.name === 'AbortError') return;
-      const fallback = await api.post('/ai/chat', { message: msg, sessionId: sessionId ?? undefined })
-        .catch(() => null);
+      const fallback = await api.post('/ai/chat', { message: msg, sessionId: sessionId ?? undefined }).catch(() => null);
       const reply = fallback?.data?.reply || "I'm having trouble connecting. Please try again.";
       setMessages((m) => [...m, { role: 'assistant', content: reply, createdAt: new Date().toISOString() }]);
       setStreamingText('');
@@ -382,48 +322,7 @@ Please provide:
               ))}
             </div>
           )}
-          //Change
-          {/* AI Task Recommendation */}
 
-<div
-  className="mx-5 mt-4 p-4 rounded-xl"
-  style={{
-    background: "var(--chat-ai-bg)",
-    border: "1px solid var(--chat-ai-border)"
-  }}
->
-  <h3
-    className="text-sm font-semibold mb-3"
-    style={{ color: "var(--text)" }}
-  >
-    AI Learning Recommendation
-  </h3>
-
-  <div className="flex gap-2">
-    <select
-      className="flex-1 rounded-lg px-3 py-2 text-sm"
-      value={selectedTask}
-      onChange={(e) => setSelectedTask(e.target.value)}
-    >
-      <option value="">Select Assigned Task</option>
-
-      {tasks.map((task) => (
-        <option key={task.id} value={task.id}>
-          {task.title}
-        </option>
-      ))}
-    </select>
-
-    <button
-      onClick={recommendForTask}
-      disabled={!selectedTask || loadingRecommendations}
-      className="px-4 py-2 rounded-lg text-white"
-      style={{ background: "#2563EB" }}
-    >
-      {loadingRecommendations ? "Generating..." : "Recommend"}
-    </button>
-  </div>
-</div>
           <div className="flex-1 overflow-y-auto chat-scroll px-5 py-5 flex flex-col gap-5">
             {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
             {streamingText && (
@@ -441,7 +340,7 @@ Please provide:
                   className="text-xs px-3 py-1.5 rounded-full font-medium transition"
                   style={{ background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--text)' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ff6d34'; e.currentTarget.style.color = '#ff6d34'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--text)' }}>
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--text)'; }}>
                   {s}
                 </button>
               ))}
@@ -476,8 +375,7 @@ Please provide:
             <ul className="space-y-2.5">
               {CAPABILITIES.map((c) => (
                 <li key={c} className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
-                  <CheckCircle size={12} style={{ color: '#00bea3', flexShrink: 0 }} />
-                  {c}
+                  <CheckCircle size={12} style={{ color: '#00bea3', flexShrink: 0 }} /> {c}
                 </li>
               ))}
             </ul>
@@ -491,7 +389,7 @@ Please provide:
                   className="w-full text-left text-xs p-2.5 rounded-lg transition"
                   style={{ background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--muted)' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ff6d34'; e.currentTarget.style.color = '#ff6d34'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--muted)' }}>
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--muted)'; }}>
                   {s}
                 </button>
               ))}
@@ -503,7 +401,7 @@ Please provide:
             <div className="space-y-2">
               {[
                 { label: 'Messages sent', value: userCount },
-                { label: 'AI replies',    value: aiCount },
+                { label: 'AI replies', value: aiCount },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>

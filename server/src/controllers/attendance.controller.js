@@ -6,32 +6,14 @@ import prisma from "../utils/prisma.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { audit } from "../services/audit.service.js";
-import { z } from 'zod';
-import prisma from '../utils/prisma.js';
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { audit } from '../services/audit.service.js';
 
 const _markSchema = z.object({
   userId: z.string().cuid(),
   date: z.coerce.date().optional(),
-  status: z
-    .enum(["PRESENT", "ABSENT", "LEAVE", "HALF_DAY", "LATE"])
-    .default("PRESENT"),
+  status: z.enum(["PRESENT", "ABSENT", "LEAVE", "HALF_DAY", "LATE"]).default("PRESENT"),
   notes: z.string().max(300).optional(),
   checkIn: z.coerce.date().optional(),
   checkOut: z.coerce.date().optional(),
-});
-
-const _selfCheckInSchema = z.object({
-  status: z.enum(["PRESENT", "LEAVE"]).default("PRESENT"),
-  notes: z.string().max(300).optional(),
-});
-
-const _leaveRequestSchema = z.object({
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date(),
-  reason: z.string().min(3).max(300),
 });
 
 const todayDate = () => {
@@ -47,7 +29,6 @@ const toKey = (d) => d.toISOString().slice(0, 10);
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, sort = "date", order } = req.validatedQuery;
   const where = {};
-  // Intern sees only themselves
   if (req.user.role === "INTERN") where.userId = req.user.id;
   else if (req.query.userId) where.userId = req.query.userId;
   if (req.query.date) {
@@ -64,9 +45,7 @@ export const list = asyncHandler(async (req, res) => {
       skip: (page - 1) * limit,
       take: limit,
       include: {
-        user: {
-          select: { id: true, name: true, department: true, avatarUrl: true },
-        },
+        user: { select: { id: true, name: true, department: true, avatarUrl: true } },
       },
     }),
     prisma.attendance.count({ where }),
@@ -85,15 +64,7 @@ export const mark = asyncHandler(async (req, res) => {
   const record = await prisma.attendance.upsert({
     where: { userId_date: { userId, date: day } },
     update: { status, notes, checkIn, checkOut, markedById: req.user.id },
-    create: {
-      userId,
-      date: day,
-      status,
-      notes,
-      checkIn,
-      checkOut,
-      markedById: req.user.id,
-    },
+    create: { userId, date: day, status, notes, checkIn, checkOut, markedById: req.user.id },
   });
   await audit({
     userId: req.user.id,
@@ -103,7 +74,6 @@ export const mark = asyncHandler(async (req, res) => {
     meta: { userId, status },
     req,
   });
-  await audit({ userId: req.user.id, action: 'attendance.mark', resource: 'attendance', resourceId: record.id, meta: { userId, status }, req });
   res.json({ attendance: record });
 });
 
@@ -113,18 +83,8 @@ export const checkInOut = asyncHandler(async (req, res) => {
   const now = new Date();
   const record = await prisma.attendance.upsert({
     where: { userId_date: { userId: req.user.id, date: day } },
-    update: {
-      status,
-      notes,
-      checkIn: now,
-    },
-    create: {
-      userId: req.user.id,
-      date: day,
-      status,
-      notes,
-      checkIn: now,
-    },
+    update: { status, notes, checkIn: now },
+    create: { userId: req.user.id, date: day, status, notes, checkIn: now },
   });
   res.json({ attendance: record });
 });
@@ -141,18 +101,9 @@ export const summary = asyncHandler(async (req, res) => {
   start.setUTCHours(0, 0, 0, 0);
 
   const [present, absent, leave, total] = await Promise.all([
-    prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "PRESENT" },
-    }),
-    prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "ABSENT" },
-    }),
-    prisma.attendance.count({
-      where: { ...where, date: { gte: start }, status: "LEAVE" },
-    }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'PRESENT' } }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'ABSENT' } }),
-    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: 'LEAVE' } }),
+    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: "PRESENT" } }),
+    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: "ABSENT" } }),
+    prisma.attendance.count({ where: { ...where, date: { gte: start }, status: "LEAVE" } }),
     prisma.attendance.count({ where: { ...where, date: { gte: start } } }),
   ]);
   res.json({
@@ -164,9 +115,6 @@ export const summary = asyncHandler(async (req, res) => {
   });
 });
 
-// ── Streak + risk indicator ─────────────────────────────────
-// LEAVE days behave like weekends: they pause the streak instead
-// of breaking it. Only ABSENT (or an unmarked working day) breaks it.
 export const streak = asyncHandler(async (req, res) => {
   const userId =
     req.user.role === "INTERN" ? req.user.id : req.query.userId || req.user.id;
@@ -184,7 +132,6 @@ export const streak = asyncHandler(async (req, res) => {
   const byDate = new Map(records.map((r) => [toKey(r.date), r.status]));
   const todayKey = toKey(todayDate());
 
-  // ── current streak: walk backward from today ──
   let currentStreak = 0;
   let cursor = todayDate();
 
@@ -200,13 +147,11 @@ export const streak = asyncHandler(async (req, res) => {
     const status = byDate.get(key);
 
     if (!status && key === todayKey) {
-      // today not marked yet — don't break the streak, check yesterday
       cursor.setDate(cursor.getDate() - 1);
       continue;
     }
 
     if (status === "LEAVE") {
-      // paused, not broken, not counted
       cursor.setDate(cursor.getDate() - 1);
       continue;
     }
@@ -219,7 +164,6 @@ export const streak = asyncHandler(async (req, res) => {
     }
   }
 
-  // ── longest streak in the fetched window ──
   let longestStreak = 0;
   let running = 0;
   for (const r of records) {
@@ -229,10 +173,8 @@ export const streak = asyncHandler(async (req, res) => {
     } else if (r.status === "ABSENT") {
       running = 0;
     }
-    // LEAVE: paused — running carries over unchanged
   }
 
-  // ── risk window: trailing 7 & 14 days, unexplained absences only ──
   const last14Start = new Date();
   last14Start.setDate(last14Start.getDate() - 14);
   last14Start.setUTCHours(0, 0, 0, 0);
@@ -240,12 +182,8 @@ export const streak = asyncHandler(async (req, res) => {
   last7Start.setDate(last7Start.getDate() - 7);
   last7Start.setUTCHours(0, 0, 0, 0);
 
-  const absences14 = records.filter(
-    (r) => r.date >= last14Start && r.status === "ABSENT",
-  ).length;
-  const absences7 = records.filter(
-    (r) => r.date >= last7Start && r.status === "ABSENT",
-  ).length;
+  const absences14 = records.filter((r) => r.date >= last14Start && r.status === "ABSENT").length;
+  const absences7 = records.filter((r) => r.date >= last7Start && r.status === "ABSENT").length;
 
   let risk = "LOW";
   if (absences14 >= 3 || (currentStreak === 0 && absences7 >= 1)) {
@@ -256,19 +194,9 @@ export const streak = asyncHandler(async (req, res) => {
 
   const onLeaveToday = byDate.get(todayKey) === "LEAVE";
 
-  res.json({
-    currentStreak,
-    longestStreak,
-    absences7,
-    absences14,
-    risk,
-    onLeaveToday,
-  });
+  res.json({ currentStreak, longestStreak, absences7, absences14, risk, onLeaveToday });
 });
 
-// ── Leave request: marks a date range as LEAVE for the logged-in
-//    intern, so the streak pauses instead of breaking. Weekends
-//    inside the range are skipped automatically.
 export const requestLeave = asyncHandler(async (req, res) => {
   const { startDate, endDate, reason } = req.body;
   const start = new Date(startDate);
@@ -276,21 +204,18 @@ export const requestLeave = asyncHandler(async (req, res) => {
   const end = new Date(endDate);
   end.setUTCHours(0, 0, 0, 0);
 
-  if (end < start)
-    throw ApiError.badRequest("End date cannot be before start date");
+  if (end < start) throw ApiError.badRequest("End date cannot be before start date");
 
   const spanDays = Math.round((end - start) / 86400000) + 1;
-  if (spanDays > 30)
-    throw ApiError.badRequest("Leave range cannot exceed 30 days");
+  if (spanDays > 30) throw ApiError.badRequest("Leave range cannot exceed 30 days");
 
   const days = [];
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dow = d.getUTCDay();
-    if (dow === 0 || dow === 6) continue; // skip weekends
+    if (dow === 0 || dow === 6) continue;
     days.push(new Date(d));
   }
-  if (!days.length)
-    throw ApiError.badRequest("No working days in the selected range");
+  if (!days.length) throw ApiError.badRequest("No working days in the selected range");
 
   const records = await Promise.all(
     days.map((date) =>
@@ -312,7 +237,6 @@ export const requestLeave = asyncHandler(async (req, res) => {
   });
 
   res.json({ marked: records.length, records });
-  res.json({ present, absent, leave, total, rate: total ? Math.round(((present + leave) / total) * 100) : 0 });
 });
 
 export default { list, mark, checkInOut, summary, streak, requestLeave };

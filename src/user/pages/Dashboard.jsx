@@ -8,64 +8,37 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
-  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2, ArrowRight, LayoutGrid,
+  CheckCircle, ClipboardList, CalendarCheck, TrendingUp, MessageSquare, Loader2,
 } from 'lucide-react';
 import { Card, StatCard, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { useAuthStore } from '../../lib/auth';
+import { useDeadlineChecker } from '../../shared/hooks/useDeadlineChecker';
+import { useDeadlineChecker } from '../../shared/hooks/useDeadlineChecker';
 import { formatRelative } from '../../lib/utils';
 
 const MotionDiv = motion.div;
 const CHART_C = ['#ff6d34', '#00bea3', '#7C3AED', '#f59e0b', '#06b6d4'];
 
-const sampleTasks = [
-  { id: 1, title: 'React Dashboard Development', status: 'DONE', priority: 'HIGH' },
-  { id: 2, title: 'API Integration', status: 'IN_PROGRESS', priority: 'MEDIUM' },
-  { id: 3, title: 'Testing', status: 'TODO', priority: 'LOW' },
-];
-const sampleReports = [
-  { id: 1, title: 'Weekly Report', status: 'REVIEWED', submittedAt: new Date(), score: 8 },
-];
-
 const Dashboard = ({ onNavigate }) => {
   const { user } = useAuthStore();
+  const { overdue, dueSoon } = useDeadlineChecker();
+  const { overdue, dueSoon } = useDeadlineChecker();
   const [stats, setStats] = useState(null);
   const [myReports, setMyReports] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
   const [attendance, setAttendance] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  
-
   useEffect(() => {
     (async () => {
       try {
-        // ensure we're authenticated; try /auth/me first
-        try {
-          await api.get('/auth/me');
-        } catch (e) {
-          // if unauthorized and in dev, try demo intern login
-          if (e.response?.status === 401 && import.meta.env.MODE !== 'production') {
-            try {
-              await api.post('/auth/login', { email: 'user@skillnova.com', password: 'User#2026' });
-            } catch {
-              // ignore; will fall back to sample data
-            }
-          }
-        }
-
         const [s, r, t, a] = await Promise.all([
           api.get('/reports/stats'),
           api.get('/reports', { params: { limit: 5 } }),
           api.get('/tasks', { params: { limit: 50 } }),
           api.get('/attendance/summary'),
         ]);
-        setStats(s.data || { total: 0, reviewed: 0, pending: 0, averageScore: 0 });
-        const reportsPayload = r?.data?.items || r?.data || [];
-        const tasksPayload = t?.data?.items || t?.data || [];
-        setMyReports(Array.isArray(reportsPayload) && reportsPayload.length > 0 ? reportsPayload : sampleReports);
-        setMyTasks(Array.isArray(tasksPayload) && tasksPayload.length > 0 ? tasksPayload : sampleTasks);
-        setAttendance(a.data || { rate: 90 });
         setStats(s.data);
         setMyReports(r.data.items);
         setMyTasks(t.data.items);
@@ -86,32 +59,10 @@ const Dashboard = ({ onNavigate }) => {
     );
   }
 
-  const totalTasks = myTasks.length;
-  const doneTasks = myTasks.filter((t) => t.status === 'DONE').length;
-  const completionPercentage = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : 0;
-  const latestReport = myReports.slice().sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
-
-  const weeklySummaryCards = [
-    { label: 'Submitted', value: stats?.total ?? 0, color: '#ff6d34' },
-    { label: 'Reviewed', value: stats?.reviewed ?? 0, color: '#00bea3' },
-    { label: 'Pending review', value: stats?.pending ?? 0, color: '#f59e0b' },
-    { label: 'Average Score', value: stats?.averageScore?.toFixed(1) ?? '—', color: '#7C3AED' },
-  ];
-
   const myTasksByStatus = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'].map((status) => ({
     name: status.replace('_', ' '),
     value: myTasks.filter((t) => t.status === status).length,
   })).filter((s) => s.value > 0);
-
-  // helper buttons for local sample data
-  const addSampleTask = (status = 'TODO') => {
-    const id = Date.now();
-    setMyTasks((prev) => [{ id, title: `Sample Task ${id % 1000}`, status, priority: 'MEDIUM' }, ...prev]);
-  };
-  const addSampleReport = (status = 'REVIEWED') => {
-    const id = Date.now();
-    setMyReports((prev) => [{ id, title: `Sample Report ${id % 1000}`, status, submittedAt: new Date(), score: Math.floor(Math.random() * 10) + 1 }, ...prev]);
-  };
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -120,24 +71,29 @@ const Dashboard = ({ onNavigate }) => {
     return 'Good evening';
   })();
 
-  const nextDeadline = [...myTasks]
-    .filter((t) => t.dueDate && t.status !== 'DONE')
-    .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))[0];
-
-  const today = new Date();
-  const todayKey = today.toISOString().slice(0, 10);
-  const todaysTasks = myTasks.filter((t) => t.status !== 'DONE' && t.dueDate && String(t.dueDate).slice(0, 10) === todayKey);
-  const agendaItems = todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : myTasks.filter((t) => t.status !== 'DONE').slice(0, 3);
-
-  const quickActions = [
-    { label: 'New Report', page: 'reports', icon: ClipboardList, color: '#ff6d34' },
-    { label: 'Task Board', page: 'kanban', icon: LayoutGrid, color: '#00bea3' },
-    { label: 'Calendar', page: 'calendar', icon: CalendarCheck, color: '#7C3AED' },
-    { label: 'Ask AI', page: 'ai', icon: MessageSquare, color: '#2563EB' },
-  ];
-
   return (
     <div className="space-y-6 pb-16">
+      {(overdue.length > 0 || dueSoon.length > 0) && (
+        <div className="rounded-xl p-4 border border-red-500/30 bg-red-500/10">
+          <p className="text-red-400 font-semibold mb-2">Task Deadline Alert</p>
+          {overdue.length > 0 && (
+            <div className="mb-2">
+              <p className="text-red-400 text-sm font-medium">Overdue - {overdue.length} task(s)</p>
+              {overdue.map((t) => (
+                <p key={t.id} className="text-red-300 text-xs mt-1">- {t.title} ({t.project?.name}) was due on {new Date(t.dueDate).toLocaleDateString()}</p>
+              ))}
+            </div>
+          )}
+          {dueSoon.length > 0 && (
+            <div>
+              <p className="text-yellow-400 text-sm font-medium">Due in 24 hours - {dueSoon.length} task(s)</p>
+              {dueSoon.map((t) => (
+                <p key={t.id} className="text-yellow-300 text-xs mt-1">- {t.title} ({t.project?.name}) due at {new Date(t.dueDate).toLocaleTimeString()}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <MotionDiv
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -156,21 +112,6 @@ const Dashboard = ({ onNavigate }) => {
             You have <span className="text-white font-bold">{myTasks.filter((t) => t.status !== 'DONE').length} pending tasks</span>{' '}
             and {stats?.pending ?? 0} reports awaiting review.
           </p>
-          <div className="mt-4 flex gap-2">
-            <button onClick={() => addSampleTask('TODO')}
-              className="px-3 py-1 rounded bg-gray-700 text-white text-sm">Add Sample Task (TODO)</button>
-            <button onClick={() => addSampleTask('IN_PROGRESS')}
-              className="px-3 py-1 rounded bg-orange-500 text-white text-sm">Add Sample Task (In progress)</button>
-            <button onClick={() => addSampleTask('DONE')}
-              className="px-3 py-1 rounded bg-green-600 text-white text-sm">Add Sample Task (Done)</button>
-            <button onClick={() => addSampleReport('REVIEWED')}
-              className="px-3 py-1 rounded bg-violet-600 text-white text-sm">Add Sample Report (Reviewed)</button>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
-            {weeklySummaryCards.map(({ label, value, color }) => (
-              <div key={label} className="bg-white/15 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10 shadow-sm">
-                <p className="font-black text-xl text-slate-900">{value}</p>
-                <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color }}>{label}</p>
           <div className="grid grid-cols-3 gap-3 mt-6 max-w-xl">
             {[
               [stats?.reviewed ?? 0, 'Reports'],
@@ -183,49 +124,6 @@ const Dashboard = ({ onNavigate }) => {
               </div>
             ))}
           </div>
-
-          <div className="mt-6 max-w-xl">
-            <div className="flex items-center justify-between mb-2 text-sm font-semibold text-slate-200">
-              <span>Completion Percentage</span>
-              <span>{completionPercentage}%</span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden border border-white/10">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{ width: `${completionPercentage}%`, background: 'linear-gradient(90deg, #ff6d34, #00bea3)' }}
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 max-w-xl bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 p-5 shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-semibold" style={{ color: '#111827' }}>Weekly Progress Summary</p>
-                <p className="text-xs text-slate-500">Latest report status and score</p>
-              </div>
-              <div className="text-sm font-semibold" style={{ color: '#ff6d34' }}>{latestReport?.weekNumber ? `W${latestReport.weekNumber}` : '—'}</div>
-            </div>
-            {latestReport ? (
-              <div className="space-y-3">
-                <div className="rounded-2xl bg-white/80 p-4 border border-slate-200">
-                  <p className="text-sm font-semibold mb-1" style={{ color: '#111827' }}>{latestReport.title}</p>
-                  <p className="text-xs text-slate-500">{latestReport.status} · Submitted {new Date(latestReport.submittedAt).toLocaleDateString()}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl bg-white/80 p-4 border border-slate-200">
-                    <p className="text-xs uppercase tracking-wider text-slate-500">Score</p>
-                    <p className="text-lg font-black" style={{ color: '#111827' }}>{latestReport.score != null ? `${latestReport.score}/10` : 'Pending'}</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/80 p-4 border border-slate-200">
-                    <p className="text-xs uppercase tracking-wider text-slate-500">Review status</p>
-                    <p className="text-lg font-black" style={{ color: '#111827' }}>{latestReport.status}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400">No weekly report submitted yet.</p>
-            )}
-          </div>
         </div>
       </MotionDiv>
 
@@ -236,76 +134,7 @@ const Dashboard = ({ onNavigate }) => {
         <StatCard title="Avg Score"       value={stats?.averageScore?.toFixed(1) ?? '—'} icon={TrendingUp} color="#00bea3" subtitle="/10" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
-        <Card className="p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Quick Actions</h3>
-              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Jump to the most useful places</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={action.page}
-                  onClick={() => onNavigate?.(action.page)}
-                  className="flex items-center justify-between rounded-xl border px-3 py-3 text-left transition hover:translate-y-[-1px]"
-                  style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
-                >
-                  <span className="flex items-center gap-2">
-                    <span className="p-2 rounded-lg" style={{ background: `${action.color}20`, color: action.color }}>
-                      <Icon size={14} />
-                    </span>
-                    <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{action.label}</span>
-                  </span>
-                  <ArrowRight size={14} style={{ color: 'var(--muted)' }} />
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card className="p-5">
-          <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text)' }}>Next Deadline</h3>
-          {nextDeadline ? (
-            <div className="rounded-xl p-4" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
-              <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{nextDeadline.title}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{formatRelative(nextDeadline.dueDate)} · {nextDeadline.status.replace('_', ' ')}</p>
-            </div>
-          ) : (
-            <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>No upcoming deadlines.</p>
-          )}
-        </Card>
-      </div>
-
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Today's Agenda</h3>
-            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{todaysTasks.length > 0 ? 'Priority items for today' : 'No tasks scheduled for today'}</p>
-          </div>
-        </div>
-        {agendaItems.length === 0 ? (
-          <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>All clear — nothing urgent today.</p>
-        ) : (
-          <div className="space-y-2">
-            {agendaItems.map((task) => (
-              <div key={task.id} className="flex items-center gap-3 rounded-lg px-3 py-2" style={{ background: 'var(--bg)' }}>
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: task.priority === 'HIGH' || task.priority === 'URGENT' ? '#ff6d34' : '#00bea3' }} />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate" style={{ color: 'var(--text)' }}>{task.title}</p>
-                  <p className="text-xs" style={{ color: 'var(--muted)' }}>{task.dueDate ? formatRelative(task.dueDate) : task.status.replace('_', ' ')}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="p-5">
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>My Tasks by Status</h3>
           {myTasksByStatus.length === 0 ? (
@@ -382,47 +211,6 @@ const Dashboard = ({ onNavigate }) => {
             ))}
           </div>
         )}
-      </Card>
-
-      <Card className="p-5">
-        <SectionHeader title="Milestones & Recent Activities" subtitle="Track your achievements" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-semibold mb-3">🏆 Milestones</h3>
-            <div className="space-y-3">
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>✅ First Task Completed</p>
-                <p className="text-xs text-slate-400 mt-1">{doneTasks} tasks finished</p>
-              </div>
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>📄 Reports Submitted</p>
-                <p className="text-xs text-slate-400 mt-1">{stats?.total ?? 0} reports</p>
-              </div>
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>🎯 Attendance Achieved</p>
-                <p className="text-xs text-slate-400 mt-1">{attendance?.rate ?? 0}% rate</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-3">📝 Recent Activities</h3>
-            <div className="space-y-3">
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm" style={{ color: 'var(--text)' }}>📄 Submitted Weekly Report</p>
-                <p className="text-xs text-slate-400 mt-1">{latestReport ? new Date(latestReport.submittedAt).toLocaleDateString() : 'No reports yet'}</p>
-              </div>
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm" style={{ color: 'var(--text)' }}>✅ Completed UI Dashboard</p>
-                <p className="text-xs text-slate-400 mt-1">Updated your project dashboard view</p>
-              </div>
-              <div className="p-3 rounded-xl" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm" style={{ color: 'var(--text)' }}>📌 Updated Task Status</p>
-                <p className="text-xs text-slate-400 mt-1">Recent task statuses were refreshed</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </Card>
 
       {onNavigate && (

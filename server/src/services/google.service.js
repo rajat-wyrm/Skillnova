@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════
 //  Google OAuth Service — build URL, exchange code, fetch profile
 // ════════════════════════════════════════════════════════════
+import crypto from 'node:crypto';
 import { config } from '../config/index.js';
-import { signOAuthState, verifyOAuthState } from '../utils/auth.js';
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -12,6 +12,20 @@ const SCOPES = ['openid', 'profile', 'email'];
 
 export function isGoogleEnabled() {
   return config.google.enabled && config.google.clientId && config.google.clientSecret;
+}
+
+export function signOAuthState(returnTo = '/') {
+  const payload = JSON.stringify({ returnTo, nonce: crypto.randomBytes(8).toString('hex') });
+  return Buffer.from(payload).toString('base64url');
+}
+
+export function verifyOAuthState(state) {
+  try {
+    const decoded = JSON.parse(Buffer.from(state, 'base64url').toString('utf8'));
+    return decoded.returnTo || '/';
+  } catch {
+    return '/';
+  }
 }
 
 export function buildAuthUrl(returnTo = '/') {
@@ -63,5 +77,3 @@ export async function exchangeCodeForProfile(code) {
     avatarUrl: profile.picture || null,
   };
 }
-
-export { verifyOAuthState };

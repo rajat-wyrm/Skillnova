@@ -53,6 +53,47 @@ const MessageBubble = ({ msg }) => {
     setTimeout(() => setCopied(false), 1800);
   };
 
+  // Parse action buttons from AI response
+  const renderContent = () => {
+    if (isUser) return <span>{msg.content}</span>;
+
+    const actionMatch = msg.content.match(/<actions>([\s\S]*?)<\/actions>/);
+    const cleanContent = msg.content.replace(/<actions>[\s\S]*?<\/actions>/g, '').trim();
+    let actions = [];
+
+    if (actionMatch) {
+      try {
+        actions = JSON.parse(actionMatch[1]);
+      } catch {
+        /* ignore parse errors */
+      }
+    }
+
+    return (
+      <>
+        <span>{cleanContent}</span>
+        {actions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {actions.map((a, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  if (a.action === 'navigate' && a.path) {
+                    window.location.href = a.path;
+                  }
+                }}
+                className="text-xs px-3 py-1.5 rounded-full font-medium transition"
+                style={{ background: 'linear-gradient(135deg, #ff6d34, #ff8c5f)', color: '#fff' }}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className={`flex items-end gap-2 group ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       style={{ animation: 'chatFadeUp 0.22s ease both' }}>
@@ -73,7 +114,7 @@ const MessageBubble = ({ msg }) => {
           style={isUser
             ? { background: 'linear-gradient(135deg, #ff6d34, #ff8c5f)', color: '#ffffff' }
             : { background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--text)' }}>
-          {msg.content}
+          {renderContent()}
           {!isUser && (
             <button onClick={handleCopy}
               className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -105,7 +146,6 @@ const AIAssistant = () => {
   const inputRef = useRef(null);
   const abortRef = useRef(null);
 
-  // Initial greeting + load sessions
   useEffect(() => {
     setMessages([
       {
@@ -127,9 +167,7 @@ const AIAssistant = () => {
       setMessages(data.session.messages);
       setSessionId(id);
       setShowHistory(false);
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   };
 
   const newSession = () => {
@@ -189,13 +227,8 @@ const AIAssistant = () => {
           if (!line.startsWith('data: ')) continue;
           try {
             const payload = JSON.parse(line.slice(6));
-            if (payload.delta) {
-              accumulated += payload.delta;
-              setStreamingText(accumulated);
-            }
-            if (payload.done && payload.sessionId) {
-              detectedSession = payload.sessionId;
-            }
+            if (payload.delta) { accumulated += payload.delta; setStreamingText(accumulated); }
+            if (payload.done && payload.sessionId) { detectedSession = payload.sessionId; }
             if (payload.error) throw new Error(payload.error);
           } catch (e) {
             if (e instanceof Error) throw e;
@@ -203,21 +236,17 @@ const AIAssistant = () => {
         }
       }
 
-      const aiMsg = {
+      setMessages((m) => [...m, {
         role: 'assistant',
         content: accumulated || "I couldn't generate a response.",
         createdAt: new Date().toISOString(),
-      };
-      setMessages((m) => [...m, aiMsg]);
+      }]);
       setStreamingText('');
       setSessionId(detectedSession);
-
-      // Refresh session list
       api.get('/ai/sessions').then((r) => setSessions(r.data.items)).catch(() => {});
     } catch (err) {
       if (err.name === 'AbortError') return;
-      const fallback = await api.post('/ai/chat', { message: msg, sessionId: sessionId ?? undefined })
-        .catch(() => null);
+      const fallback = await api.post('/ai/chat', { message: msg, sessionId: sessionId ?? undefined }).catch(() => null);
       const reply = fallback?.data?.reply || "I'm having trouble connecting. Please try again.";
       setMessages((m) => [...m, { role: 'assistant', content: reply, createdAt: new Date().toISOString() }]);
       setStreamingText('');
@@ -311,7 +340,7 @@ const AIAssistant = () => {
                   className="text-xs px-3 py-1.5 rounded-full font-medium transition"
                   style={{ background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--text)' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ff6d34'; e.currentTarget.style.color = '#ff6d34'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--text)' }}>
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--text)'; }}>
                   {s}
                 </button>
               ))}
@@ -346,8 +375,7 @@ const AIAssistant = () => {
             <ul className="space-y-2.5">
               {CAPABILITIES.map((c) => (
                 <li key={c} className="flex items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
-                  <CheckCircle size={12} style={{ color: '#00bea3', flexShrink: 0 }} />
-                  {c}
+                  <CheckCircle size={12} style={{ color: '#00bea3', flexShrink: 0 }} /> {c}
                 </li>
               ))}
             </ul>
@@ -361,7 +389,7 @@ const AIAssistant = () => {
                   className="w-full text-left text-xs p-2.5 rounded-lg transition"
                   style={{ background: 'var(--chat-ai-bg)', border: '1px solid var(--chat-ai-border)', color: 'var(--muted)' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ff6d34'; e.currentTarget.style.color = '#ff6d34'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--muted)' }}>
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--chat-ai-border)'; e.currentTarget.style.color = 'var(--muted)'; }}>
                   {s}
                 </button>
               ))}
@@ -373,7 +401,7 @@ const AIAssistant = () => {
             <div className="space-y-2">
               {[
                 { label: 'Messages sent', value: userCount },
-                { label: 'AI replies',    value: aiCount },
+                { label: 'AI replies', value: aiCount },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: 'var(--muted)' }}>{label}</span>
