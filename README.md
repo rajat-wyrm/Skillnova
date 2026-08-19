@@ -1,21 +1,6 @@
-<div align="center">
-
 # SkillNova
 
-[![CI](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml/badge.svg)](https://github.com/rajat-wyrm/Skillnova/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-[![GitHub stars](https://img.shields.io/github/stars/rajat-wyrm/Skillnova?style=social)](https://github.com/rajat-wyrm/Skillnova/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/rajat-wyrm/Skillnova?style=social)](https://github.com/rajat-wyrm/Skillnova/network/members)
-[![GitHub issues](https://img.shields.io/github/issues/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/pulls)
-[![Code size](https://img.shields.io/github/languages/code-size/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova)
-[![Last commit](https://img.shields.io/github/last-commit/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/commits/main)
-[![Contributors](https://img.shields.io/github/contributors/rajat-wyrm/Skillnova)](https://github.com/rajat-wyrm/Skillnova/graphs/contributors)
-
 A production-grade intern management platform for UptoSkills. Real-time, RBAC-protected, AI-grounded, and engineered for the operational needs of an internship program: onboarding, knowledge base, daily reports, attendance, projects, reviews, announcements, and analytics.
-
-</div>
 
 ---
 
@@ -40,7 +25,7 @@ A production-grade intern management platform for UptoSkills. Real-time, RBAC-pr
 | ORM / DB | Prisma 5 on PostgreSQL (Neon-compatible) |
 | Realtime | Socket.io 4 |
 | Cache | In-memory LRU + Upstash Redis (graceful in-memory fallback) |
-| Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA, Google OAuth |
+| Auth | JWT access + refresh, CSRF double-submit cookie, TOTP 2FA |
 | Validation | Zod + Joi (per-endpoint) |
 | AI | Groq (`llama-3.1-8b-instant` / `llama-3.1-70b-versatile`) |
 | Logging | Pino (structured JSON in prod, pretty in dev) |
@@ -125,8 +110,6 @@ skillnova/
 - A PostgreSQL database (Neon free tier works)
 - Optional: an Upstash Redis REST URL and token
 - Optional: a Groq API key for the AI assistant
-
-> **Windows users:** Use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) or [Git Bash](https://git-scm.com/downloads/win) to run shell commands. All subsequent commands assume a POSIX-compatible shell.
 
 ### Bootstrap
 
@@ -363,106 +346,6 @@ All routes (except `/auth/login`, `/auth/verify-otp`, `/auth/refresh`, `/healthz
 | GET | `/healthz` | none | Backwards-compatible process check |
 | GET | `/healthz/live` | none | Liveness probe (kubelet) |
 | GET | `/healthz/ready` | none | Readiness probe; 503 if Postgres or Redis is down |
-| GET | `/api/v1/meta` | none | Service name and version |
-
----
-
-## API Reference
-
-Complete listing of all API endpoints. Base URL: `http://localhost:4000/api/v1`
-
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| POST | `/auth/login` | none | Authenticate user; returns tokens or OTP challenge |
-| POST | `/auth/verify-otp` | none | Verify OTP/TOTP code and receive tokens |
-| POST | `/auth/refresh` | cookie | Rotate access and refresh tokens |
-| POST | `/auth/logout` | bearer | Revoke current session |
-| POST | `/auth/logout-all` | bearer | Revoke all user sessions |
-| GET | `/auth/me` | bearer | Get current user profile and permissions |
-| POST | `/auth/2fa/setup` | bearer | Initiate TOTP enrollment |
-| POST | `/auth/2fa/enable` | bearer | Confirm TOTP enrollment with 6-digit code |
-| GET | `/users` | `users:read` | List users with pagination and filters |
-| GET | `/users/stats` | `users:read` | User counts grouped by role and status |
-| GET | `/users/:id` | `users:read` | Get single user with relations |
-| POST | `/users` | `users:create` | Create a new user |
-| PATCH | `/users/:id` | `users:update` | Update user fields |
-| PATCH | `/users/:id/role` | `users:role:change` | Change user role (super admin only) |
-| PATCH | `/users/:id/status` | `users:update` | Change user status |
-| DELETE | `/users/:id` | `users:delete` | Delete user (super admin only) |
-| GET | `/kb/categories` | `kb:read` | List knowledge base categories |
-| POST | `/kb/categories` | `kb:create` | Create a new KB category |
-| GET | `/kb/articles` | `kb:read` | List KB articles with pagination (cached 30s) |
-| GET | `/kb/articles/:id` | `kb:read` | Get article by ID or slug |
-| POST | `/kb/articles` | `kb:create` | Create article with first version |
-| PATCH | `/kb/articles/:id` | `kb:update` | Update article (creates new version) |
-| PATCH | `/kb/articles/:id/verify` | `kb:verify` | Mark article as verified |
-| DELETE | `/kb/articles/:id` | `kb:delete` | Delete article |
-| POST | `/kb/articles/:id/feedback` | `kb:read` | Submit article feedback |
-| GET | `/reports` | `reports:read` | List reports (role-scoped) |
-| GET | `/reports/:id` | `reports:read` | Get single report |
-| GET | `/reports/stats` | `reports:read` | Aggregated report statistics |
-| POST | `/reports` | `reports:create` | Submit a new report |
-| PATCH | `/reports/:id/review` | `reports:review` | Mentor/admin review of report |
-| DELETE | `/reports/:id` | `reports:delete` | Delete report |
-| GET | `/announcements` | `announcements:read` | List announcements (cached 20s) |
-| GET | `/announcements/:id` | `announcements:read` | Get single announcement |
-| POST | `/announcements` | `announcements:create` | Create and broadcast announcement |
-| PATCH | `/announcements/:id` | `announcements:update` | Edit announcement |
-| PATCH | `/announcements/:id/pin` | `announcements:update` | Toggle pinned status |
-| DELETE | `/announcements/:id` | `announcements:delete` | Delete announcement |
-| GET | `/attendance` | bearer | List attendance rows (role-scoped) |
-| GET | `/attendance/summary` | bearer | Attendance summary for interns/mentors |
-| POST | `/attendance/mark` | bearer | Mark attendance for user |
-| POST | `/attendance/check` | bearer | Self check-in / check-out |
-| GET | `/qa/questions` | bearer | List Q&A questions |
-| POST | `/qa/questions` | bearer | Ask a new question |
-| GET | `/qa/questions/:id` | bearer | Get question with answers |
-| POST | `/qa/questions/:id/answers` | bearer | Post answer to question |
-| POST | `/qa/answers/:id/accept` | bearer | Accept answer (asker only) |
-| POST | `/qa/upvote` | bearer | Upvote question or answer |
-| GET | `/projects` | bearer | List projects |
-| POST | `/projects` | bearer | Create project |
-| GET | `/projects/:id` | bearer | Get single project |
-| PATCH | `/projects/:id` | bearer | Update project |
-| DELETE | `/projects/:id` | bearer | Delete project |
-| GET | `/tasks` | bearer | List tasks |
-| POST | `/tasks` | bearer | Create task |
-| PATCH | `/tasks/:id` | bearer | Update task |
-| DELETE | `/tasks/:id` | bearer | Delete task |
-| POST | `/ai/chat` | bearer | Non-streaming AI chat completion |
-| POST | `/ai/chat/stream` | bearer | SSE-streamed AI chat |
-| GET | `/ai/sessions` | bearer | List AI chat sessions |
-| GET | `/ai/sessions/:id` | bearer | Get single chat session |
-| DELETE | `/ai/sessions/:id` | bearer | Delete chat session |
-| POST | `/files` | bearer | Upload file (multipart, 25 MB limit) |
-| GET | `/files` | bearer | List user's files |
-| GET | `/files/:id` | bearer | Get file metadata |
-| GET | `/files/:id/download` | none | Signed-URL redirect download |
-| GET | `/files/:id/url` | bearer | Get short-lived signed URL |
-| DELETE | `/files/:id` | bearer | Delete file (owner or admin) |
-| GET | `/notifications` | bearer | Paginated notification inbox |
-| POST | `/notifications/:id/read` | bearer | Mark notification as read |
-| POST | `/notifications/read-all` | bearer | Mark all notifications as read |
-| GET | `/preferences/notifications` | bearer | Get notification preferences |
-| PATCH | `/preferences/notifications` | bearer | Update notification preferences |
-| GET | `/webhooks` | `webhooks:manage` | List configured webhooks |
-| POST | `/webhooks` | `webhooks:manage` | Create webhook |
-| PATCH | `/webhooks/:id` | `webhooks:manage` | Update webhook |
-| DELETE | `/webhooks/:id` | `webhooks:manage` | Delete webhook |
-| GET | `/webhooks/:id/deliveries` | `webhooks:manage` | Webhook delivery log |
-| GET | `/webhooks/events` | `webhooks:manage` | List available webhook events |
-| GET | `/meetings` | bearer | List calendar meetings |
-| POST | `/meetings` | bearer | Create meeting |
-| PATCH | `/meetings/:id` | bearer | Update meeting |
-| DELETE | `/meetings/:id` | bearer | Delete meeting |
-| GET | `/analytics/platform` | `analytics:read` | Platform-wide metrics (cached 60s) |
-| GET | `/analytics/interns` | `analytics:read` | Per-intern performance (cached 30s) |
-| GET | `/exports/users` | `analytics:read` | Export users as CSV/JSON |
-| GET | `/exports/reports` | `analytics:read` | Export reports as CSV/JSON |
-| GET | `/exports/attendance` | `analytics:read` | Export attendance as CSV/JSON |
-| GET | `/healthz` | none | Backwards-compatible process check |
-| GET | `/healthz/live` | none | Liveness probe |
-| GET | `/healthz/ready` | none | Readiness probe (DB + Redis) |
 | GET | `/api/v1/meta` | none | Service name and version |
 
 ---

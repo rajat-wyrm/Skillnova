@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/Settings.jsx (API-driven system settings)
 // ════════════════════════════════════════════════════════════
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card, Toggle, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -12,14 +12,47 @@ const Settings = () => {
   const [platformName, setPlatformName] = useState('SkillNova');
   const [maxInterns, setMaxInterns] = useState('50');
   const [twoFactor, setTwoFactor] = useState(false);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const [{ data: meData }, { data: analyticsData }, { data: settingsData }] = await Promise.all([
+          api.get('/auth/me').catch(() => ({ data: null })),
+          api.get('/analytics/platform').catch(() => ({ data: null })),
+          api.get('/settings').catch(() => ({ data: { settings: {} } })),
+        ]);
+
+        const saved = settingsData?.settings ?? {};
+        setPlatformName(saved.platformName ?? 'SkillNova');
+        setMaxInterns(String(saved.maxInterns ?? 50));
+        setTwoFactor(Boolean(saved.twoFactorRequired));
+        setSettings({
+          maintenance: Boolean(saved.maintenance),
+          registrationOpen: saved.registrationOpen !== false,
+        });
+        if (meData?.user?.role) {
+          // keep auth state warm for the admin page
+        }
+        if (analyticsData?.totalUsers != null) {
+          // analytics loaded successfully
+        }
+      } catch {
+        // ignore and fall back to defaults
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   const persist = async (key, value) => {
     try {
-      await api.patch('/users/me', { preferences: { [key]: value } });
-      notify.success('Settings saved.');
+      await api.patch('/settings', { key, value });
+      notify.success('Settings saved');
     } catch {
-      notify.error('Failed to save settings.');
+      notify.error('Could not save settings');
     }
   };
 
@@ -29,19 +62,27 @@ const Settings = () => {
     {
       title: 'Platform', icon: Shield, rows: [
         { label: 'Platform Name', sub: 'The name shown in header and emails',
-          ctrl: <input value={platformName} onChange={(e) => setPlatformName(e.target.value)} onBlur={() => notify.success('Saved')} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-40" /> },
+          ctrl: <input value={platformName} onChange={(e) => setPlatformName(e.target.value)} onBlur={() => persist('platformName', platformName)} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-40" /> },
         { label: 'Max Interns', sub: 'Maximum intern accounts',
-          ctrl: <input type="number" value={maxInterns} onChange={(e) => setMaxInterns(e.target.value)} onBlur={() => notify.success('Saved')} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-24" /> },
+          ctrl: <input type="number" value={maxInterns} onChange={(e) => setMaxInterns(e.target.value)} onBlur={() => persist('maxInterns', Number(maxInterns))} className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 w-24" /> },
         { label: 'Open Registration', sub: 'Allow new interns to self-register',
-          ctrl: <Toggle checked={settings.registrationOpen} onChange={() => { setSettings({ ...settings, registrationOpen: !settings.registrationOpen }); persist('registrationOpen', !settings.registrationOpen); }} /> },
+          ctrl: <Toggle checked={settings.registrationOpen} onChange={() => {
+            const next = !settings.registrationOpen;
+            setSettings((prev) => ({ ...prev, registrationOpen: next }));
+            persist('registrationOpen', next);
+          }} /> },
         { label: 'Maintenance Mode', sub: 'Take the platform offline for maintenance',
-          ctrl: <Toggle checked={settings.maintenance} onChange={() => { setSettings({ ...settings, maintenance: !settings.maintenance }); persist('maintenance', !settings.maintenance); }} /> },
+          ctrl: <Toggle checked={settings.maintenance} onChange={() => {
+            const next = !settings.maintenance;
+            setSettings((prev) => ({ ...prev, maintenance: next }));
+            persist('maintenance', next);
+          }} /> },
       ],
     },
     {
       title: 'Security', rows: [
         { label: 'Two-Factor Required', sub: 'Require 2FA for all admin accounts',
-          ctrl: <Toggle checked={twoFactor} onChange={() => setTwoFactor(!twoFactor)} /> },
+          ctrl: <Toggle checked={twoFactor} onChange={() => { const next = !twoFactor; setTwoFactor(next); persist('twoFactorRequired', next); }} /> },
         { label: 'Audit Logging', sub: 'Log every privileged action', ctrl: <Toggle checked={true} onChange={() => {}} /> },
       ],
     },

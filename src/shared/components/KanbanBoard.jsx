@@ -10,17 +10,16 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, AlertCircle, Clock, CheckCircle, Loader2, GripVertical } from 'lucide-react';
+import { Plus, AlertCircle, Clock, CheckCircle, Loader2, GripVertical, Sparkles, X } from 'lucide-react';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
-import { getSocket } from '../../lib/socket';
 
 const COLUMNS = [
-  { id: 'TODO',        title: 'To do',         color: '#94a3b8' },
-  { id: 'IN_PROGRESS', title: 'In progress',   color: '#ff6d34' },
-  { id: 'REVIEW',      title: 'In review',     color: '#7C3AED' },
-  { id: 'DONE',        title: 'Done',          color: '#00bea3' },
+  { id: 'TODO', title: 'To do', color: '#94a3b8' },
+  { id: 'IN_PROGRESS', title: 'In progress', color: '#ff6d34' },
+  { id: 'REVIEW', title: 'In review', color: '#7C3AED' },
+  { id: 'DONE', title: 'Done', color: '#00bea3' },
 ];
 
 const PRIORITY_COLORS = {
@@ -31,7 +30,7 @@ const STATUS_ICON = {
   TODO: Clock, IN_PROGRESS: Loader2, REVIEW: AlertCircle, DONE: CheckCircle, BLOCKED: AlertCircle,
 };
 
-const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick }) => {
+const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick, onAI }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -75,11 +74,36 @@ const TaskCard = ({ task, isOverlay = false, canEdit = true, onClick }) => {
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>{task.assignee.name}</span>
         </div>
       )}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAI(task);
+        }}
+        style={{
+          marginTop: 10,
+          width: '100%',
+          padding: '8px',
+          borderRadius: 8,
+          border: 'none',
+          background: '#7C3AED',
+          color: '#fff',
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+        }}
+      >
+        <Sparkles size={14} />
+        AI Learning Guide
+      </button>
     </div>
   );
 };
 
-const Column = ({ column, tasks, canEdit, onAdd, onClickTask }) => {
+const Column = ({ column, tasks, canEdit, onAdd, onClickTask, onAITask }) => {
   const taskIds = tasks.map((t) => t.id);
   const { setNodeRef } = useSortable({ id: column.id, data: { type: 'column' }, disabled: !canEdit });
   return (
@@ -110,7 +134,7 @@ const Column = ({ column, tasks, canEdit, onAdd, onClickTask }) => {
       </div>
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 100 }}>
-          {tasks.map((t) => <TaskCard key={t.id} task={t} canEdit={canEdit} onClick={() => onClickTask?.(t)} />)}
+          {tasks.map((t) => <TaskCard key={t.id} task={t} canEdit={canEdit} onClick={() => onClickTask?.(t)} onAI={onAITask} />)}
           {tasks.length === 0 && (
             <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: 24, opacity: 0.6 }}>No tasks here.</p>
           )}
@@ -171,6 +195,9 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
   const [activeTask, setActiveTask] = useState(null);
   const [modalTask, setModalTask] = useState(null);
   const [project, setProject] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResponse, setAiResponse] = useState('');
+  const [selectedAITask, setSelectedAITask] = useState(null);
 
   const fetch = useCallback(async () => {
     if (!projectId) return;
@@ -182,27 +209,60 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
       ]);
       setProject(p?.data?.project);
       setTasks(t.data.items);
+
     } catch { /* ignore */ }
     setLoading(false);
   }, [projectId]);
 
+  const getTaskGuidance = async (task) => {
+    setSelectedAITask(task);
+    setAiLoading(true);
+    setAiResponse('');
+
+    const prompt = `
+You are an AI mentor helping an intern complete a task.
+
+Task Title:
+${task.title}
+
+Description:
+${task.description || "No description provided"}
+
+Priority:
+${task.priority}
+
+Status:
+${task.status}
+
+Please provide:
+
+1. Explain what this task means.
+2. Skills required.
+3. Technologies required.
+4. Beginner-friendly YouTube tutorials.
+5. Official documentation.
+6. Step-by-step roadmap.
+7. Estimated completion time.
+8. Common mistakes.
+9. Best practices.
+10. End with some motivation.
+`;
+
+    try {
+      const { data } = await api.post('/ai/chat', {
+        message: prompt,
+      });
+
+      setAiResponse(data.reply);
+    } catch {
+      notify.error('Failed to get AI guidance.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetch();
-    const socket = getSocket();
-    if (!socket) return undefined;
-    const onTaskUpdated = (data) => {
-      if (data.projectId === projectId) {
-        setTasks((arr) => arr.map((t) => (t.id === data.taskId ? { ...t, ...data.task } : t)));
-      }
-    };
-    const onDashboardRefresh = () => { fetch(); };
-    socket.emit('join:project', projectId);
-    socket.on('task:updated', onTaskUpdated);
-    socket.on('dashboard:refresh', onDashboardRefresh);
-    return () => {
-      socket.off('task:updated', onTaskUpdated);
-      socket.off('dashboard:refresh', onDashboardRefresh);
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
@@ -259,9 +319,39 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
   return (
     <div>
       {project && (
-        <div style={{ marginBottom: 16 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{project.name}</h2>
-          {project.description && <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{project.description}</p>}
+        <div
+          style={{
+            marginBottom: 16,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text)",
+              }}
+            >
+              {project.name}
+            </h2>
+
+            {project.description && (
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "var(--muted)",
+                  marginTop: 4,
+                }}
+              >
+                {project.description}
+              </p>
+            )}
+          </div>
+
+
         </div>
       )}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -274,12 +364,88 @@ const KanbanBoard = ({ projectId, canEdit = true }) => {
               canEdit={canEdit}
               onAdd={onAdd}
               onClickTask={(t) => canEdit && setModalTask(t)}
+              onAITask={getTaskGuidance}
             />
           ))}
         </div>
         <DragOverlay>{activeTask && <TaskCard task={activeTask} isOverlay />}</DragOverlay>
       </DndContext>
       {modalTask && <TaskModal task={modalTask} onClose={() => setModalTask(null)} onSave={onSaveTask} />}
+      {selectedAITask && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              width: 'min(850px,90vw)',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              background: 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 16,
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 20,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Sparkles size={20} color="#ff6d34" />
+                <div>
+                  <h2 style={{ margin: 0 }}>AI Learning Guide</h2>
+                  <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13 }}>
+                    {selectedAITask.title}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedAITask(null);
+                  setAiResponse('');
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {aiLoading ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <Loader2 className="animate-spin" />
+                <p>Generating learning guide...</p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.7,
+                  color: 'var(--text)',
+                }}
+              >
+                {aiResponse}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

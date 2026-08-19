@@ -23,6 +23,13 @@ export const list = asyncHandler(async (req, res) => {
   res.json({ items, total, unreadCount, page, limit });
 });
 
+export const unreadCount = asyncHandler(async (req, res) => {
+  const count = await prisma.notification.count({
+    where: { userId: req.user.id, read: false },
+  });
+  res.json({ unreadCount: count });
+});
+
 export const markRead = asyncHandler(async (req, res) => {
   const id = req.validatedParams.id;
   await prisma.notification.updateMany({
@@ -36,6 +43,13 @@ export const markAllRead = asyncHandler(async (req, res) => {
   await prisma.notification.updateMany({
     where: { userId: req.user.id, read: false },
     data: { read: true, readAt: new Date() },
+  });
+  res.json({ ok: true });
+});
+
+export const remove = asyncHandler(async (req, res) => {
+  await prisma.notification.deleteMany({
+    where: { id: req.validatedParams.id, userId: req.user.id },
   });
   res.json({ ok: true });
 });
@@ -115,5 +129,5 @@ export const internPerformance = asyncHandler(async (req, res) => {
   res.json({ items });
 });
 
-export default { list, markRead, markAllRead, platformStats, internPerformance };
+export default { list, unreadCount, markRead, markAllRead, remove, platformStats, internPerformance };
 

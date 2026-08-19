@@ -4,16 +4,16 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut,
+  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, Map,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
-import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const MENU = [
   { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
   { id: 'interns',       label: 'My Interns',     icon: Users           },
   { id: 'reports',       label: 'Report Reviews', icon: FileText        },
   { id: 'projects',      label: 'Projects',       icon: Activity        },
+  { id: 'roadmap',       label: 'Learning Roadmaps', icon: Map          },
   { id: 'knowledge',     label: 'Knowledge Base', icon: BookOpen        },
   { id: 'qa',            label: 'Q&A Forum',      icon: MessageSquare   },
   { id: 'announcements', label: 'Announcements',  icon: Megaphone       },
@@ -34,7 +34,7 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
     >
       <div className={`h-20 flex items-center gap-3 flex-shrink-0 ${isCollapsed ? 'px-3 justify-center' : 'px-4'}`} style={{ borderBottom: '1px solid #2d3436' }}>
         {!isCollapsed && (
-          <img src={APP_CONSTANTS.LOGO_PATH} alt="SkillNova" loading="lazy" style={{ height: 48, mixBlendMode: 'lighten' }} />
+          <img src="/logo.png" alt="SkillNova" style={{ height: 48, mixBlendMode: 'lighten' }} />
         )}
         {isCollapsed && (
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm flex-shrink-0"

@@ -13,8 +13,7 @@ const _chatSchema = z.object({
   sessionId: z.string().cuid().optional(),
 });
 
-export const chat = asyncHandler(async (req, res) => {
-  const { message, sessionId } = req.body;
+async function _prepareChatSession(req, message, sessionId) {
   let session;
   if (sessionId) {
     session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
@@ -39,17 +38,14 @@ export const chat = asyncHandler(async (req, res) => {
     data: { sessionId: session.id, role: 'user', content: message },
   });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
-  let result;
-  try {
-    result = await Promise.race([
-      chatCompletion({ user: req.user, history, userMessage: message }),
-      new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error('AI request timed out')))),
-    ]);
-  } finally {
-    clearTimeout(timeout);
-  }
+  return { session, history };
+}
+
+export const chat = asyncHandler(async (req, res) => {
+  const { message, sessionId } = req.body;
+  const { session, history } = await _prepareChatSession(req, message, sessionId);
+
+  const result = await chatCompletion({ user: req.user, history, userMessage: message });
   const assistantMsg = await prisma.chatMessage.create({
     data: {
       sessionId: session.id,
@@ -71,26 +67,7 @@ export const chat = asyncHandler(async (req, res) => {
 
 export const streamChat = asyncHandler(async (req, res) => {
   const { message, sessionId } = req.body;
-  let session;
-  if (sessionId) {
-    session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
-    if (!session || session.userId !== req.user.id) throw ApiError.notFound();
-  } else {
-    session = await prisma.chatSession.create({
-      data: { userId: req.user.id, title: message.slice(0, 60) },
-    });
-  }
-
-  const history = await prisma.chatMessage.findMany({
-    where: { sessionId: session.id },
-    orderBy: { createdAt: 'asc' },
-    take: 20,
-    select: { role: true, content: true },
-  });
-
-  await prisma.chatMessage.create({
-    data: { sessionId: session.id, role: 'user', content: message },
-  });
+  const { session, history } = await _prepareChatSession(req, message, sessionId);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -98,8 +75,6 @@ export const streamChat = asyncHandler(async (req, res) => {
   res.flushHeaders?.();
 
   let full = '';
-  const streamController = new AbortController();
-  const streamTimeout = setTimeout(() => streamController.abort(), 30_000);
   try {
     for await (const chunk of chatCompletionStream({ user: req.user, history, userMessage: message })) {
       full += chunk;
@@ -112,7 +87,6 @@ export const streamChat = asyncHandler(async (req, res) => {
   } catch (err) {
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
   } finally {
-    clearTimeout(streamTimeout);
     res.end();
   }
 });

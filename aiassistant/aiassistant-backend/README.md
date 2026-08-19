@@ -21,19 +21,19 @@ INTERN).
 
 ## Stack
 
-| Concern | Choice |
-| --- | --- |
-| API | FastAPI + Uvicorn |
-| Streaming | sse-starlette |
-| Agent | LangGraph |
-| LLM | Gemini / Groq / DeepSeek (circuit-broken) |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
-| Vector store | FAISS (CPU) |
-| Web search | Tavily → DuckDuckGo |
-| Cache | In-memory or Redis |
-| DB | SQLAlchemy (SQLite default, Postgres optional) |
-| Tests | pytest |
-| Lint | ruff |
+| Concern      | Choice                                         |
+| ------------ | ---------------------------------------------- |
+| API          | FastAPI + Uvicorn                              |
+| Streaming    | sse-starlette                                  |
+| Agent        | LangGraph                                      |
+| LLM          | Gemini / Groq / DeepSeek (circuit-broken)      |
+| Embeddings   | sentence-transformers (all-MiniLM-L6-v2)       |
+| Vector store | FAISS (CPU)                                    |
+| Web search   | Tavily → DuckDuckGo                            |
+| Cache        | In-memory or Redis                             |
+| DB           | SQLAlchemy (SQLite default, Postgres optional) |
+| Tests        | pytest                                         |
+| Lint         | ruff                                           |
 
 ---
 
@@ -54,13 +54,13 @@ python main.py                # http://localhost:8000/docs
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/` | Service status |
-| GET | `/api/aiassistant/session` | Create a session id |
-| GET | `/api/aiassistant/health` | Liveness + boot status |
-| POST | `/api/aiassistant/chat` | Synchronous chat |
-| POST | `/api/aiassistant/chat/stream` | Server-Sent Events stream |
+| Method | Path                           | Description               |
+| ------ | ------------------------------ | ------------------------- |
+| GET    | `/`                            | Service status            |
+| GET    | `/api/aiassistant/session`     | Create a session id       |
+| GET    | `/api/aiassistant/health`      | Liveness + boot status    |
+| POST   | `/api/aiassistant/chat`        | Synchronous chat          |
+| POST   | `/api/aiassistant/chat/stream` | Server-Sent Events stream |
 
 ### `POST /api/aiassistant/chat`
 
@@ -115,8 +115,27 @@ topic: Policies
 importance: high
 last_updated: 2026-06-01
 ---
-
 Body of the document goes here …
 ```
 
 The next service start will re-index the knowledge base automatically.
+
+## Example `.env`
+
+Copy the provided example file and populate at least one LLM provider key.
+
+```bash
+cp .env.example .env
+# Edit `.env` and set either `GROQ_API_KEY` or `GEMINI_API_KEY` (or both)
+# Do NOT commit `.env` with real keys.
+```
+
+Example variables contained in `.env.example`:
+
+```
+GROQ_API_KEY=
+GEMINI_API_KEY=
+AIASSISTANT_HOST=0.0.0.0
+AIASSISTANT_PORT=8000
+REDIS_URL=
+```

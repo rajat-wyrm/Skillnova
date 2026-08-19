@@ -38,7 +38,19 @@ export const upload = multer({
       'text/plain', 'text/csv', 'text/markdown',
       'application/json',
     ];
-    if (!allowed.includes(file.mimetype)) return cb(new Error(`Unsupported file type: ${file.mimetype}`));
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Unsupported file type'));
+    cb(null, true);
+  },
+});
+
+// ── Resume-specific upload (PDF only, 5 MB) ─────────────
+export const resumeUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') {
+      return cb(new Error('Only PDF files are accepted for resume parsing'));
+    }
     cb(null, true);
   },
 });
