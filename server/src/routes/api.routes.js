@@ -290,12 +290,19 @@ api.delete(
   validate(idParam, "params"),
   projects.deleteProject,
 );
-
 api.get(
   "/tasks",
   requirePermission("tasks:read"),
   validate(schemas.pagination, "query"),
   projects.listTasks,
+);
+
+api.get(
+  "/tasks/recommendation/:internId",
+  requirePermission("tasks:read"),
+  validate(z.object({ internId: z.string().cuid() }), "params"),
+  projects.recommendTask,
+);
 );
 api.post(
   "/tasks",
