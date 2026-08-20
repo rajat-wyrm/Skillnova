@@ -22,6 +22,7 @@ import kbRoutes from './routes/kb.routes.js';
 import featuresRoutes, { publicApi as publicFeaturesRoutes } from './routes/features.routes.js';
 import skillGapRoutes from './routes/skillGap.routes.js';
 import phase1Routes from './routes/roadmap.routes.js';
+import peerRoutes from './routes/peer.routes.js';
 import { etagMiddleware } from './utils/cache.js';
 import { requestId } from './middleware/requestId.js';
 import { bodySizeTracker } from './utils/metrics.js';
@@ -196,6 +197,8 @@ app.use('/api/v1/resume-import', resumeImportRoutes);
 app.use('/api/v1', csrfProtection, apiRoutes);
 // Phase 1: Learning Roadmap, Achievement Badges, Internship Completion Tracker
 app.use('/api/v1', csrfProtection, phase1Routes);
+// Peer-to-Peer: DMs, Study Groups & Skill Matcher
+app.use('/api/v1/peer', csrfProtection, peerRoutes);
 
 // ── 404 ────────────────────────────────────────────────────
 app.use((req, _res, next) => {

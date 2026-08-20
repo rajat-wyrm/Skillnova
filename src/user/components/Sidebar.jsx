@@ -6,12 +6,13 @@ import {
   LayoutDashboard, BookOpen, MessageSquare, FileText,
   CalendarCheck, Bot, Megaphone, BarChart2, User, Settings, Activity,
   LayoutGrid, Calendar, Folder, Bell, Download, ChevronRight, ChevronLeft, LogOut,
-  Map, Award, Target, Trophy,
+  Map, Award, Target, Trophy, Users,
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
 const MENU = [
   { id: 'dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { id: 'peers',          label: 'Peer Network & DMs', icon: Users       },
   { id: 'knowledge',      label: 'Knowledge Base', icon: BookOpen        },
   { id: 'project_flow',   label: 'Project Flow',   icon: Activity        },
   { id: 'kanban',         label: 'Task Board',     icon: LayoutGrid      },

@@ -88,6 +88,13 @@ model User {
   badgeAwards        BadgeAward[]
   internshipProgress InternshipProgress?
 
+  // Peer-to-Peer / Direct Messaging & Study Groups
+  sentDirectMessages     DirectMessage[]     @relation("SentDirectMessages")
+  receivedDirectMessages DirectMessage[]     @relation("ReceivedDirectMessages")
+  createdStudyGroups     StudyGroup[]        @relation("CreatedStudyGroups")
+  studyGroupMemberships  StudyGroupMember[]  @relation("StudyGroupMemberships")
+  studyGroupMessages     StudyGroupMessage[] @relation("SentGroupMessages")
+
   @@index([role])
   @@index([status])
   @@index([department])
@@ -794,3 +801,75 @@ model InternshipProgress {
 
   @@index([finalStatus])
 }
+
+// ════════════════════════════════════════════════════════════
+//  PEER-TO-PEER — Direct Messaging, Study Groups, Teammates
+// ════════════════════════════════════════════════════════════
+
+model DirectMessage {
+  id          String    @id @default(cuid())
+  senderId    String
+  sender      User      @relation("SentDirectMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   User      @relation("ReceivedDirectMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  content     String
+  read        Boolean   @default(false)
+  readAt      DateTime?
+  attachments Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([senderId, recipientId])
+  @@index([recipientId, read])
+  @@index([createdAt])
+}
+
+model StudyGroup {
+  id          String              @id @default(cuid())
+  name        String
+  description String?
+  topic       String?
+  skills      String[]
+  maxMembers  Int                 @default(10)
+  meetingLink String?
+  createdById String
+  createdBy   User                @relation("CreatedStudyGroups", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  members     StudyGroupMember[]
+  messages    StudyGroupMessage[]
+
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+model StudyGroupMember {
+  id        String     @id @default(cuid())
+  groupId   String
+  group     StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation("StudyGroupMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role      String     @default("MEMBER") // CREATOR | ADMIN | MEMBER
+  joinedAt  DateTime   @default(now())
+  lastReadAt DateTime?
+
+  @@unique([groupId, userId])
+  @@index([userId])
+  @@index([groupId])
+}
+
+model StudyGroupMessage {
+  id          String     @id @default(cuid())
+  groupId     String
+  group       StudyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User       @relation("SentGroupMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  content     String
+  attachments Json?
+  createdAt   DateTime   @default(now())
+
+  @@index([groupId, createdAt])
+  @@index([senderId])
+}
+

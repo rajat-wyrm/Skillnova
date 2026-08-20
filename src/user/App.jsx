@@ -23,9 +23,16 @@ const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 const Roadmap          = lazy(() => import('./pages/Roadmap'));
 const Badges           = lazy(() => import('./pages/Badges'));
+const PeerHub          = lazy(() => import('./pages/PeerHub'));
 
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
+  const [navParams, setNavParams] = useState({});
+
+  const handleNavigate = (targetPage, params = {}) => {
+    setNavParams(params);
+    setPage(targetPage);
+  };
 
   const PAGES = {
     dashboard:      <Dashboard onNavigate={setPage} />,
@@ -37,8 +44,9 @@ const UserApp = () => {
     files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
     reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
     attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
-    roadmap:        <Suspense fallback={<PageLoader />}><Roadmap onNavigate={setPage} /></Suspense>,
+    roadmap:        <Suspense fallback={<PageLoader />}><Roadmap onNavigate={handleNavigate} /></Suspense>,
     badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
+    peers:          <Suspense fallback={<PageLoader />}><PeerHub initialTab={navParams.tab || 'dm'} initialPeerId={navParams.peerId} onNavigate={handleNavigate} /></Suspense>,
     ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
     notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
     announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
@@ -49,7 +57,7 @@ const UserApp = () => {
   };
 
   return (
-    <MainLayout page={page} onNavigate={setPage}>
+    <MainLayout page={page} onNavigate={handleNavigate}>
       {PAGES[page]}
     </MainLayout>
   );

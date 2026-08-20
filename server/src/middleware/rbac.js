@@ -72,8 +72,9 @@ export const PERMISSIONS = {
   "meetings:write": ["SUPER_ADMIN", "ADMIN", "MENTOR"],
   "meetings:delete": ["SUPER_ADMIN", "ADMIN", "MENTOR"],
 
-  // Exports
-  "exports:use": ["SUPER_ADMIN", "ADMIN", "MENTOR", "INTERN"],
+  // Peer-to-Peer & Collaboration
+  "peer:use": ["SUPER_ADMIN", "ADMIN", "MENTOR", "INTERN"],
+  "peer:read": ["SUPER_ADMIN", "ADMIN", "MENTOR", "INTERN"],
 
   // Settings & Audit
   "settings:read": ["SUPER_ADMIN", "ADMIN"],

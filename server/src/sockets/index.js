@@ -54,6 +54,40 @@ export function createSocketServer(httpServer) {
       logger.info({ sub, role, sid: socket.id }, 'socket:connected');
     }
 
+    // ── Peer-to-Peer & Study Group Realtime Events ─────────
+    socket.on('dm:typing', ({ recipientId, isTyping }) => {
+      if (recipientId && sub) {
+        socket.to(`user:${recipientId}`).emit('dm:typing', {
+          senderId: sub,
+          isTyping: !!isTyping,
+        });
+      }
+    });
+
+    socket.on('group:join_room', (groupId) => {
+      if (groupId) {
+        socket.join(`study_group:${groupId}`);
+        logger.debug({ sub, groupId }, 'socket:joined_study_group_room');
+      }
+    });
+
+    socket.on('group:leave_room', (groupId) => {
+      if (groupId) {
+        socket.leave(`study_group:${groupId}`);
+        logger.debug({ sub, groupId }, 'socket:left_study_group_room');
+      }
+    });
+
+    socket.on('group:typing', ({ groupId, isTyping }) => {
+      if (groupId && sub) {
+        socket.to(`study_group:${groupId}`).emit('group:typing', {
+          groupId,
+          userId: sub,
+          isTyping: !!isTyping,
+        });
+      }
+    });
+
     socket.on('ping', (cb) => cb?.('pong'));
 
     socket.on('disconnect', (reason) => {

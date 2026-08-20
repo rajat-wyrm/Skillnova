@@ -49,10 +49,20 @@ const UserProfileModal = ({ isOpen, onClose, userId }) => {
         }
       })
       .catch(() => {
-        if (mounted) {
-          setUser(null);
-          setLoading(false);
-        }
+        // Fallback to peer public endpoint for interns
+        api.get(`/peer/users/${userId}`)
+          .then(({ data }) => {
+            if (mounted) {
+              setUser(data.peer);
+              setLoading(false);
+            }
+          })
+          .catch(() => {
+            if (mounted) {
+              setUser(null);
+              setLoading(false);
+            }
+          });
       });
 
     return () => {
