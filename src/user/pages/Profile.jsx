@@ -70,7 +70,6 @@ const FormField = ({ field, value, editing, onChange, touched, error }) => {
         {field.required && editing && <span style={{ color: '#ff6d34' }}> *</span>}
       </label>
       <input id={uid} type={field.type} value={field.type === 'date' ? formatDateValue(value) : value ?? ''} disabled={!editing || field.disabled}
-      <input id={uid} type={field.type} value={value || ''} disabled={!editing || field.disabled}
         onChange={onChange}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         maxLength={field.maxLen}

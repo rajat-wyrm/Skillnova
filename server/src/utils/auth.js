@@ -66,10 +66,11 @@ export function verifyTotp(token, secret) {
 
 // ── CSRF token (double submit cookie pattern, stateless) ──
 export function signCsrf(sessionId) {
-  return jwt.sign({ sid: sessionId, nonce: crypto.randomBytes(8).toString('hex') }, config.csrf.secret, {
-    expiresIn: '1d',
-    algorithm: ALGO,
-  });
+  return jwt.sign(
+    { sid: sessionId, nonce: crypto.randomBytes(8).toString('hex') },
+    config.csrf.secret,
+    { expiresIn: '1d', algorithm: ALGO }
+  );
 }
 
 export function verifyCsrf(token, sessionId) {
@@ -79,6 +80,25 @@ export function verifyCsrf(token, sessionId) {
   } catch {
     return false;
   }
+}
+
+// ── Google OAuth state token ───────────────────────────────
+export function signOAuthState(returnTo = '/') {
+  return jwt.sign(
+    { purpose: 'oauth_state', returnTo },
+    config.jwt.accessSecret,
+    { expiresIn: '10m', algorithm: ALGO, issuer: 'skillnova', audience: 'skillnova.oauth' }
+  );
+}
+
+export function verifyOAuthState(token) {
+  const payload = jwt.verify(token, config.jwt.accessSecret, {
+    algorithms: [ALGO],
+    issuer: 'skillnova',
+    audience: 'skillnova.oauth',
+  });
+  if (payload.purpose !== 'oauth_state') throw new Error('bad purpose');
+  return payload;
 }
 
 // ── Random helpers ─────────────────────────────────────────
