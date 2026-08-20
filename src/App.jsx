@@ -4,7 +4,7 @@
 //  based on the authenticated user's role. Mounts the global
 //  AIAssistant widget so every logged-in user has access.
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
 import AuthGate from './AuthGate';
@@ -17,7 +17,6 @@ import AuthCallback from './auth/pages/AuthCallback';
 
 const App = () => {
   const { user, step, hydrated, hydrate, accessToken } = useAuthStore();
-  const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     hydrate();

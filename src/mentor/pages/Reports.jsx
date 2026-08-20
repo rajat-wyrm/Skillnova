@@ -1,5 +1,5 @@
 // Mentor — Reports review
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, Loader2, CheckCircle, X } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -14,14 +14,14 @@ const Reports = () => {
   const [score, setScore] = useState('');
   const [feedback, setFeedback] = useState('');
 
-  const fetch = useCallback(async () => {
+  const fetch = async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/reports', { params: { limit: 50, status: filter === 'ALL' ? undefined : filter } });
       setReports(data.items);
     } finally { setLoading(false); }
-  }, [filter]);
-  useEffect(() => { fetch(); }, [fetch]);
+  };
+  useEffect(() => { fetch(); }, [filter]);
 
   const submitReview = async () => {
     try {

@@ -399,6 +399,7 @@ const Profile = () => {
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -426,22 +427,6 @@ const Profile = () => {
       const f = FIELDS.find((x) => x.key === name);
       setErrors((prev) => ({ ...prev, [name]: f?.validate ? f.validate(value) : '' }));
     }
-  };
-
-  // Called by ResumeParser when user clicks "Apply to Profile"
-  const handleResumeApply = (parsed) => {
-    setProfile((prev) => ({
-      ...prev,
-      skills: parsed.skills || prev.skills,
-      college: parsed.college || prev.college,
-      department: parsed.department || prev.department,
-      yearOfStudy: parsed.yearOfStudy || prev.yearOfStudy,
-      linkedinUrl: parsed.linkedinUrl || prev.linkedinUrl,
-    }));
-    setSaved(false);
-    // Auto-enter editing mode so user can review & save
-    setEditing(true);
-    setSnapshot((prev) => prev ?? { ...profile });
   };
 
   const startEditing = () => {
@@ -494,7 +479,7 @@ const Profile = () => {
     }
   };
 
-  const [importing, setImporting] = useState(false);
+
   const handleResumeImportSaved = async ({ skills, education, experience }) => {
     setImporting(true);
     try {

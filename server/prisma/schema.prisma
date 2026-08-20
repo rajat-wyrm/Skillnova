@@ -81,6 +81,8 @@ model User {
   meetingAttendees  MeetingAttendee[]
   internRatingsReceived InternRating[] @relation("InternRatings")
   internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
+  leaveRequestsSent     LeaveRequest[] @relation("LeaveRequestsSent")
+  leaveRequestsReceived LeaveRequest[] @relation("LeaveRequestsReceived")
 
   // Phase 1: Learning / Badges / Completion
   roadmapAssignments RoadmapAssignment[]
@@ -111,8 +113,6 @@ model InternProfile {
   updatedAt     DateTime @updatedAt
 
   @@index([isTL])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model MentorProfile {
@@ -239,6 +239,33 @@ model Attendance {
   @@unique([userId, date])
   @@index([date])
   @@index([status])
+}
+
+// ── Leave Requests ──────────────────────────────────────────
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LeaveRequest {
+  id            String      @id @default(cuid())
+  internId      String
+  intern        User        @relation("LeaveRequestsSent", fields: [internId], references: [id], onDelete: Cascade)
+  startDate     DateTime
+  endDate       DateTime
+  reason        String      @db.Text
+  status        LeaveStatus @default(PENDING)
+  reviewedById  String?
+  reviewedBy    User?       @relation("LeaveRequestsReceived", fields: [reviewedById], references: [id])
+  reviewComment String?     @db.Text
+  reviewedAt    DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([internId])
+  @@index([status])
+  @@index([startDate])
 }
 
 // ── Projects & Tasks ───────────────────────────────────────

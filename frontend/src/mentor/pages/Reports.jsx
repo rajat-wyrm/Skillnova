@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { FileText, Loader2, CheckCircle, X } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal } from '../../shared/components/UI';
 import api from '../../lib/api';
+import { useSearchStore } from '../../lib/searchStore';
 import notify from '../../lib/toast';
 import { formatDate, formatRelative } from '../../lib/utils';
 
@@ -19,6 +20,7 @@ const Reports = () => {
     try {
       const { data } = await api.get('/reports', { params: { limit: 50, status: filter === 'ALL' ? undefined : filter } });
       setReports(data.items);
+      useSearchStore.getState().setReports(data.items);
     } finally { setLoading(false); }
   };
   useEffect(() => { fetch(); }, [filter]);

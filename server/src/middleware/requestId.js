@@ -2,7 +2,7 @@
 //  Request ID middleware — assigns a unique id to every request
 //  for log correlation and downstream tracing.
 // ════════════════════════════════════════════════════════════
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
 

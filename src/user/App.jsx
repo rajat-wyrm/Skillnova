@@ -16,13 +16,14 @@ const Profile          = lazy(() => import('./pages/Profile'));
 const Settings         = lazy(() => import('./pages/Settings'));
 const ProjectFlow      = lazy(() => import('./pages/ProjectFlow'));
 const Attendance       = lazy(() => import('./pages/Attendance'));
+const LeaveRequests    = lazy(() => import('./pages/LeaveRequests'));
 const KanbanPage       = lazy(() => import('./pages/Kanban'));
 const Calendar         = lazy(() => import('./pages/Calendar'));
 const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
-const Roadmap          = lazy(() => import('./pages/Roadmap'));
-const Badges           = lazy(() => import('./pages/Badges'));
+
+import AnimatedPage from '../shared/components/AnimatedPage';
 
 const PAGES = {
   dashboard:      <Dashboard />,
@@ -34,8 +35,7 @@ const PAGES = {
   files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
-  roadmap:        <Suspense fallback={<PageLoader />}><Roadmap /></Suspense>,
-  badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
+  leave_requests: <Suspense fallback={<PageLoader />}><LeaveRequests /></Suspense>,
   ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
   notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
   announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
@@ -45,33 +45,20 @@ const PAGES = {
   settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
 };
 
+import { useDeadlineChecker } from '../shared/hooks/useDeadlineChecker';
+
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
-
-  const PAGES = {
-    dashboard:      <Dashboard onNavigate={setPage} />,
-    knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
-    qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
-    project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
-    kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
-    calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
-    files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
-    reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
-    attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
-    ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
-    notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
-    announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
-    exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
-    analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
-    profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
-    settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
-  };
-
+  useDeadlineChecker();
   return (
     <MainLayout page={page} onNavigate={setPage}>
-      {PAGES[page]}
+      <AnimatedPage key={page}>
+        {PAGES[page]}
+      </AnimatedPage>
     </MainLayout>
   );
 };
 
+
 export default UserApp;
+

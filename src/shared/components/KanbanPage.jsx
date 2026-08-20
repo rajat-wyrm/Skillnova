@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import { ListChecks, Loader2 } from 'lucide-react';
-import { SectionHeader } from './UI';
+import { Card, SectionHeader } from './UI';
 import { EmptyState } from './Skeleton';
 import KanbanBoard from './KanbanBoard';
 import api from '../../lib/api';
@@ -22,7 +22,6 @@ const KanbanPage = ({ canEdit = true }) => {
         setProjects(r.data.items);
         if (r.data.items[0]) setActive(r.data.items[0].id);
       })
-      
       .catch(() => notify.error('Failed to load projects.'))
       .finally(() => setLoading(false));
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -37,7 +36,7 @@ const KanbanPage = ({ canEdit = true }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 animate-fadeIn">
       <SectionHeader title="Task Board" subtitle="Drag tasks across columns to update status" />
       {projects.length === 0 ? (
         <EmptyState

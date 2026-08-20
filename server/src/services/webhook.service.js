@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  Webhook service — HMAC-signed delivery with retries
 // ════════════════════════════════════════════════════════════
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import prisma from '../utils/prisma.js';
 import { logger } from '../utils/logger.js';
 
@@ -11,7 +11,7 @@ const TIMEOUT_MS = 10_000;
 export async function fireWebhook(event, payload) {
   try {
     const hooks = await prisma.webhook.findMany({
-      where: { enabled: true, events: { has: event } },
+      where: { enabled: true, events: { contains: '"' + event + '"' } },
     });
     await Promise.all(hooks.map((h) => deliver(h, event, payload)));
   } catch (err) {

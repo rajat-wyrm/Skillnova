@@ -27,7 +27,7 @@ const Notifications = () => {
 
   const remove = async (n) => {
     try {
-      await api.delete(`/notifications/${n.id}`);
+      await api.delete(`/notifications/${n.id}/read`);
       fetchAll();
     } catch { /* ignore */ }
   };

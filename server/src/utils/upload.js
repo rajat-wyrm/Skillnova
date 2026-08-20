@@ -5,7 +5,7 @@
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,18 +39,6 @@ export const upload = multer({
       'application/json',
     ];
     if (!allowed.includes(file.mimetype)) return cb(new Error('Unsupported file type'));
-    cb(null, true);
-  },
-});
-
-// ── Resume-specific upload (PDF only, 5 MB) ─────────────
-export const resumeUpload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype !== 'application/pdf') {
-      return cb(new Error('Only PDF files are accepted for resume parsing'));
-    }
     cb(null, true);
   },
 });

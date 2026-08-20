@@ -25,7 +25,7 @@ const SignupOTP = () => {
     inputs.current[0]?.focus();
     if (devCode) {
       const arr = devCode.split("");
-      setDigits(arr.concat(Array(LEN - arr.length).fill("")));
+      queueMicrotask(() => setDigits(arr.concat(Array(LEN - arr.length).fill(""))));
     }
   }, [devCode]);
 

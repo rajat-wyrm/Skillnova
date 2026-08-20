@@ -14,7 +14,7 @@ const AdminOTP = () => {
   const goBack = useAuthStore((s) => s.goBackToLogin);
   const loading = useAuthStore((s) => s.loading);
   const devCode = useAuthStore((s) => s.devCode);
-  const contactHint = useAuthStore((s) => s.user?.email) || '';
+  const contactHint = useAuthStore((s) => s.contactHint) || '';
 
   const [digits, setDigits] = useState(Array(LEN).fill(''));
   const [error, setError] = useState('');

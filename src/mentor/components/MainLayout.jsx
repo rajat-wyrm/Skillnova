@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   knowledge:      'Knowledge Base',
   qa:             'Q&A Forum',
   announcements:  'Announcements',
+  leave_requests: 'Leave Requests',
   ai:             'AI Assistant',
   profile:        'My Profile',
   settings:       'Settings',
@@ -50,7 +51,7 @@ const MainLayout = ({ page, onNavigate, children }) => {
         </>
       )}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header title={title} onMenuToggle={() => setMobileOpen(!mobileOpen)} />
+        <Header title={title} onMenuToggle={() => setMobileOpen(!mobileOpen)} onNavigate={onNavigate} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>

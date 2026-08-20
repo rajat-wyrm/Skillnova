@@ -7,6 +7,7 @@ import * as reports from "../controllers/reports.controller.js";
 import * as announcements from "../controllers/announcements.controller.js";
 import * as qa from "../controllers/qa.controller.js";
 import * as attendance from "../controllers/attendance.controller.js";
+import * as leaveRequests from "../controllers/leaveRequests.controller.js";
 import * as ratings from "../controllers/ratings.controller.js";
 import * as projects from "../controllers/projects.controller.js";
 import * as ai from "../controllers/ai.controller.js";
@@ -21,6 +22,17 @@ api.use(authenticate, requireAuth);
 
 const internIdParam = z.object({ internId: z.string().cuid() });
 const idParam = z.object({ id: z.string().cuid() });
+
+const createSchema = z.object({
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  reason: z.string().min(3).max(500),
+});
+
+const statusSchema = z.object({
+  status: z.enum(["APPROVED", "REJECTED"]),
+  comment: z.string().max(500).optional(),
+});
 
 // ── Reports ───────────────────────────────────────────────
 api.get(
@@ -236,6 +248,27 @@ api.post(
     }),
   ),
   attendance.mark,
+);
+
+// ── Leave Requests ─────────────────────────────────────────
+api.get(
+  "/leave-requests",
+  requirePermission("leave:read"),
+  validate(schemas.pagination, "query"),
+  leaveRequests.list,
+);
+api.post(
+  "/leave-requests",
+  requirePermission("leave:create"),
+  validate(createSchema),
+  leaveRequests.create,
+);
+api.patch(
+  "/leave-requests/:id/status",
+  requirePermission("leave:update"),
+  validate(idParam, "params"),
+  validate(statusSchema),
+  leaveRequests.updateStatus,
 );
 
 // ── Projects ──────────────────────────────────────────────

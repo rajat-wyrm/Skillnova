@@ -104,7 +104,6 @@ export const useAuthStore = create((set, get) => ({
           loading: false,
         });
         return { step: 'otp', otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin') };
-        return { step: "otp" };
       }
       set({
         user: data.user,
@@ -358,6 +357,8 @@ const ROLE_PERMISSIONS = {
     "attendance:read",
     "attendance:mark",
     "attendance:self",
+    "leave:read",
+    "leave:update",
     "projects:read",
     "projects:create",
     "projects:update",
@@ -377,6 +378,8 @@ const ROLE_PERMISSIONS = {
     "kb:read",
     "announcements:read",
     "attendance:self",
+    "leave:read",
+    "leave:create",
     "projects:read",
     "tasks:read",
     "tasks:update",

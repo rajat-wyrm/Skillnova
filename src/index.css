@@ -143,6 +143,43 @@ textarea:focus-visible,
 .animate-pulse  { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 .animate-spin   { animation: spin 0.7s linear infinite; }
 
+@keyframes softAppear {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+body > * {
+  animation: softAppear 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+body *:not(script):not(style) {
+  animation-fill-mode: both;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+body button:hover,
+body a:hover,
+body [role="button"]:hover,
+body .premium-card:hover,
+body .group:hover,
+body .rounded-xl:hover,
+body .rounded-lg:hover,
+body .rounded-full:hover {
+  transform: translateY(-1px) scale(1.01);
+}
+
+body .no-animate,
+body .no-animate * {
+  animation: none !important;
+  transition: none !important;
+}
+
 /* ===== SKELETON ===== */
 .skeleton {
   background: linear-gradient(90deg, var(--elevated) 0%, var(--input-bg) 50%, var(--elevated) 100%);
@@ -271,3 +308,103 @@ button:disabled { opacity: 0.55; cursor: not-allowed !important; }
   outline: 2px solid var(--brand-orange);
   outline-offset: 2px;
 }
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ===== PREMIUM ANIMATION ENHANCEMENTS ===== */
+
+/* Card glow, lift, and hover animations */
+.premium-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+              box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+              border-color 0.3s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-5px) scale(1.015);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08), 0 0 15px rgba(255, 109, 52, 0.15);
+  border-color: rgba(255, 109, 52, 0.3) !important;
+}
+
+.dark .premium-card:hover {
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 190, 163, 0.15);
+  border-color: rgba(0, 190, 163, 0.3) !important;
+}
+
+/* MD3 Ripple Click Effect container */
+.ripple-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 109, 52, 0.2);
+  transform: scale(0);
+  animation: ripple-animation 0.6s linear;
+  pointer-events: none;
+}
+
+.dark .ripple-effect {
+  background: rgba(0, 190, 163, 0.25);
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Bell ring animation */
+@keyframes bell-ring {
+  0% { transform: rotate(0); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-10deg); }
+  30% { transform: rotate(12deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(-6deg); }
+  70% { transform: rotate(4deg); }
+  80% { transform: rotate(-3deg); }
+  90% { transform: rotate(2deg); }
+  100% { transform: rotate(0); }
+}
+
+.bell-ring-active {
+  animation: bell-ring 1s ease-in-out;
+  transform-origin: top center;
+}
+
+/* Avatar Pulse Animation */
+@keyframes avatar-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 109, 52, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 109, 52, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 109, 52, 0);
+  }
+}
+
+.avatar-pulse-active {
+  animation: avatar-pulse 2s infinite;
+}
+
+/* Custom Skeleton loading shimmer */
+.skeleton-box {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--border) 25%, var(--input-bg) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+

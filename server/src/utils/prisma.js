@@ -29,20 +29,68 @@ if (!config.isProd) {
   prisma.$on('error', (e) => logger.error(e, 'prisma:error'));
 }
 
-function assertDatabaseUrl() {
-  if (!config.databaseUrl) {
-    throw new Error(
-      'DATABASE_URL is not configured. Create server/.env and set DATABASE_URL to a PostgreSQL connection string.',
-    );
+const JSON_FIELDS = new Set(['tags', 'embedding', 'meta', 'value', 'events', 'payload', 'typePrefs']);
+
+function serialize(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(serialize);
   }
-  if (!/^postgres(?:ql)?:\/\//.test(config.databaseUrl)) {
-    throw new Error('DATABASE_URL must start with postgresql:// or postgres://');
+  const result = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (JSON_FIELDS.has(key) && val !== null && val !== undefined) {
+      if (typeof val === 'string') {
+        result[key] = val;
+      } else {
+        result[key] = JSON.stringify(val);
+      }
+    } else {
+      result[key] = serialize(val);
+    }
   }
+  return result;
 }
+
+function deserialize(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(deserialize);
+  }
+  const result = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (JSON_FIELDS.has(key) && typeof val === 'string') {
+      try {
+        result[key] = JSON.parse(val);
+      } catch {
+        result[key] = val;
+      }
+    } else {
+      result[key] = deserialize(val);
+    }
+  }
+  return result;
+}
+
+prisma.$use(async (params, next) => {
+  if (params.args) {
+    if (params.args.data) {
+      params.args.data = serialize(params.args.data);
+    }
+    if (params.args.create) {
+      params.args.create = serialize(params.args.create);
+    }
+    if (params.args.update) {
+      params.args.update = serialize(params.args.update);
+    }
+  }
+  const result = await next(params);
+  return deserialize(result);
+});
 
 export async function connectDB() {
   try {
-    assertDatabaseUrl();
     await prisma.$connect();
     logger.info('✅  Database connected');
   } catch (err) {

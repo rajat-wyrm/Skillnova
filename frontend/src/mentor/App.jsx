@@ -33,7 +33,7 @@ const MentorApp = () => {
   const [page, setPage] = useState('dashboard');
   return (
     <MainLayout page={page} onNavigate={setPage}>
-      {PAGES[page]}
+      {page === 'dashboard' ? <Dashboard onNavigate={setPage} /> : PAGES[page]}
     </MainLayout>
   );
 };

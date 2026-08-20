@@ -33,6 +33,27 @@ jobs:
     defaults:
       run:
         working-directory: server
+    # The server test-suite uses Node's built-in test runner against a real
+    # PostgreSQL database (e.g. settings & notifications tests write/read live
+    # rows, and notifications.test.js asserts an INTERN user exists — created by
+    # `npm run seed`). The Prisma client must also be generated before the tests
+    # import `@prisma/client`, otherwise they throw "did not initialize yet".
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: skillnova
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/skillnova?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +62,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
       - run: npm ci
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if (echo > /dev/tcp/localhost/5432) 2>/dev/null; then echo "PostgreSQL ready"; break; fi
+            echo "Waiting for PostgreSQL..."; sleep 1
+          done
+      - run: npm run prisma:generate
+      - run: npm run prisma:push
+      - run: npm run seed
       - run: npm test
 
   frontend-lint:

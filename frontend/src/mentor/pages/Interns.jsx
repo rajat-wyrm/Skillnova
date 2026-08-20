@@ -2,15 +2,21 @@
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Card } from '../../shared/components/UI';
+import UserProfileModal from '../../shared/components/UserProfileModal';
+import { useSearchStore } from '../../lib/searchStore';
 import api from '../../lib/api';
 
 const Interns = () => {
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   useEffect(() => {
     api.get('/users', { params: { role: 'INTERN', limit: 100 } })
-      .then((r) => setInterns(r.data.items))
+      .then((r) => {
+        setInterns(r.data.items);
+        useSearchStore.getState().setInterns(r.data.items);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -29,11 +35,15 @@ const Interns = () => {
             </tr></thead>
             <tbody>
               {interns.map((i) => (
-                <tr key={i.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                <tr
+                  key={i.id}
+                  style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                  onClick={() => setSelectedUserId(i.id)}
+                >
                   <td className="px-5 py-4 font-medium" style={{ color: 'var(--text)' }}>{i.name}</td>
                   <td className="px-5 py-4 text-xs" style={{ color: 'var(--muted)' }}>{i.email}</td>
                   <td className="px-5 py-4" style={{ color: 'var(--muted)' }}>{i.department}</td>
-                  <td className="px-5 py-4"><span className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">⭐ {i.rating}</span></td>
+                  <td className="px-5 py-4"><span className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">★ {i.rating}</span></td>
                   <td className="px-5 py-4 text-xs">{i.status}</td>
                 </tr>
               ))}
@@ -41,6 +51,12 @@ const Interns = () => {
           </table>
         </div>
       </Card>
+
+      <UserProfileModal
+        isOpen={!!selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+        userId={selectedUserId}
+      />
     </div>
   );
 };

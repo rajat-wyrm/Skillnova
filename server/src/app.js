@@ -6,7 +6,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import fs from 'node:fs';
 

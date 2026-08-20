@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════
 import { Server } from 'socket.io';
 import { verifyAccessToken } from '../utils/auth.js';
-import { isCorsOriginAllowed } from '../config/index.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 let io = null;
@@ -12,10 +12,7 @@ let io = null;
 export function createSocketServer(httpServer) {
   io = new Server(httpServer, {
     cors: {
-      origin: (origin, cb) => {
-        if (isCorsOriginAllowed(origin)) return cb(null, true);
-        cb(new Error('CORS: origin not allowed'));
-      },
+      origin: config.corsOrigin,
       credentials: true,
     },
     pingInterval: 25_000,

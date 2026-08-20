@@ -148,7 +148,7 @@ export const rateLimitMiddleware = ({ windowSec, max, name }) => async (req, res
 };
 
 // ── ETag support ─────────────────────────────────────────
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 
 export const etagMiddleware = (weak = true) => (req, res, next) => {
   if (req.method !== 'GET') return next();

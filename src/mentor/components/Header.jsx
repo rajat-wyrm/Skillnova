@@ -1,22 +1,48 @@
 // ════════════════════════════════════════════════════════════
-//  Mentor — Header.jsx
+//  Mentor — Header.jsx (dark mode + notifications + global search)
 // ════════════════════════════════════════════════════════════
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell, Search, Sun, Moon, Menu } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import { useNotifications } from '../../shared/hooks/useNotifications';
+import { useSearchStore } from '../../lib/searchStore';
 import { initials } from '../../lib/utils';
 
-const Header = ({ title, onMenuToggle }) => {
+const Header = ({ title, onMenuToggle, onNavigate }) => {
   const { user } = useAuthStore();
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [showNotif, setShowNotif] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { items, unreadCount, markAllRead } = useNotifications();
+  const { query: searchQuery, results: searchResults, setQuery: setSearchQuery } = useSearchStore();
+
+  const searchRef = useRef(null);
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setShowSearch(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (dark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
     else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
   }, [dark]);
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSearch(value.length > 0);
+  };
+
+  const handleResultClick = (result) => {
+    setShowSearch(false);
+    setSearchQuery('');
+    onNavigate?.(result.type === 'report' ? 'reports' : 'interns');
+  };
 
   return (
     <header className="h-16 flex items-center px-3 sm:px-6 gap-2 sm:gap-4 flex-shrink-0" style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}>
@@ -30,10 +56,36 @@ const Header = ({ title, onMenuToggle }) => {
         <h1 className="text-base font-bold truncate" style={{ color: 'var(--text)' }}>{title}</h1>
       </div>
 
-      <div className="relative hidden md:block">
+      <div className="relative hidden md:block" ref={searchRef}>
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--muted)' }} />
-        <input className="pl-9 pr-4 py-2 text-sm rounded-lg w-60 focus:outline-none" placeholder="Search interns, reports…"
-          style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+        <input
+          className="pl-9 pr-4 py-2 text-sm rounded-lg w-60 focus:outline-none"
+          placeholder="Search interns, reports…"
+          style={{ background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
+          value={searchQuery}
+          onChange={handleSearchChange}
+          onFocus={() => setShowSearch(searchQuery.length > 0)}
+        />
+        {showSearch && (
+          <div className="absolute top-full left-0 mt-1 w-60 rounded-lg shadow-xl z-50 overflow-hidden"
+            style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            {searchResults.length === 0 ? (
+              <div className="px-3 py-2 text-xs" style={{ color: 'var(--muted)' }}>No results found</div>
+            ) : searchResults.map((r, idx) => (
+              <button key={idx} onClick={() => handleResultClick(r)} className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+                style={{ color: 'var(--text)' }}>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #2563EB, #7C3AED)' }}>
+                  {r.type === 'intern' ? initials(r.name) : '📄'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{r.type === 'intern' ? r.name : r.title}</p>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>{r.type === 'intern' ? r.department : (r.user?.name || 'No intern')}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-1 relative">
@@ -70,7 +122,7 @@ const Header = ({ title, onMenuToggle }) => {
         )}
       </div>
 
-      <div className="flex items-center gap-2 pl-3" style={{ borderLeft: '1px solid var(--border)' }}>
+      <div className="flex items-center gap-2 pl-3 cursor-pointer" style={{ borderLeft: '1px solid var(--border)' }} onClick={() => onNavigate?.('profile')}>
         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 shadow-md"
           style={{ background: 'linear-gradient(135deg, #7C3AED, #2563EB)' }}>
           {initials(user?.name)}
@@ -85,3 +137,4 @@ const Header = ({ title, onMenuToggle }) => {
 };
 
 export default Header;
+

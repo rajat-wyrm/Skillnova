@@ -64,7 +64,7 @@ export const listArticles = asyncHandler(async (req, res) => {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { excerpt: { contains: search, mode: 'insensitive' } },
-      { tags: { has: search } },
+      { tags: { contains: '"' + search + '"' } },
     ];
   }
   if (req.query.categoryId) where.categoryId = req.query.categoryId;

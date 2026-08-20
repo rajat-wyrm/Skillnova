@@ -4,14 +4,9 @@
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import { Loader2, ScrollText } from 'lucide-react';
+import { Card } from '../../shared/components/UI';
 import api from '../../lib/api';
 import { formatRelative } from '../../lib/utils';
-
-const Card = ({ children, className = '' }) => (
-  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)' }}>
-    {children}
-  </div>
-);
 
 const AuditLog = () => {
   const [items, setItems] = useState([]);

@@ -122,14 +122,6 @@ const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 const Login = () => {
   const uid = useId();
-  const [demoAccounts, setDemoAccounts] = useState([]);
-
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || "/api/v1"}/auth/demo-accounts`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((d) => setDemoAccounts(Array.isArray(d.accounts) ? d.accounts : []))
-      .catch(() => setDemoAccounts([]));
-  }, []);
 
   const emailId = `${uid}-email`;
   const passwordId = `${uid}-password`;
