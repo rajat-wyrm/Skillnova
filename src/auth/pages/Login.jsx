@@ -168,9 +168,19 @@ const Login = () => {
           </div>
 
           <div className={`auth-form-group ${pwdState === 'error' ? 'is-error' : pwdState === 'success' ? 'is-success' : ''}`}>
-            <label className="auth-label" htmlFor={passwordId}>
-              Password <span className="auth-required" aria-label="required">*</span>
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label className="auth-label" htmlFor={passwordId} style={{ marginBottom: 0 }}>
+                Password <span className="auth-required" aria-label="required">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={useAuthStore.getState().goForgotPassword}
+                className="text-xs font-semibold hover:underline"
+                style={{ color: '#ff6d34', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                Forgot Password?
+              </button>
+            </div>
             <div className="auth-input-wrap has-icon">
               <span className="auth-input-icon"><Icon.Lock /></span>
               <input

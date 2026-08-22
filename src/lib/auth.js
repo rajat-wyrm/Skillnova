@@ -33,8 +33,10 @@ export const useAuthStore = create((set, get) => ({
   user: null,
   accessToken: null,
   permissions: [],
-  step: 'login', // 'login' | 'otp'
+  step: 'login', // 'login' | 'otp' | 'forgot_password'
   challengeToken: null,
+  resetToken: null,
+  resetSessionToken: null,
   devCode: null,
   loading: false,
   error: null,
@@ -128,7 +130,64 @@ export const useAuthStore = create((set, get) => ({
     persist(get());
   },
 
-  goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null }),
+  goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null, resetToken: null, resetSessionToken: null }),
+
+  forgotPassword: async (email) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await api.post('/auth/forgot-password', { email });
+      set({
+        resetToken: data.resetToken,
+        devCode: data.devCode ?? null,
+        loading: false,
+      });
+      return data;
+    } catch (err) {
+      set({ loading: false, error: getErrorMessage(err) });
+      throw err;
+    }
+  },
+
+  verifyResetOtp: async (code) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await api.post('/auth/verify-reset-otp', {
+        code,
+        resetToken: get().resetToken,
+      });
+      set({
+        resetSessionToken: data.resetSessionToken,
+        loading: false,
+      });
+      return data;
+    } catch (err) {
+      set({ loading: false, error: getErrorMessage(err) });
+      throw err;
+    }
+  },
+
+  resetPassword: async (newPassword) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await api.post('/auth/reset-password', {
+        newPassword,
+        resetSessionToken: get().resetSessionToken,
+      });
+      set({
+        step: 'login',
+        resetToken: null,
+        resetSessionToken: null,
+        devCode: null,
+        loading: false,
+      });
+      return data;
+    } catch (err) {
+      set({ loading: false, error: getErrorMessage(err) });
+      throw err;
+    }
+  },
+
+  goForgotPassword: () => set({ step: 'forgot_password', error: null, resetToken: null, resetSessionToken: null, devCode: null }),
 
   hasPermission: (perm) => get().permissions.includes(perm),
   hasRole: (...roles) => roles.includes(get().user?.role),

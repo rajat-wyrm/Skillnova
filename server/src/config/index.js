@@ -112,6 +112,13 @@ export const config = {
 
   logLevel: process.env.LOG_LEVEL || 'info',
   isProd: process.env.NODE_ENV === 'production',
+  email: {
+    smtpHost: process.env.SMTP_HOST || '',
+    smtpPort: Number(process.env.SMTP_PORT) || 587,
+    smtpUser: process.env.SMTP_USER || '',
+    smtpPass: process.env.SMTP_PASS || '',
+    fromEmail: process.env.FROM_EMAIL || 'no-reply@skillnova.com',
+  },
 };
 
 export default config;

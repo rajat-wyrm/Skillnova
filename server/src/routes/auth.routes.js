@@ -97,6 +97,9 @@ const otpSchema = z.object({
 
 router.post('/login', loginLimiter, validate(loginSchema), auth.login);
 router.post('/verify-otp', loginLimiter, validate(otpSchema), auth.verifyOtp);
+router.post('/forgot-password', loginLimiter, validate(z.object({ email: schemas.email })), auth.forgotPassword);
+router.post('/verify-reset-otp', loginLimiter, validate(z.object({ code: z.string().trim().length(6), resetToken: z.string().min(10) })), auth.verifyResetOtp);
+router.post('/reset-password', loginLimiter, validate(z.object({ newPassword: z.string().min(8).max(128), resetSessionToken: z.string().min(10) })), auth.resetPassword);
 router.post('/refresh', auth.refresh);
 router.post('/logout', authenticate, auth.logout);
 router.get('/me', authenticate, requireAuth, auth.me);

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import Login from './auth/pages/Login';
 import AdminOTP from './auth/pages/AdminOTP';
 import User2FA from './auth/pages/User2FA';
+import ForgotPassword from './auth/pages/ForgotPassword';
 import { useAuthStore } from './lib/auth';
 
 const AuthGate = () => {
@@ -15,6 +16,7 @@ const AuthGate = () => {
   }, [hydrate, step, user]);
 
   if (step === 'login') return <Login />;
+  if (step === 'forgot_password') return <ForgotPassword />;
 
   if (step === 'otp') {
     if (user?.role === 'INTERN') return <User2FA />;

@@ -26,6 +26,7 @@ import { getClientIp, getUserAgent } from '../middleware/auth.js';
 import { audit } from '../services/audit.service.js';
 import { logger } from '../utils/logger.js';
 import { notify } from '../services/notification.service.js';
+import emailService from '../services/email.service.js';
 
 function parseDurationToMs(val) {
   if (typeof val === 'number') return val;
@@ -375,4 +376,139 @@ export const enableTotp = asyncHandler(async (req, res) => {
   });
   await audit({ userId: req.user.id, action: 'auth.2fa.enabled', req });
   res.json({ ok: true });
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw ApiError.badRequest('Email is required');
+
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+  let code;
+  
+  if (user) {
+    code = generateOtp(6);
+    const codeHash = await bcrypt.hash(code, config.security.otpHashRounds);
+    
+    // Save in OtpChallenge table
+    await prisma.otpChallenge.create({
+      data: {
+        email: user.email,
+        purpose: 'reset',
+        codeHash,
+        expiresAt: new Date(Date.now() + parseDurationToMs(config.jwt.otpTtl)),
+      },
+    });
+
+    // Send the email
+    await emailService.sendResetPasswordOtp(user.email, code);
+    await audit({ userId: user.id, action: 'auth.forgot_password.requested', req });
+  }
+
+  // Sign a temporary reset verification token
+  const resetToken = signAccessToken({
+    purpose: 'reset-verify',
+    email: email.toLowerCase(),
+  });
+
+  res.json({
+    message: 'If the email matches an account, a verification code has been sent.',
+    resetToken,
+    ...(user && !config.isProd ? { devCode: code } : {}),
+  });
+});
+
+export const verifyResetOtp = asyncHandler(async (req, res) => {
+  const { code, resetToken } = req.body;
+  if (!resetToken) throw ApiError.badRequest('Reset token is required');
+  if (!code) throw ApiError.badRequest('Verification code is required');
+
+  let payload;
+  try {
+    payload = verifyAccessToken(resetToken);
+    if (payload.purpose !== 'reset-verify') throw new Error('Invalid token purpose');
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired reset session');
+  }
+
+  const user = await prisma.user.findUnique({ where: { email: payload.email } });
+  if (!user) throw ApiError.unauthorized('Invalid user session');
+
+  const challenges = await prisma.otpChallenge.findMany({
+    where: {
+      email: user.email,
+      purpose: 'reset',
+      consumedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+  });
+
+  let ok = false;
+  for (const c of challenges) {
+    if (await bcrypt.compare(code, c.codeHash)) {
+      ok = true;
+      await prisma.otpChallenge.update({
+        where: { id: c.id },
+        data: { consumedAt: new Date() },
+      });
+      break;
+    } else {
+      await prisma.otpChallenge.update({
+        where: { id: c.id },
+        data: { attempts: { increment: 1 } },
+      });
+    }
+  }
+
+  if (!ok) throw ApiError.unauthorized('Incorrect or expired verification code');
+
+  // Sign a password reset session token
+  const resetSessionToken = signAccessToken({
+    sub: user.id,
+    purpose: 'reset-complete',
+  });
+
+  await audit({ userId: user.id, action: 'auth.forgot_password.otp_verified', req });
+
+  res.json({
+    message: 'Verification code accepted. Please set your new password.',
+    resetSessionToken,
+  });
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { newPassword, resetSessionToken } = req.body;
+  if (!resetSessionToken) throw ApiError.badRequest('Reset session token is required');
+  if (!newPassword || newPassword.length < 8) throw ApiError.badRequest('Password must be at least 8 characters long');
+
+  let payload;
+  try {
+    payload = verifyAccessToken(resetSessionToken);
+    if (payload.purpose !== 'reset-complete') throw new Error('Invalid token purpose');
+  } catch {
+    throw ApiError.unauthorized('Invalid or expired reset session');
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user) throw ApiError.unauthorized('Invalid user');
+
+  const passwordHash = await bcrypt.hash(newPassword, config.security.bcryptRounds);
+
+  // Update password in database and clean up active failed attempts & lockouts
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash,
+      failedAttempts: 0,
+      lockedUntil: null,
+    },
+  });
+
+  // Revoke all existing refresh tokens for this user for safety
+  await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+  await audit({ userId: user.id, action: 'auth.password_reset.completed', req });
+
+  res.json({ message: 'Password has been successfully updated.' });
 });
