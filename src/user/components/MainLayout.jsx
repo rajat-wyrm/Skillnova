@@ -20,6 +20,7 @@ const PAGE_TITLES = {
   announcements:  'Announcements',
   exports:        'Data Export',
   analytics:      'Analytics',
+  ai_code_review: 'AI Code Reviewer',
   profile:        'My Profile',
   settings:       'Settings',
 };

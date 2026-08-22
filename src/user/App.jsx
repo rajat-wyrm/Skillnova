@@ -22,6 +22,7 @@ const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
 const SkillGapAnalyzer = lazy(() => import('./pages/SkillGapAnalyzer'));
+const CodeReview       = lazy(() => import('./pages/CodeReview'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
@@ -38,6 +39,7 @@ const PAGES = {
   announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
   exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
   skill_gap:      <Suspense fallback={<PageLoader />}><SkillGapAnalyzer /></Suspense>,
+  ai_code_review: <Suspense fallback={<PageLoader />}><CodeReview /></Suspense>,
   analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
   profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
   settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,

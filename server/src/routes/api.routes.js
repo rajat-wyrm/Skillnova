@@ -10,6 +10,7 @@ import * as attendance from '../controllers/attendance.controller.js';
 import * as projects from '../controllers/projects.controller.js';
 import * as ai from '../controllers/ai.controller.js';
 import * as notif from '../controllers/notifications.controller.js';
+import * as codeReview from '../controllers/codeReview.controller.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { validate, schemas } from '../middleware/validate.js';
@@ -270,5 +271,22 @@ api.post('/notifications/read-all', notif.markAllRead);
 // ── Analytics ─────────────────────────────────────────────
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+
+// ── AI Code Reviewer ──────────────────────────────────────
+api.post(
+  '/ai-review',
+  requirePermission('ai:use'),
+  validate(
+    z.object({
+      title: z.string().min(3).max(100),
+      language: z.string().min(1).max(30),
+      code: z.string().min(5),
+      focus: z.array(z.string()).optional(),
+    })
+  ),
+  codeReview.createCodeReview
+);
+api.get('/ai-review', requirePermission('ai:use'), codeReview.getCodeReviews);
+api.get('/ai-review/:id', requirePermission('ai:use'), validate(idParam, 'params'), codeReview.getCodeReviewById);
 
 export default api;

@@ -74,6 +74,7 @@ model User {
   mentorOf          InternProfile[] @relation("MentorRelation")
   organizedMeetings Meeting[]      @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
+  codeReviews       CodeReview[]
 
   @@index([role])
   @@index([status])
@@ -625,4 +626,20 @@ model MeetingAttendee {
 
   @@unique([meetingId, userId])
   @@index([userId])
+}
+
+model CodeReview {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  language  String
+  code      String   @db.Text
+  score     Int
+  summary   String   @db.Text
+  comments  Json     // Array of line comments
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
