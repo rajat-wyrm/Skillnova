@@ -31,7 +31,23 @@ const otpSchema = z.object({
   useTotp: z.boolean().optional(),
 });
 
+const registrationSchema = z.object({
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  email: schemas.email,
+  password: schemas.password,
+});
+
+const forgotPasswordSchema = z.object({ email: schemas.email });
+const resetPasswordSchema = z.object({
+  email: schemas.email,
+  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit reset code'),
+  password: schemas.password,
+});
+
 router.post('/login', loginLimiter, validate(loginSchema), auth.login);
+router.post('/register', loginLimiter, validate(registrationSchema), auth.register);
+router.post('/forgot-password', loginLimiter, validate(forgotPasswordSchema), auth.forgotPassword);
+router.post('/reset-password', loginLimiter, validate(resetPasswordSchema), auth.resetPassword);
 router.post('/verify-otp', loginLimiter, validate(otpSchema), auth.verifyOtp);
 router.post('/refresh', auth.refresh);
 router.post('/logout', authenticate, auth.logout);

@@ -35,6 +35,8 @@ export const useAuthStore = create((set, get) => ({
   accessToken: null,
   permissions: [],
   step: 'login', // 'login' | 'otp'
+  authView: 'login', // 'login' | 'register' | 'forgot-password' | 'reset-password'
+  resetEmail: '',
   challengeToken: null,
   devCode: null,
   loading: false,
@@ -113,16 +115,17 @@ export const useAuthStore = create((set, get) => ({
 
   logout: async () => {
     try { await api.post('/auth/logout'); } catch { /* ignore */ }
-    set({ user: null, accessToken: null, permissions: [], step: 'login', challengeToken: null });
+    set({ user: null, accessToken: null, permissions: [], step: 'login', authView: 'login', challengeToken: null });
     persist(get());
   },
 
   reset: () => {
-    set({ user: null, accessToken: null, permissions: [], step: 'login', challengeToken: null, error: null });
+    set({ user: null, accessToken: null, permissions: [], step: 'login', authView: 'login', challengeToken: null, error: null });
     persist(get());
   },
 
   goBackToLogin: () => set({ step: 'login', error: null, challengeToken: null, devCode: null }),
+  goToAuthView: (authView, { resetEmail = '' } = {}) => set({ authView, resetEmail, error: null }),
 
   hasPermission: (perm) => get().permissions.includes(perm),
   hasRole: (...roles) => roles.includes(get().user?.role),

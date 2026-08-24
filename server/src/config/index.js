@@ -53,6 +53,18 @@ export const config = {
 
   apiKey: process.env.API_KEY,
 
+  smtp: {
+    enabled: process.env.SMTP_ENABLED === 'true',
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE
+      ? process.env.SMTP_SECURE === 'true'
+      : (Number(process.env.SMTP_PORT) || 465) === 465,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM,
+  },
+
   rateLimit: {
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: Number(process.env.RATE_LIMIT_MAX) || 300,

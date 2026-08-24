@@ -49,6 +49,7 @@ const Login = () => {
 
   const login = useAuthStore((s) => s.login);
   const loading = useAuthStore((s) => s.loading);
+  const goToAuthView = useAuthStore((s) => s.goToAuthView);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -173,6 +174,10 @@ const Login = () => {
             {pwdState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
           </div>
 
+          <div className="auth-password-actions">
+            <button type="button" className="auth-link" onClick={() => goToAuthView('forgot-password')}>Forgot Password?</button>
+          </div>
+
           {formError && (
             <div className="auth-error" role="alert"><Icon.Alert /><span>{formError}</span></div>
           )}
@@ -181,6 +186,11 @@ const Login = () => {
             {loading ? (<><span className="sn-spinner" /> Signing in…</>) : 'Sign In'}
           </button>
         </form>
+
+        <p className="auth-account-prompt">
+          Don't have an account?{' '}
+          <button type="button" className="auth-link" onClick={() => goToAuthView('register')}>Create Account</button>
+        </p>
 
         <div className="auth-divider"><span>Demo Accounts</span></div>
 

@@ -5,6 +5,7 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
+const AUTH_STORAGE_KEY = 'skillnova.auth';
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -20,8 +21,40 @@ const getCookie = (name) => {
   return match ? decodeURIComponent(match[2]) : null;
 };
 
+const getStoredAccessToken = () => {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw)?.accessToken ?? null : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistRefreshedAuth = ({ user, accessToken }) => {
+  if (typeof localStorage === 'undefined' || !accessToken) return;
+  try {
+    const current = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
+    localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        ...current,
+        user: user ?? current.user,
+        accessToken,
+      })
+    );
+  } catch {
+    /* ignore */
+  }
+};
+
 // ── Request interceptor — CSRF + auth header echo ────────
 api.interceptors.request.use((config) => {
+  const token = getStoredAccessToken();
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   const csrf = getCookie('sn_csrf');
   if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
     config.headers['X-CSRF-Token'] = csrf;
@@ -42,7 +75,8 @@ api.interceptors.response.use(
       original._retry = true;
       try {
         refreshing = refreshing || axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-        await refreshing;
+        const { data } = await refreshing;
+        persistRefreshedAuth(data);
         refreshing = null;
         return api(original);
       } catch (refreshErr) {

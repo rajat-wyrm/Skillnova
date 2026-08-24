@@ -14,10 +14,13 @@ export async function authenticate(req, _res, next) {
   try {
     const header = req.headers.authorization;
     let token;
+    let tokenSource;
     if (header && header.startsWith('Bearer ')) {
       token = header.slice(7);
+      tokenSource = 'header';
     } else if (req.cookies && req.cookies[COOKIE_NAMES.session]) {
       token = req.cookies[COOKIE_NAMES.session];
+      tokenSource = 'cookie';
     }
 
     if (!token) return next(); // public route
@@ -26,8 +29,8 @@ export async function authenticate(req, _res, next) {
     if (!payload?.sub) return next();
 
     // Check session is still active (defense against revoked tokens)
-    const sid = req.cookies?.[COOKIE_NAMES.session + '_sid'];
-    if (sid && memoryStore.has(`session:${sid}`) === false) {
+    const sid = payload.sid ?? req.cookies?.[COOKIE_NAMES.session + '_sid'];
+    if (tokenSource === 'cookie' && sid && memoryStore.has(`session:${sid}`) === false) {
       return next();
     }
 

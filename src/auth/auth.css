@@ -316,6 +316,27 @@
   font-size: 13px;
 }
 .auth-link:hover { text-decoration: underline; }
+.auth-link:focus-visible { outline: 2px solid #ff6d34; outline-offset: 2px; border-radius: 3px; }
+
+.auth-password-actions { display: flex; justify-content: flex-end; margin-top: -8px; }
+.auth-account-prompt { margin: 18px 0 0; text-align: center; color: #64748b; font-size: 13px; }
+.dark .auth-account-prompt { color: var(--muted); }
+
+.auth-select {
+  appearance: none;
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.auth-select:focus { outline: none; border-color: #ff6d34; box-shadow: 0 0 0 4px rgba(255, 109, 52, 0.12); }
+.dark .auth-select { color: var(--text); background: var(--input-bg); border-color: var(--border); }
+.auth-helper { margin-top: 6px; color: #64748b; font-size: 12px; line-height: 1.4; }
+.dark .auth-helper { color: var(--muted); }
 
 /* OTP cells */
 .auth-otp-grid {

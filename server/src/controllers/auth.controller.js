@@ -15,6 +15,7 @@ import {
   verifyAccessToken,
   verifyRefreshToken,
   hashToken,
+  hashPassword,
   generateOtp,
   verifyTotp,
   signCsrf,
@@ -26,6 +27,7 @@ import { getClientIp, getUserAgent } from '../middleware/auth.js';
 import { audit } from '../services/audit.service.js';
 import { logger } from '../utils/logger.js';
 import { notify } from '../services/notification.service.js';
+import { isSmtpEnabled, sendPasswordResetEmail } from '../services/email.service.js';
 
 // ── Cookie options ───────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
@@ -54,6 +56,7 @@ const CSRF_COOKIE_OPTS = {
 
 const MAX_FAILED = 5;
 const LOCK_MS = 15 * 60 * 1000;
+const RESET_CODE_TTL_MS = 10 * 60 * 1000;
 
 // ── Helpers ──────────────────────────────────────────────
 function issueTokens(res, user, req, { rememberMe = true } = {}) {
@@ -171,6 +174,114 @@ export const login = asyncHandler(async (req, res) => {
     accessToken,
     refreshToken,
   });
+});
+
+// POST /auth/register — public self-registration is intentionally limited to interns.
+// Staff and privileged roles must be provisioned by an authenticated administrator.
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw ApiError.conflict('Email already registered');
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash: hashPassword(password),
+      role: 'INTERN',
+      status: 'PENDING',
+      emailVerified: false,
+    },
+    select: { id: true, name: true, email: true, role: true, status: true },
+  });
+
+  await audit({ userId: user.id, action: 'auth.register', resource: 'user', resourceId: user.id, req });
+  res.status(201).json({
+    user,
+    message: 'Account created. An administrator will activate your account.',
+  });
+});
+
+// POST /auth/forgot-password — always returns the same message to prevent account enumeration.
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const response = { message: 'If that email is registered, a password reset code has been sent.' };
+
+  // Return the same service-unavailable response before looking up the email, so a
+  // production SMTP outage cannot be used to distinguish registered accounts.
+  if (config.isProd && !isSmtpEnabled()) {
+    logger.error('email:password-reset-smtp-disabled-in-production');
+    throw ApiError.internal('Unable to send the password reset email. Please try again later.');
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return res.json(response);
+
+  const code = generateOtp(6);
+  await prisma.$transaction([
+    prisma.otpChallenge.deleteMany({ where: { email, purpose: 'reset', consumedAt: null } }),
+    prisma.otpChallenge.create({
+      data: {
+        email,
+        purpose: 'reset',
+        codeHash: await bcrypt.hash(code, 8),
+        expiresAt: new Date(Date.now() + RESET_CODE_TTL_MS),
+      },
+    }),
+  ]);
+  await audit({ userId: user.id, action: 'auth.password_reset.requested', req });
+
+  if (isSmtpEnabled()) {
+    try {
+      await sendPasswordResetEmail({ to: user.email, code });
+    } catch {
+      throw ApiError.internal('Unable to send the password reset email. Please try again later.');
+    }
+  } else if (!config.isProd) {
+    // This fallback is intentionally local-only. It can never expose a reset code in production.
+    response.devCode = code;
+  }
+  return res.json(response);
+});
+
+// POST /auth/reset-password — reset codes are short-lived, single-use, and hashed at rest.
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, code, password } = req.body;
+  const challenges = await prisma.otpChallenge.findMany({
+    where: { email, purpose: 'reset', consumedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+  });
+
+  let challenge = null;
+  for (const candidate of challenges) {
+    if (candidate.attempts >= MAX_FAILED) continue;
+    if (await bcrypt.compare(code, candidate.codeHash)) {
+      challenge = candidate;
+      break;
+    }
+    await prisma.otpChallenge.update({
+      where: { id: candidate.id },
+      data: { attempts: { increment: 1 } },
+    });
+  }
+
+  if (!challenge) throw ApiError.unauthorized('Invalid or expired reset code');
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw ApiError.unauthorized('Invalid or expired reset code');
+
+  await prisma.$transaction([
+    prisma.otpChallenge.update({ where: { id: challenge.id }, data: { consumedAt: new Date() } }),
+    prisma.otpChallenge.deleteMany({ where: { email, purpose: 'reset', consumedAt: null } }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hashPassword(password), failedAttempts: 0, lockedUntil: null },
+    }),
+    prisma.refreshToken.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } }),
+  ]);
+  await audit({ userId: user.id, action: 'auth.password_reset.completed', req });
+  res.json({ message: 'Password updated. Please sign in with your new password.' });
 });
 
 // ── POST /auth/verify-otp ────────────────────────────────
