@@ -259,6 +259,7 @@ model ProjectTask {
   assignee    User?        @relation(fields: [assigneeId], references: [id])
   title       String
   description String?
+  skills      String?
   status      TaskStatus   @default(TODO)
   priority    TaskPriority @default(MEDIUM)
   dueDate     DateTime?
