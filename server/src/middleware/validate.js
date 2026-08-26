@@ -24,9 +24,6 @@ export function validate(schema, source = 'body') {
   };
 }
 
-export const validateQuery = (schema) => validate(schema, 'query');
-export const validateParams = (schema) => validate(schema, 'params');
-
 // ── Reusable schemas ──────────────────────────────────────
 export const schemas = {
   email: z.string().trim().toLowerCase().email().max(254),
@@ -39,7 +36,7 @@ export const schemas = {
     .regex(/[0-9]/, 'Must contain at least one digit'),
   pagination: z.object({
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(1000).default(20),
     sort: z.string().optional(),
     order: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().max(200).optional(),

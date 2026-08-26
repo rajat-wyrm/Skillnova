@@ -1,13 +1,14 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/AdminPanel.jsx (User Management, API)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState } from 'react';
-import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Search, Plus, Trash2, ShieldCheck, UserCheck, Users, UserX, Loader2 } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal, Input } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { useAuthStore } from '../../lib/auth';
 import { formatDate } from '../../lib/utils';
+import UserProfileModal from '../../shared/components/UserProfileModal';
 
 const ROLE_VARIANT = { ADMIN: 'purple', SUPER_ADMIN: 'purple', MENTOR: 'default', INTERN: 'default' };
 const STATUS_VARIANT = { ACTIVE: 'success', INACTIVE: 'gray', SUSPENDED: 'danger', PENDING: 'warning' };
@@ -20,16 +21,17 @@ const AdminPanel = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [form, setForm] = useState({ email: '', password: '', name: '', role: 'INTERN', department: '' });
 
-  const fetch = async () => {
+  const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get('/users', { params: { limit: 100, search: search || undefined, role: roleFilter || undefined, status: statusFilter || undefined } });
       setUsers(data.items);
     } finally { setLoading(false); }
-  };
-  useEffect(() => { fetch(); }, [search, roleFilter, statusFilter]);
+  }, [roleFilter, search, statusFilter]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   const add = async () => {
     if (!form.email || !form.password || !form.name) return notify.error('Fill all required fields.');
@@ -127,7 +129,9 @@ const AdminPanel = () => {
                         {u.name?.split(' ').map((n) => n[0]).slice(0, 2).join('')}
                       </div>
                       <div>
-                        <p className="font-medium" style={{ color: 'var(--text)' }}>{u.name}</p>
+                        <button type="button" onClick={() => setSelectedUserId(u.id)} className="font-medium text-left hover:underline" style={{ color: 'var(--text)' }}>
+                          {u.name}
+                        </button>
                         <p className="text-xs" style={{ color: 'var(--muted)' }}>{u.email}</p>
                       </div>
                     </div>
@@ -151,6 +155,8 @@ const AdminPanel = () => {
           </table>
         </div>
       </Card>
+
+      <UserProfileModal isOpen={!!selectedUserId} onClose={() => setSelectedUserId(null)} userId={selectedUserId} />
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add New User"
         footer={

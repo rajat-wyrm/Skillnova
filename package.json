@@ -12,6 +12,9 @@
     "server": "cd server && npm run dev",
     "server:setup": "cd server && npm run setup",
     "server:install": "cd server && npm install",
+    "aiassistant:install": "node ./scripts/install-aiassistant.js",
+    "aiassistant:start": "node ./scripts/start-aiassistant.js",
+    "start:all": "concurrently -k -n web,api,ai -c cyan,magenta,yellow \"npm run dev\" \"npm run server\" \"npm run aiassistant:start\"",
     "start": "concurrently -k -n web,api -c cyan,magenta \"npm run dev\" \"npm run server\"",
     "setup": "npm install && npm run server:install && npm run server:setup",
     "push": "bash scripts/push.sh"

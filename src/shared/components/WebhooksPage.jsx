@@ -2,11 +2,55 @@
 //  Webhooks Management — admin/mentor
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
-import { Plus, Webhook, Trash2, Loader2, Send, Copy, Check } from 'lucide-react';
-import { Card, Badge, SectionHeader, Modal } from './UI';
+import { Plus, Webhook, Trash2, Loader2, Send, Copy, Check, X } from 'lucide-react';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatRelative } from '../../lib/utils';
+
+const Card = ({ children, className = '', style }) => (
+  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)', ...style }}>
+    {children}
+  </div>
+);
+
+const Badge = ({ children, variant = 'default' }) => {
+  const variants = {
+    default: { background: 'var(--badge-default-bg)', color: 'var(--badge-default-fg)', border: '1px solid var(--badge-default-border)' },
+    success: { background: 'var(--badge-success-bg)', color: 'var(--badge-success-fg)', border: '1px solid var(--badge-success-border)' },
+    warning: { background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-fg)', border: '1px solid var(--badge-warning-border)' },
+    gray: { background: 'var(--badge-gray-bg)', color: 'var(--badge-gray-fg)', border: '1px solid var(--badge-gray-border)' },
+  };
+  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={variants[variant] || variants.default}>{children}</span>;
+};
+
+const SectionHeader = ({ title, subtitle, action }) => (
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+    <div className="min-w-0">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {subtitle && <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>{subtitle}</p>}
+    </div>
+    {action && <div className="flex-shrink-0 w-full sm:w-auto">{action}</div>}
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children, footer }) => {
+  if (!isOpen) return null;
+  return (
+    <>
+      <div onClick={onClose} className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm" />
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="font-bold text-lg text-slate-900">{title}</h3>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors" type="button"><X size={18} /></button>
+          </div>
+          <div className="p-6">{children}</div>
+          {footer && <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">{footer}</div>}
+        </div>
+      </div>
+    </>
+  );
+};
 
 const WebhooksPage = () => {
   const [hooks, setHooks] = useState([]);

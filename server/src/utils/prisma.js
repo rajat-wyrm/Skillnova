@@ -29,8 +29,20 @@ if (!config.isProd) {
   prisma.$on('error', (e) => logger.error(e, 'prisma:error'));
 }
 
+function assertDatabaseUrl() {
+  if (!config.databaseUrl) {
+    throw new Error(
+      'DATABASE_URL is not configured. Create server/.env and set DATABASE_URL to a PostgreSQL connection string.',
+    );
+  }
+  if (!/^postgres(?:ql)?:\/\//.test(config.databaseUrl)) {
+    throw new Error('DATABASE_URL must start with postgresql:// or postgres://');
+  }
+}
+
 export async function connectDB() {
   try {
+    assertDatabaseUrl();
     await prisma.$connect();
     logger.info('✅  Database connected');
   } catch (err) {

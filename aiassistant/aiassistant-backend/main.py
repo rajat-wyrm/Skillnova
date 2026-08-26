@@ -200,6 +200,15 @@ def health():
     }
 
 
+def reload_enabled() -> bool:
+    return os.getenv("AIASSISTANT_RELOAD", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────
 # Chat — hardened & idempotent
 # ─────────────────────────────────────────────────────────────────────
@@ -379,5 +388,5 @@ if __name__ == "__main__":
         "main:app",
         host=os.getenv("AIASSISTANT_HOST", "0.0.0.0"),
         port=int(os.getenv("AIASSISTANT_PORT", "8000")),
-        reload=True,
+        reload=reload_enabled(),
     )

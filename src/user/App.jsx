@@ -21,7 +21,8 @@ const Calendar         = lazy(() => import('./pages/Calendar'));
 const Files            = lazy(() => import('./pages/Files'));
 const Notifications    = lazy(() => import('./pages/Notifications'));
 const Exports          = lazy(() => import('./pages/Exports'));
-const SkillGapAnalyzer = lazy(() => import('./pages/SkillGapAnalyzer'));
+const Roadmap          = lazy(() => import('./pages/Roadmap'));
+const Badges           = lazy(() => import('./pages/Badges'));
 
 const PAGES = {
   dashboard:      <Dashboard />,
@@ -33,11 +34,12 @@ const PAGES = {
   files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
   reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
   attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
+  roadmap:        <Suspense fallback={<PageLoader />}><Roadmap /></Suspense>,
+  badges:         <Suspense fallback={<PageLoader />}><Badges /></Suspense>,
   ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
   notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
   announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
   exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
-  skill_gap:      <Suspense fallback={<PageLoader />}><SkillGapAnalyzer /></Suspense>,
   analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
   profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
   settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
@@ -45,26 +47,29 @@ const PAGES = {
 
 const UserApp = () => {
   const [page, setPage] = useState('dashboard');
-  const [fade, setFade] = useState(true);
 
-  const handleNavigate = (p) => {
-    if (p === page) return;
-    setFade(false);
-    setTimeout(() => {
-      setPage(p);
-      setFade(true);
-    }, 150);
+  const PAGES = {
+    dashboard:      <Dashboard onNavigate={setPage} />,
+    knowledge:      <Suspense fallback={<PageLoader />}><KnowledgeBase /></Suspense>,
+    qa:             <Suspense fallback={<PageLoader />}><QA /></Suspense>,
+    project_flow:   <Suspense fallback={<PageLoader />}><ProjectFlow /></Suspense>,
+    kanban:         <Suspense fallback={<PageLoader />}><KanbanPage /></Suspense>,
+    calendar:       <Suspense fallback={<PageLoader />}><Calendar /></Suspense>,
+    files:          <Suspense fallback={<PageLoader />}><Files /></Suspense>,
+    reports:        <Suspense fallback={<PageLoader />}><Reports /></Suspense>,
+    attendance:     <Suspense fallback={<PageLoader />}><Attendance /></Suspense>,
+    ai:             <Suspense fallback={<PageLoader />}><AIAssistant /></Suspense>,
+    notifications:  <Suspense fallback={<PageLoader />}><Notifications /></Suspense>,
+    announcements:  <Suspense fallback={<PageLoader />}><Announcements /></Suspense>,
+    exports:        <Suspense fallback={<PageLoader />}><Exports /></Suspense>,
+    analytics:      <Suspense fallback={<PageLoader />}><Analytics /></Suspense>,
+    profile:        <Suspense fallback={<PageLoader />}><Profile /></Suspense>,
+    settings:       <Suspense fallback={<PageLoader />}><Settings /></Suspense>,
   };
 
   return (
-    <MainLayout page={page} onNavigate={handleNavigate}>
-      <div style={{
-        opacity: fade ? 1 : 0,
-        transform: fade ? 'translateY(0)' : 'translateY(8px)',
-        transition: 'opacity 0.2s ease, transform 0.2s ease',
-      }}>
-        {PAGES[page]}
-      </div>
+    <MainLayout page={page} onNavigate={setPage}>
+      {PAGES[page]}
     </MainLayout>
   );
 };

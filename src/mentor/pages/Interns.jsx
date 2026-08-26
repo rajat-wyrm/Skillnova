@@ -11,7 +11,53 @@ import api from '../../lib/api';
 
 const Interns = () => {
   const [interns, setInterns] = useState([]);
+  const [todayAttendance, setTodayAttendance] = useState({});
   const [loading, setLoading] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [marking, setMarking] = useState(null);
+  const [streaks, setStreaks] = useState({});
+  const [filterTab, setFilterTab] = useState('my'); // 'my' vs 'all'
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [ratingModal, setRatingModal] = useState(false);
+  const [editingIntern, setEditingIntern] = useState(null);
+  const [ratingVal, setRatingVal] = useState(8.5);
+
+  const [form, setForm] = useState({ name: '', email: '', password: 'User#2026', department: '', role: 'INTERN' });
+
+  const [assignedInterns, setAssignedInterns] = useState([]);
+
+  const fetchAll = async () => {
+    try {
+      const [internsRes, attendanceRes, assignedRes] = await Promise.all([
+        api.get("/users", { params: { role: "INTERN", myInterns: filterTab === 'my', limit: 100 } }),
+        api.get("/attendance", { params: { date: todayKey(), limit: 100 } }),
+        api.get("/users", { params: { role: "INTERN", myInterns: true, limit: 100 } }),
+      ]);
+      const currentList = internsRes.data.items || [];
+      const assignedList = assignedRes.data.items || [];
+      setInterns(currentList);
+      setAssignedInterns(assignedList);
+
+      const map = {};
+      (attendanceRes.data.items || []).forEach((a) => {
+        map[a.userId] = a.status;
+      });
+      setTodayAttendance(map);
+
+      const streakResults = await Promise.all(
+        currentList.map((i) =>
+          api
+            .get("/attendance/streak", { params: { userId: i.id } })
+            .then((r) => [i.id, r.data])
+            .catch(() => [i.id, null]),
+        ),
+      );
+      setStreaks(Object.fromEntries(streakResults));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const [recommendations, setRecommendations] = useState({});
   const [loadingRecommendation, setLoadingRecommendation] =
@@ -776,6 +822,36 @@ const Interns = () => {
 
         </div>
       </Card>
+
+      <UserProfileModal isOpen={!!selectedUserId} onClose={() => setSelectedUserId(null)} userId={selectedUserId} />
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Intern"
+        footer={
+          <>
+            <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button onClick={addIntern} className="px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ background: '#ff6d34' }}>Create Intern</button>
+          </>
+        }>
+        <div className="space-y-4">
+          <Input label="Full Name *" placeholder="e.g. Rahul Sharma" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input label="Email *" type="email" placeholder="intern@skillnova.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Input label="Initial Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <Input label="Department" placeholder="e.g. AI / ML" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+        </div>
+      </Modal>
+
+      {/* Edit Rating Modal */}
+      <Modal isOpen={ratingModal} onClose={() => setRatingModal(false)} title={`Update Rating — ${editingIntern?.name || ''}`}
+        footer={
+          <>
+            <button onClick={() => setRatingModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button onClick={updateRating} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Save Rating</button>
+          </>
+        }>
+        <div className="space-y-4">
+          <Input label="Intern Rating (0 to 10) *" type="number" min="0" max="10" step="0.1" value={ratingVal} onChange={(e) => setRatingVal(e.target.value)} />
+        </div>
+      </Modal>
     </div>
   );
 };
