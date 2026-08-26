@@ -116,23 +116,50 @@ api.patch('/projects/:id', requirePermission('projects:update'), validate(idPara
 api.delete('/projects/:id', requirePermission('projects:delete'), validate(idParam, 'params'), projects.deleteProject);
 
 api.get('/tasks', requirePermission('tasks:read'), validate(schemas.pagination, 'query'), projects.listTasks);
-api.post('/tasks', requirePermission('tasks:create'), validate(z.object({
-  projectId: z.string().cuid(),
-  assigneeId: z.string().cuid().optional().nullable(),
-  title: z.string().min(3).max(200),
-  description: z.string().max(2000).optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).default('TODO'),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
-  dueDate: z.coerce.date().optional(),
-})), projects.createTask);
-api.patch('/tasks/:id', requirePermission('tasks:update'), validate(idParam, 'params'), validate(z.object({
-  title: z.string().min(3).max(200).optional(),
-  description: z.string().max(2000).optional(),
-  status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).optional(),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
-  dueDate: z.coerce.date().optional(),
-  assigneeId: z.string().cuid().nullable().optional(),
-})), projects.updateTask);
+api.get(
+  '/tasks/recommendation/:internId',
+  requirePermission('tasks:read'),
+  validate(z.object({ internId: z.string().cuid() }), 'params'),
+  projects.recommendTask
+);
+api.get(
+  '/tasks/skill-growth/:internId',
+  requirePermission('tasks:read'),
+  validate(z.object({ internId: z.string().cuid() }), 'params'),
+  projects.getSkillGrowth
+);
+api.post(
+  '/tasks',
+  requirePermission('tasks:create'),
+  validate(
+    z.object({
+      projectId: z.string().cuid(),
+      assigneeId: z.string().cuid().optional().nullable(),
+      title: z.string().min(3).max(200),
+      description: z.string().max(2000).optional(),
+      status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).default('TODO'),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).default('MEDIUM'),
+      dueDate: z.coerce.date().optional(),
+    })
+  ),
+  projects.createTask
+);
+api.patch(
+  '/tasks/:id',
+  requirePermission('tasks:update'),
+  validate(idParam, 'params'),
+  validate(
+    z.object({
+      title: z.string().min(3).max(200).optional(),
+      description: z.string().max(2000).optional(),
+      status: z.enum(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE', 'BLOCKED']).optional(),
+      priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+      dueDate: z.coerce.date().optional(),
+      assigneeId: z.string().cuid().nullable().optional(),
+    })
+  ),
+  projects.updateTask
+);
 api.delete('/tasks/:id', requirePermission('tasks:delete'), validate(idParam, 'params'), projects.deleteTask);
 
 // ── AI Assistant ──────────────────────────────────────────

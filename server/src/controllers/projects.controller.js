@@ -7,6 +7,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { audit } from '../services/audit.service.js';
 import { notify } from '../services/notification.service.js';
+import { emitToRoom } from '../sockets/index.js';
+import { getTaskRecommendations } from '../services/taskRecommendation.service.js';
 
 // Local schemas (validators live in routes; kept here for documentation & reuse)
 const _projectSchema = z.object({
@@ -151,6 +153,108 @@ export const deleteTask = asyncHandler(async (req, res) => {
   await audit({ userId: req.user.id, action: 'task.delete', resource: 'task', resourceId: id, req });
   res.json({ ok: true });
 });
+export const getSkillGrowth = asyncHandler(async (req, res) => {
+  const { internId } = req.validatedParams;
+
+  const intern = await prisma.user.findUnique({
+    where: { id: internId },
+    select: {
+      id: true,
+      name: true,
+      skills: true,
+      projectTasks: {
+        select: {
+          title: true,
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!intern) {
+    throw ApiError.notFound('Intern not found');
+  }
+
+  const skills = (intern.skills || '')
+    .split(',')
+    .map((skill) => skill.trim())
+    .filter(Boolean);
+
+  // Match common task keywords to skills.
+  const skillKeywords = {
+    react: ['react', 'frontend', 'component', 'ui', 'jsx'],
+    tailwind: ['tailwind', 'css', 'styling', 'style', 'design'],
+    typescript: ['typescript', 'type', 'interface', 'ts'],
+    javascript: ['javascript', 'js', 'frontend'],
+    node: ['node', 'express', 'backend', 'api'],
+    python: ['python', 'flask', 'django'],
+    sql: ['sql', 'database', 'query', 'postgres', 'mysql'],
+    pandas: ['pandas', 'data', 'dataset', 'dataframe'],
+    'scikit-learn': ['scikit', 'machine learning', 'ml', 'model'],
+    tableau: ['tableau', 'dashboard', 'visualization'],
+  };
+  const skillGrowth = skills.map((skill, skillIndex) => {
+  const normalizedSkill = skill.toLowerCase();
+
+  const keywords = skillKeywords[normalizedSkill] || [
+    normalizedSkill,
+  ];
+
+  let relatedTasks = intern.projectTasks.filter((task) => {
+    const title = task.title.toLowerCase();
+
+    return keywords.some((keyword) =>
+      title.includes(keyword.toLowerCase())
+    );
+  });
+
+  // If no task explicitly mentions this skill,
+  // assign some existing tasks to this skill.
+  if (relatedTasks.length === 0 && intern.projectTasks.length > 0) {
+    relatedTasks = intern.projectTasks.filter(
+      (_, index) => index % skills.length === skillIndex
+    );
+  }
+
+  const completedTasks = relatedTasks.filter(
+    (task) => task.status === 'DONE'
+  ).length;
+
+  const totalTasks = relatedTasks.length;
+
+  return {
+    name: skill,
+    progress:
+      totalTasks > 0
+        ? Math.round((completedTasks / totalTasks) * 100)
+        : 0,
+    completedTasks,
+    totalTasks,
+  };
+});
+  res.json({
+    intern: {
+      id: intern.id,
+      name: intern.name,
+    },
+    skills: skillGrowth,
+  });
+});
+export const recommendTask = asyncHandler(async (req, res) => {
+  const { internId } = req.validatedParams;
+
+  const result = await getTaskRecommendations(prisma, internId);
+
+  if (!result) {
+    throw ApiError.notFound('Intern not found');
+  }
+
+  if (result.error) {
+    throw ApiError.badRequest(result.error);
+  }
+
+  res.json(result);
+});
 
 export default {
   listProjects,
@@ -162,4 +266,5 @@ export default {
   createTask,
   updateTask,
   deleteTask,
+  recommendTask,
 };
