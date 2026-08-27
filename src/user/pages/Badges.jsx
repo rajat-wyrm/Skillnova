@@ -24,6 +24,27 @@ const TYPE_COLOR = {
   CUSTOM: '#ff6d34',
 };
 
+const formatCriteria = (criteria) => {
+  if (!criteria) return 'Awarded by admin';
+  const parts = [];
+  if (criteria.metric) {
+    const metricLabels = {
+      attendancePct: 'Attendance',
+      taskPct: 'Task Completion',
+      learningPct: 'Roadmap Completion',
+      overallPct: 'Overall Progress',
+    };
+    parts.push(`${metricLabels[criteria.metric] || criteria.metric} ≥ ${criteria.gte}%`);
+  }
+  if (criteria.projectsCompleted?.gte) {
+    parts.push(`Completed Tasks ≥ ${criteria.projectsCompleted.gte}`);
+  }
+  if (criteria.topPerformerRank?.lte) {
+    parts.push(`Top Performer Rank ≤ ${criteria.topPerformerRank.lte}`);
+  }
+  return parts.join(' and ') || 'Awarded by admin';
+};
+
 const Badges = () => {
   const [awards, setAwards] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,14 +105,21 @@ const Badges = () => {
                   onClick={() => toggleShowcase(award.id)}
                   disabled={busyId === award.id}
                   title={award.showcase ? 'Showing on profile' : 'Hidden from profile'}
-                  className="p-1.5 rounded-lg"
-                  style={{ color: 'var(--muted)' }}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  style={{ color: award.showcase ? '#ff6d34' : 'var(--muted)' }}
                 >
                   {award.showcase ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
               </div>
               <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{award.badge.name}</h3>
               {award.badge.description && <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{award.badge.description}</p>}
+
+              <div className="mt-3 pt-2" style={{ borderTop: '1px dashed var(--border)' }}>
+                <p className="text-[11px] font-medium" style={{ color: 'var(--muted)' }}>
+                  <span className="font-semibold">Criteria:</span> {formatCriteria(award.badge.criteria)}
+                </p>
+              </div>
+
               <div className="flex items-center justify-between mt-3">
                 <Badge variant="gray">{award.badge.type.replace('_', ' ')}</Badge>
                 <span className="text-[11px]" style={{ color: 'var(--muted)' }}>{new Date(award.awardedAt).toLocaleDateString()}</span>

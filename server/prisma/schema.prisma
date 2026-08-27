@@ -111,8 +111,6 @@ model InternProfile {
   updatedAt     DateTime @updatedAt
 
   @@index([isTL])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model MentorProfile {
@@ -646,6 +644,7 @@ model Meeting {
   startsAt     DateTime
   endsAt       DateTime?
   location     String?
+  meetingLink  String?
   organizerId  String
   organizer    User        @relation("OrganizedMeetings", fields: [organizerId], references: [id])
   attendees    MeetingAttendee[]
@@ -703,6 +702,7 @@ model LearningMilestone {
   description String?
   resourceUrl String?
   order       Int      @default(0)
+  duration    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

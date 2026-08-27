@@ -88,72 +88,7 @@ api.get('/exports/reports', exports.exportReports);
 api.get('/exports/users', requirePermission('users:read'), exports.exportUsers);
 api.get('/exports/attendance', exports.exportAttendance);
 
-// ── Meetings ──────────────────────────────────────────────
-const meetingCreateSchema = z.object({
-  title: z.string().min(3).max(200),
-  description: z.string().max(2000).optional(),
-  startsAt: z.coerce.date(),
-  endsAt: z.coerce.date().optional(),
-  attendeeIds: z.array(z.string().cuid()).default([]),
-  location: z.string().max(200).optional(),
-  type: z.enum(['STANDUP', 'ONE_ON_ONE', 'REVIEW', 'TRAINING', 'OTHER']).default('ONE_ON_ONE'),
-});
 
-api.get('/meetings', asyncHandler(async (req, res) => {
-  const { from, to } = req.query;
-  const where = {
-    OR: [
-      { organizerId: req.user.id },
-      { attendees: { some: { userId: req.user.id } } },
-    ],
-  };
-  if (from || to) {
-    where.startsAt = {};
-    if (from) where.startsAt.gte = new Date(from);
-    if (to) where.startsAt.lte = new Date(to);
-  }
-  const items = await prisma.meeting.findMany({
-    where,
-    orderBy: { startsAt: 'asc' },
-    take: 200,
-    include: {
-      organizer: { select: { id: true, name: true } },
-      attendees: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
-    },
-  });
-  res.json({ items });
-}));
-
-api.post('/meetings', csrfProtection, validate(meetingCreateSchema), asyncHandler(async (req, res) => {
-  const { attendeeIds = [], ...data } = req.body;
-  const meeting = await prisma.meeting.create({
-    data: {
-      ...data,
-      organizerId: req.user.id,
-      attendees: { create: attendeeIds.map((uid) => ({ userId: uid })) },
-    },
-    include: {
-      organizer: { select: { id: true, name: true } },
-      attendees: { include: { user: { select: { id: true, name: true } } } },
-    },
-  });
-  await Promise.all(attendeeIds.map((uid) =>
-    notify(uid, { type: 'meeting', title: `Meeting: ${data.title}`, body: data.description?.slice(0, 200) || '', link: `/meetings/${meeting.id}` })
-  ));
-  await audit({ userId: req.user.id, action: 'meeting.create', resource: 'meeting', resourceId: meeting.id, req });
-  res.status(201).json({ meeting });
-}));
-
-api.delete('/meetings/:id', csrfProtection, validate(idParam, 'params'), asyncHandler(async (req, res) => {
-  const id = req.validatedParams.id;
-  const m = await prisma.meeting.findUnique({ where: { id } });
-  if (!m) throw ApiError.notFound();
-  if (m.organizerId !== req.user.id && !['SUPER_ADMIN', 'ADMIN'].includes(req.user.role)) {
-    throw ApiError.forbidden();
-  }
-  await prisma.meeting.delete({ where: { id } });
-  res.json({ ok: true });
-}));
 
 export { publicApi, api };
 export default api;

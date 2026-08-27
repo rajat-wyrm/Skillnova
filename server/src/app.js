@@ -28,6 +28,7 @@ import featuresRoutes, { publicApi as publicFeaturesRoutes } from './routes/feat
 import skillGapRoutes from './routes/skillGap.routes.js';
 import phase1Routes from './routes/roadmap.routes.js';
 import resumeImportRoutes from './resume-import/resumeImport.routes.js';
+import meetingRoutes from './routes/meeting.routes.js';
 
 const app = express();
 
@@ -204,6 +205,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/kb', kbRoutes);
 app.use('/api/v1/skill-gap', skillGapRoutes);
 app.use('/api/v1/resume-import', resumeImportRoutes);
+app.use('/api/v1/meetings', csrfProtection, meetingRoutes);
 app.use('/api/v1', csrfProtection, apiRoutes);
 // Phase 1: Learning Roadmap, Achievement Badges, Internship Completion Tracker
 app.use('/api/v1', csrfProtection, phase1Routes);

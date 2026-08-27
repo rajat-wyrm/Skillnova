@@ -31,6 +31,7 @@ export const createPath = asyncHandler(async (req, res) => {
           description: m.description,
           resourceUrl: m.resourceUrl,
           order: m.order ?? i,
+          duration: m.duration,
         })),
       },
     },
@@ -67,11 +68,23 @@ export const addMilestone = asyncHandler(async (req, res) => {
   const pathId = req.validatedParams.id;
   const path = await prisma.learningPath.findUnique({ where: { id: pathId } });
   if (!path) throw ApiError.notFound('Learning path not found');
-  const { title, description, resourceUrl, order } = req.body;
+  const { title, description, resourceUrl, order, duration } = req.body;
   const milestone = await prisma.learningMilestone.create({
-    data: { pathId, title, description, resourceUrl, order: order ?? 0 },
+    data: { pathId, title, description, resourceUrl, order: order ?? 0, duration },
   });
   res.status(201).json({ milestone });
+});
+
+export const updateMilestone = asyncHandler(async (req, res) => {
+  const milestoneId = req.validatedParams.milestoneId;
+  const milestone = await prisma.learningMilestone.findUnique({ where: { id: milestoneId } });
+  if (!milestone) throw ApiError.notFound('Milestone not found');
+  const { title, description, resourceUrl, order, duration } = req.body;
+  const updated = await prisma.learningMilestone.update({
+    where: { id: milestoneId },
+    data: { title, description, resourceUrl, order, duration },
+  });
+  res.json({ milestone: updated });
 });
 
 export const removeMilestone = asyncHandler(async (req, res) => {
