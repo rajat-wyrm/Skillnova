@@ -547,6 +547,7 @@ model Meeting {
   startsAt     DateTime
   endsAt       DateTime?
   location     String?
+  meetingLink  String?
   organizerId  String
   organizer    User        @relation("OrganizedMeetings", fields: [organizerId], references: [id])
   attendees    MeetingAttendee[]

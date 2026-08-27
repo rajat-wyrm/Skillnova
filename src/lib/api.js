@@ -34,7 +34,7 @@ api.interceptors.request.use((config) => {
   } catch { /* ignore */ }
 
   const csrf = getCookie('sn_csrf');
-  if (csrf && ["post", "put", "patch", "delete"].includes(config.method)) {
+  if (csrf && ["post", "put", "patch", "delete"].includes(config.method?.toLowerCase())) {
     config.headers['X-CSRF-Token'] = csrf;
   }
   return config;
