@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Card, Badge } from "../../shared/components/UI";
 import UserProfileModal from '../../shared/components/UserProfileModal';
+import ScheduleMeetingModal from "../../shared/components/ScheduleMeetingModal";
+import MeetingDetailsModal from "../../shared/components/MeetingDetailsModal";
 import api from "../../lib/api";
 import notify from "../../lib/toast";
 
@@ -17,13 +19,18 @@ const Interns = () => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [marking, setMarking] = useState(null); // userId currently being marked
   const [streaks, setStreaks] = useState({});
+  const [meetings, setMeetings] = useState([]);
+  const [schedulingIntern, setSchedulingIntern] = useState(null);
+  const [detailsIntern, setDetailsIntern] = useState(null);
+  const [showMultiSchedule, setShowMultiSchedule] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [internsRes, attendanceRes] = await Promise.all([
+      const [internsRes, attendanceRes, meetingsRes] = await Promise.all([
         api.get("/users", { params: { role: "INTERN", limit: 100 } }),
         api.get("/attendance", { params: { date: todayKey(), limit: 100 } }),
+        api.get("/meetings/organized"),
       ]);
       setInterns(internsRes.data.items);
       const map = {};
@@ -31,6 +38,7 @@ const Interns = () => {
         map[a.userId] = a.status;
       });
       setTodayAttendance(map);
+      setMeetings(meetingsRes.data.items || []);
 
       const streakResults = await Promise.all(
         internsRes.data.items.map((i) =>
@@ -44,6 +52,27 @@ const Interns = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUpcomingMeetingForIntern = (internId) => {
+    const internMeetings = meetings.filter((m) =>
+      m.attendees.some((a) => a.userId === internId)
+    );
+    const now = new Date();
+    const upcoming = internMeetings.filter((m) => new Date(m.startsAt) >= now);
+    upcoming.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
+    return upcoming[0];
+  };
+
+  const formatUpcomingDate = (isoStr) => {
+    const d = new Date(isoStr);
+    return d.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   useEffect(() => {
@@ -76,13 +105,22 @@ const Interns = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
-          My Interns ({interns.length})
-        </h2>
-        <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
-          Mark today's meeting attendance and manage weekly ratings.
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+            My Interns ({interns.length})
+          </h2>
+          <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+            Mark today's meeting attendance and manage weekly ratings.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowMultiSchedule(true)}
+          className="px-4 py-2 rounded-lg text-sm font-medium text-white flex items-center gap-2"
+          style={{ background: "#ff6d34" }}
+        >
+          Schedule Meeting
+        </button>
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -102,7 +140,8 @@ const Interns = () => {
                   "Today's meeting",
                   "Streak",
                   "Rating",
-                  "Status"
+                  "Status",
+                  "Meeting"
                 ].map((h) => (
                   <th
                     key={h}
@@ -215,6 +254,61 @@ const Interns = () => {
                     <td className="px-5 py-4 text-xs uppercase font-medium">
                       {i.status}
                     </td>
+                    <td className="px-5 py-4">
+                      {(() => {
+                        const upcoming = getUpcomingMeetingForIntern(i.id);
+                        if (upcoming) {
+                          const internAttendee = upcoming.attendees?.find((a) => a.userId === i.id);
+                          const rsvp = internAttendee?.response || "PENDING";
+                          return (
+                            <div className="flex flex-col gap-1 text-[11px] font-normal">
+                              <span className="font-semibold truncate max-w-[120px]" style={{ color: "var(--text)" }} title={upcoming.title}>
+                                {upcoming.title}
+                              </span>
+                              <span style={{ color: "var(--muted)" }}>
+                                {formatUpcomingDate(upcoming.startsAt)}
+                              </span>
+                              <div>
+                                <Badge
+                                  variant={
+                                    rsvp === "ACCEPTED" ? "success" :
+                                    rsvp === "DECLINED" ? "danger" : "warning"
+                                  }
+                                >
+                                  {rsvp}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-2 mt-1">
+                                <button
+                                  onClick={() => setDetailsIntern(i)}
+                                  className="hover:underline text-[10px] font-medium"
+                                  style={{ color: "#ff6d34" }}
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => setSchedulingIntern(i)}
+                                  className="hover:underline text-[10px] font-medium"
+                                  style={{ color: "var(--muted)" }}
+                                >
+                                  Schedule
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <button
+                              onClick={() => setSchedulingIntern(i)}
+                              className="px-2.5 py-1.5 rounded-lg text-white text-xs font-medium"
+                              style={{ background: "#ff6d34" }}
+                            >
+                              Schedule
+                            </button>
+                          );
+                        }
+                      })()}
+                    </td>
                   </tr>
                 );
               })}
@@ -224,6 +318,32 @@ const Interns = () => {
       </Card>
 
       <UserProfileModal isOpen={!!selectedUserId} onClose={() => setSelectedUserId(null)} userId={selectedUserId} />
+
+      {(schedulingIntern || showMultiSchedule) && (
+        <ScheduleMeetingModal
+          intern={schedulingIntern}
+          allInterns={interns}
+          onClose={() => {
+            setSchedulingIntern(null);
+            setShowMultiSchedule(false);
+          }}
+          onScheduled={() => {
+            setSchedulingIntern(null);
+            setShowMultiSchedule(false);
+            fetchAll();
+          }}
+        />
+      )}
+
+      {detailsIntern && (
+        <MeetingDetailsModal
+          intern={detailsIntern}
+          onClose={() => setDetailsIntern(null)}
+          onUpdated={() => {
+            fetchAll();
+          }}
+        />
+      )}
     </div>
   );
 };

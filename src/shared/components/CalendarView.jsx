@@ -30,6 +30,7 @@ const CalendarView = () => {
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [rsvpLoadingId, setRsvpLoadingId] = useState(null);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -45,7 +46,31 @@ const CalendarView = () => {
       .then((r) => setMeetings(r.data.items))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [monthStart, monthEnd]);
+  }, [currentMonth.getTime()]);
+
+  const handleRsvp = async (meetingId, response) => {
+    setRsvpLoadingId(meetingId);
+    try {
+      await api.patch(`/meetings/${meetingId}/rsvp`, { response });
+      notify.success(`RSVP updated to ${response.toLowerCase()}`);
+      
+      // Update target meeting locally in-place
+      setMeetings((prevMeetings) =>
+        prevMeetings.map((m) => {
+          if (m.id !== meetingId) return m;
+          const updatedAttendees = m.attendees.map((a) => {
+            if (a.userId !== user?.id) return a;
+            return { ...a, response };
+          });
+          return { ...m, attendees: updatedAttendees };
+        })
+      );
+    } catch (err) {
+      notify.error(err.response?.data?.error || "Failed to update RSVP");
+    } finally {
+      setRsvpLoadingId(null);
+    }
+  };
 
   const meetingsByDay = useMemo(() => {
     const m = new Map();
@@ -133,23 +158,111 @@ const CalendarView = () => {
           <p className="text-sm py-6 text-center" style={{ color: 'var(--muted)' }}>No meetings scheduled.</p>
         ) : (
           <div className="space-y-3">
-            {dayMeetings.map((m) => (
-              <div key={m.id} className="p-4 rounded-xl" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
-                <div className="flex items-start gap-3">
-                  <div className="w-1.5 h-full rounded-full flex-shrink-0 self-stretch" style={{ background: TYPE_COLORS[m.type] || '#94a3b8' }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold" style={{ color: 'var(--text)' }}>{m.title}</p>
-                    {m.description && <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{m.description}</p>}
-                    <div className="flex flex-wrap gap-3 mt-2 text-xs" style={{ color: 'var(--muted)' }}>
-                      <span className="flex items-center gap-1"><Clock size={11} /> {format(parseISO(m.startsAt), 'HH:mm')}{m.endsAt && `–${format(parseISO(m.endsAt), 'HH:mm')}`}</span>
-                      {m.location && <span className="flex items-center gap-1"><MapPin size={11} /> {m.location}</span>}
-                      <span className="flex items-center gap-1"><Users size={11} /> {m.attendees?.length || 0} attendee{(m.attendees?.length || 0) !== 1 ? 's' : ''}</span>
+            {dayMeetings.map((m) => {
+              const myAttendee = m.attendees?.find((a) => a.userId === user?.id);
+              const rsvp = myAttendee?.response || "PENDING";
+              return (
+                <div key={m.id} className="p-4 rounded-xl" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-full rounded-full flex-shrink-0 self-stretch" style={{ background: TYPE_COLORS[m.type] || '#94a3b8' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="font-semibold" style={{ color: 'var(--text)' }}>{m.title}</p>
+                        {myAttendee && (
+                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                            rsvp === 'ACCEPTED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400' :
+                            rsvp === 'DECLINED' ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-400' :
+                            'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400'
+                          }`}>
+                            RSVP: {rsvp}
+                          </span>
+                        )}
+                      </div>
+                      {m.description && <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>{m.description}</p>}
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-xs" style={{ color: 'var(--muted)' }}>
+                        <span className="flex items-center gap-1"><Clock size={11} /> {format(parseISO(m.startsAt), 'HH:mm')}{m.endsAt && `–${format(parseISO(m.endsAt), 'HH:mm')}`}</span>
+                        {m.location && <span className="flex items-center gap-1"><MapPin size={11} /> {m.location}</span>}
+                        <span className="flex items-center gap-1 font-medium">
+                          Organizer: {m.organizer?.name}
+                        </span>
+                        {m.meetingLink && (
+                          <a
+                            href={m.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange-500 hover:underline font-semibold"
+                          >
+                            Join Meeting
+                          </a>
+                        )}
+                      </div>
+
+                      {m.attendees?.length > 0 && (
+                        <div className="mt-2 text-xs flex flex-wrap gap-2 animate-fade-in" style={{ color: 'var(--muted)' }}>
+                          <span className="font-semibold">Attendees:</span>
+                          {m.attendees.map((a) => {
+                            const attRsvp = a.response || "PENDING";
+                            return (
+                              <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                {a.user?.name}
+                                <span className={`text-[10px] font-bold ${
+                                  attRsvp === "ACCEPTED" ? "text-emerald-500" :
+                                  attRsvp === "DECLINED" ? "text-rose-500" : "text-amber-500"
+                                }`}>
+                                  ({attRsvp})
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {user?.role === 'INTERN' && myAttendee && (
+                        <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                          <span className="text-xs" style={{ color: 'var(--muted)' }}>Your RSVP:</span>
+                          <button
+                            disabled={rsvpLoadingId === m.id}
+                            onClick={() => handleRsvp(m.id, 'ACCEPTED')}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+                            style={{
+                              background: rsvp === 'ACCEPTED' ? '#00bea3' : 'transparent',
+                              color: rsvp === 'ACCEPTED' ? '#fff' : 'var(--text)',
+                              border: `1px solid ${rsvp === 'ACCEPTED' ? '#00bea3' : 'var(--border)'}`,
+                            }}
+                          >
+                            {rsvpLoadingId === m.id ? 'Loading...' : 'Accept'}
+                          </button>
+                          <button
+                            disabled={rsvpLoadingId === m.id}
+                            onClick={() => handleRsvp(m.id, 'DECLINED')}
+                            className="px-3 py-1 rounded-lg text-xs font-semibold transition disabled:opacity-50"
+                            style={{
+                              background: rsvp === 'DECLINED' ? '#dc2626' : 'transparent',
+                              color: rsvp === 'DECLINED' ? '#fff' : 'var(--text)',
+                              border: `1px solid ${rsvp === 'DECLINED' ? '#dc2626' : 'var(--border)'}`,
+                            }}
+                          >
+                            {rsvpLoadingId === m.id ? 'Loading...' : 'Decline'}
+                          </button>
+                          {m.meetingLink && (
+                            <a
+                              href={m.meetingLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1 rounded-lg text-xs font-semibold text-white transition flex items-center justify-center"
+                              style={{ background: '#ff6d34' }}
+                            >
+                              Join Meeting
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ background: TYPE_COLORS[m.type] || '#94a3b8', color: '#fff' }}>{m.type}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded" style={{ background: TYPE_COLORS[m.type] || '#94a3b8', color: '#fff' }}>{m.type}</span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
@@ -167,6 +280,7 @@ const MeetingForm = ({ day, onClose, onCreated }) => {
     startsAt: format(day, 'yyyy-MM-dd') + 'T10:00',
     endsAt: format(day, 'yyyy-MM-dd') + 'T11:00',
     location: '',
+    meetingLink: '',
     type: 'ONE_ON_ONE',
   });
   const [users, setUsers] = useState([]);
@@ -180,6 +294,7 @@ const MeetingForm = ({ day, onClose, onCreated }) => {
 
   const save = async () => {
     if (!form.title.trim()) return notify.error('Title is required');
+    if (attendees.length === 0) return notify.error('At least one attendee must be selected');
     setSaving(true);
     try {
       await api.post('/meetings', { ...form, attendeeIds: attendees });
@@ -217,8 +332,15 @@ const MeetingForm = ({ day, onClose, onCreated }) => {
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--muted)' }}>Location</label>
               <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder="Meet link or room" className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+                placeholder="Room or Address" className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
             </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--muted)' }}>Meeting Link</label>
+              <input value={form.meetingLink} onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
+                placeholder="Google Meet URL" className="w-full px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--muted)' }}>Type</label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -229,9 +351,15 @@ const MeetingForm = ({ day, onClose, onCreated }) => {
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider block mb-1" style={{ color: 'var(--muted)' }}>Attendees</label>
-            <div className="max-h-32 overflow-y-auto p-2 rounded-lg" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+            <div className="max-h-32 overflow-y-auto p-2 rounded-lg space-y-1.5" style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}>
+              {users.length > 0 && (
+                <label className="flex items-center gap-2 p-1 border-b cursor-pointer text-sm font-semibold select-none" style={{ borderColor: 'var(--border)', color: 'var(--text)' }}>
+                  <input type="checkbox" checked={attendees.length === users.length} onChange={(e) => setAttendees(e.target.checked ? users.map((u) => u.id) : [])} />
+                  <span>Select All Interns</span>
+                </label>
+              )}
               {users.map((u) => (
-                <label key={u.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-white/5 cursor-pointer text-sm">
+                <label key={u.id} className="flex items-center gap-2 p-1 rounded hover:bg-white/5 cursor-pointer text-sm select-none">
                   <input type="checkbox" checked={attendees.includes(u.id)} onChange={(e) => setAttendees(e.target.checked ? [...attendees, u.id] : attendees.filter((x) => x !== u.id))} />
                   <span style={{ color: 'var(--text)' }}>{u.name}</span>
                   <span style={{ color: 'var(--muted)', fontSize: 11 }}>{u.department}</span>
