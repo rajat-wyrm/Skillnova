@@ -107,7 +107,7 @@ export const isProd = config.isProd;
 // ── OAuth State tokens ─────────────────────────────────────
 export function signOAuthState(returnTo = "/") {
   return jwt.sign(
-    { returnTo, nonce: crypto.randomBytes(8).toString("hex") },
+    { returnTo, nonce: crypto.randomBytes(8).toString("hex"), purpose: "oauth_state" },
     config.jwt.accessSecret,
     {
       expiresIn: "15m",
