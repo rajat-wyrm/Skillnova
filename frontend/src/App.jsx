@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { useAuthStore } from './lib/auth';
 import { connectSocket, disconnectSocket } from './lib/socket';
 import AuthGate from './AuthGate';
+import ResetPassword from './auth/pages/ResetPassword';
 import UserApp from './user/App';
 import AdminApp from './admin/App';
 import MentorApp from './mentor/App';
@@ -15,6 +16,7 @@ import LoaderScreen from './shared/components/LoaderScreen';
 import AIAssistant from './shared/components/AIAssistant';
 
 const App = () => {
+  if (window.location.pathname === '/reset-password') return <ResetPassword />;
   const { user, step, hydrated, hydrate } = useAuthStore();
 
   useEffect(() => {

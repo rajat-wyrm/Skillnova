@@ -24,6 +24,14 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
   rememberMe: z.boolean().optional().default(true),
 });
+const forgotPasswordSchema = z.object({
+  email: schemas.email,
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(6).max(128),
+});
 
 const otpSchema = z.object({
   challengeToken: z.string().min(10),
@@ -34,6 +42,8 @@ const otpSchema = z.object({
 router.post('/login', loginLimiter, validate(loginSchema), auth.login);
 router.post('/verify-otp', loginLimiter, validate(otpSchema), auth.verifyOtp);
 router.post('/refresh', auth.refresh);
+router.post('/forgot-password', validate(forgotPasswordSchema), auth.forgotPassword);
+router.post('/reset-password', validate(resetPasswordSchema), auth.resetPassword);
 router.post('/logout', authenticate, auth.logout);
 router.get('/me', authenticate, requireAuth, auth.me);
 router.post('/2fa/setup', authenticate, requireAuth, auth.setupTotp);

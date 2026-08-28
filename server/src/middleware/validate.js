@@ -54,7 +54,7 @@ export const schemas = {
     .transform((value) => value.toUpperCase()),
   pagination: z.object({
     page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(100).default(20),
+    limit: z.coerce.number().int().min(1).max(1000).default(20),
     sort: z.string().optional(),
     order: z.enum(["asc", "desc"]).default("desc"),
     search: z.string().max(200).optional(),

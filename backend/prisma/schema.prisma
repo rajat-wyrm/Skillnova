@@ -39,6 +39,8 @@ model User {
   lastLoginIp     String?
   failedAttempts  Int           @default(0)
   lockedUntil     DateTime?
+  resetToken      String?
+  resetTokenExpiry  DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

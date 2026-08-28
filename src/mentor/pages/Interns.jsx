@@ -5,35 +5,52 @@ import { useEffect, useState } from "react";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Card, Badge } from "../../shared/components/UI";
 import UserProfileModal from '../../shared/components/UserProfileModal';
-import api from "../../lib/api";
+import api, { getErrorMessage } from "../../lib/api";
 import notify from "../../lib/toast";
+import UserProfileModal from '../../shared/components/UserProfileModal';
+
+import { Modal, Input, SectionHeader } from "../../shared/components/UI";
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const Interns = () => {
   const [interns, setInterns] = useState([]);
-  const [todayAttendance, setTodayAttendance] = useState({}); // userId -> status
+  const [todayAttendance, setTodayAttendance] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [marking, setMarking] = useState(null); // userId currently being marked
+  const [marking, setMarking] = useState(null);
   const [streaks, setStreaks] = useState({});
+  const [filterTab, setFilterTab] = useState('my'); // 'my' vs 'all'
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [ratingModal, setRatingModal] = useState(false);
+  const [editingIntern, setEditingIntern] = useState(null);
+  const [ratingVal, setRatingVal] = useState(8.5);
+
+  const [form, setForm] = useState({ name: '', email: '', password: 'User#2026', department: '', role: 'INTERN' });
+
+  const [assignedInterns, setAssignedInterns] = useState([]);
 
   const fetchAll = async () => {
-    setLoading(true);
     try {
-      const [internsRes, attendanceRes] = await Promise.all([
-        api.get("/users", { params: { role: "INTERN", limit: 100 } }),
+      const [internsRes, attendanceRes, assignedRes] = await Promise.all([
+        api.get("/users", { params: { role: "INTERN", myInterns: filterTab === 'my', limit: 100 } }),
         api.get("/attendance", { params: { date: todayKey(), limit: 100 } }),
+        api.get("/users", { params: { role: "INTERN", myInterns: true, limit: 100 } }),
       ]);
-      setInterns(internsRes.data.items);
+      const currentList = internsRes.data.items || [];
+      const assignedList = assignedRes.data.items || [];
+      setInterns(currentList);
+      setAssignedInterns(assignedList);
+
       const map = {};
-      attendanceRes.data.items.forEach((a) => {
+      (attendanceRes.data.items || []).forEach((a) => {
         map[a.userId] = a.status;
       });
       setTodayAttendance(map);
 
       const streakResults = await Promise.all(
-        internsRes.data.items.map((i) =>
+        currentList.map((i) =>
           api
             .get("/attendance/streak", { params: { userId: i.id } })
             .then((r) => [i.id, r.data])
@@ -48,18 +65,79 @@ const Interns = () => {
 
   useEffect(() => {
     fetchAll();
-  }, []);
+    const interval = setInterval(fetchAll, 6000);
+    return () => clearInterval(interval);
+  }, [filterTab]);
+
+  const addIntern = async () => {
+    if (!form.name.trim() || !form.email.trim()) return notify.error('Name and email are required.');
+    try {
+      await api.post('/users', {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password || 'User#2026',
+        department: form.department.trim() || undefined,
+        role: 'INTERN',
+      });
+      notify.success(`Intern "${form.name}" added successfully.`);
+      setModalOpen(false);
+      setForm({ name: '', email: '', password: 'User#2026', department: '', role: 'INTERN' });
+      fetchAll();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    }
+  };
+
+  const toggleTeamLead = async (user) => {
+    const nextTL = !user.isTL;
+    try {
+      await api.post(`/auth/intern/${user.id}/set-tl`, { isTL: nextTL });
+      notify.success(`${user.name} is now ${nextTL ? 'a' : 'not a'} Team Lead.`);
+      fetchAll();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    }
+  };
 
   const markAttendance = async (userId, status) => {
     setMarking(userId);
     try {
       await api.post("/attendance/mark", { userId, status });
       setTodayAttendance((m) => ({ ...m, [userId]: status }));
-      notify.success(`Marked ${status.toLowerCase()}.`);
+      notify.success(`Attendance marked as ${status}.`);
     } catch (err) {
-      notify.error(err.response?.data?.error || "Could not mark attendance.");
+      notify.error(getErrorMessage(err));
     } finally {
       setMarking(null);
+    }
+  };
+
+  const markAllPresent = async () => {
+    // Strictly mark assigned interns ONLY
+    const targets = assignedInterns.length > 0 ? assignedInterns : (filterTab === 'my' ? interns : []);
+    if (targets.length === 0) return notify.error("No assigned interns found to mark present.");
+
+    try {
+      await Promise.all(
+        targets.map((i) => api.post("/attendance/mark", { userId: i.id, status: "PRESENT" }))
+      );
+      notify.success(`Marked all ${targets.length} assigned intern(s) PRESENT for today!`);
+      fetchAll();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
+    }
+  };
+
+  const updateRating = async () => {
+    if (!editingIntern) return;
+    try {
+      await api.patch(`/users/${editingIntern.id}`, { rating: Number(ratingVal) });
+      notify.success(`Rating updated for ${editingIntern.name}.`);
+      setRatingModal(false);
+      setEditingIntern(null);
+      fetchAll();
+    } catch (err) {
+      notify.error(getErrorMessage(err));
     }
   };
 
@@ -76,13 +154,51 @@ const Interns = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
-          My Interns ({interns.length})
-        </h2>
-        <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
-          Mark today's meeting attendance and manage weekly ratings.
-        </p>
+      <SectionHeader
+        title={`Interns & Attendance (${interns.length})`}
+        subtitle="Mark today's meeting attendance, review streaks and manage intern performance."
+        action={
+          <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={markAllPresent}
+              className="flex items-center gap-2 px-3.5 py-2 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+              style={{ background: "#00bea3" }}
+            >
+              <CheckCircle size={14} /> Mark All Present
+            </button>
+
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 text-white rounded-lg text-xs font-semibold shadow-sm transition"
+              style={{ background: "#ff6d34" }}
+            >
+              + Add Intern
+            </button>
+          </div>
+        }
+      />
+
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+        <button
+          onClick={() => setFilterTab('my')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+            filterTab === 'my'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+          }`}
+        >
+          My Interns
+        </button>
+        <button
+          onClick={() => setFilterTab('all')}
+          className={`px-4 py-2 text-xs font-bold rounded-xl transition ${
+            filterTab === 'all'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+          }`}
+        >
+          All Platform Interns
+        </button>
       </div>
 
       <Card className="overflow-hidden p-0">
@@ -96,13 +212,13 @@ const Interns = () => {
                 }}
               >
                 {[
-                  "Name",
-                  "Email",
+                  "Name & Email",
                   "Department",
-                  "Today's meeting",
-                  "Streak",
+                  "Today's Attendance",
+                  "Streak & Risk",
                   "Rating",
-                  "Status"
+                  "Status",
+                  "Actions",
                 ].map((h) => (
                   <th
                     key={h}
@@ -122,64 +238,46 @@ const Interns = () => {
                     key={i.id}
                     style={{ borderBottom: "1px solid var(--border)" }}
                   >
-                    <td
-                      className="px-5 py-4 font-medium"
-                      style={{ color: "var(--text)" }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedUserId(i.id)}
-                        className="text-left hover:underline"
-                        style={{ color: 'var(--text)' }}
-                      >
-                        {i.name}
-                      </button>
+                    <td className="px-5 py-4 font-medium" style={{ color: "var(--text)" }}>
+                      <div>
+                        <button type="button" onClick={() => setSelectedUserId(i.id)} className="font-semibold text-left hover:underline" style={{ color: "var(--text)" }}>
+                          {i.name}
+                        </button>
+                        <p className="text-xs opacity-60 font-normal">{i.email}</p>
+                      </div>
                     </td>
-                    <td
-                      className="px-5 py-4 text-xs"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {i.email}
-                    </td>
-                    <td
-                      className="px-5 py-4 text-xs"
-                      style={{ color: "var(--muted)" }}
-                    >
-                      {i.department}
+                    <td className="px-5 py-4 text-xs" style={{ color: "var(--muted)" }}>
+                      {i.department || "—"}
                     </td>
                     <td className="px-5 py-4">
-                      {status ? (
-                        <Badge
-                          variant={
-                            status === "PRESENT"
-                              ? "success"
-                              : status === "LEAVE"
-                                ? "warning"
-                                : "danger"
-                          }
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {status && (
+                          <Badge
+                            variant={
+                              status === "PRESENT"
+                                ? "success"
+                                : status === "LEAVE"
+                                  ? "warning"
+                                  : "danger"
+                            }
+                          >
+                            {status}
+                          </Badge>
+                        )}
+                        <select
+                          value={status || ""}
+                          onChange={(e) => markAttendance(i.id, e.target.value)}
+                          disabled={marking === i.id}
+                          className="text-xs px-2 py-1 rounded-lg border border-slate-200 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
                         >
-                          {status}
-                        </Badge>
-                      ) : (
-                        <div className="flex gap-1.5">
-                          <button
-                            onClick={() => markAttendance(i.id, "PRESENT")}
-                            disabled={marking === i.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-white text-xs font-medium"
-                            style={{ background: "#00bea3" }}
-                          >
-                            <CheckCircle size={12} /> Present
-                          </button>
-                          <button
-                            onClick={() => markAttendance(i.id, "ABSENT")}
-                            disabled={marking === i.id}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-white text-xs font-medium"
-                            style={{ background: "#dc2626" }}
-                          >
-                            <XCircle size={12} /> Absent
-                          </button>
-                        </div>
-                      )}
+                          <option value="" disabled>Mark status...</option>
+                          <option value="PRESENT">PRESENT</option>
+                          <option value="ABSENT">ABSENT</option>
+                          <option value="LEAVE">LEAVE</option>
+                          <option value="HALF_DAY">HALF DAY</option>
+                          <option value="LATE">LATE</option>
+                        </select>
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       {streaks[i.id] ? (
@@ -208,9 +306,20 @@ const Interns = () => {
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full">
-                        ⭐ {i.rating?.toFixed?.(1) ?? i.rating ?? 0}
-                      </span>
+                      <button
+                        onClick={() => { setEditingIntern(i); setRatingVal(i.rating || 8.5); setRatingModal(true); }}
+                        className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-full hover:underline"
+                      >
+                        ⭐ {i.rating?.toFixed?.(1) ?? i.rating ?? 0}/10
+                      </button>
+                    </td>
+                    <td className="px-5 py-4">
+                      <button
+                        onClick={() => toggleTeamLead(i)}
+                        className="text-xs font-semibold text-purple-600 hover:underline"
+                      >
+                        {i.isTL ? 'Unset TL' : 'Set TL'}
+                      </button>
                     </td>
                     <td className="px-5 py-4 text-xs uppercase font-medium">
                       {i.status}
@@ -218,12 +327,47 @@ const Interns = () => {
                   </tr>
                 );
               })}
+              {interns.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-sm" style={{ color: "var(--muted)" }}>
+                    No interns found under this filter.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </Card>
 
       <UserProfileModal isOpen={!!selectedUserId} onClose={() => setSelectedUserId(null)} userId={selectedUserId} />
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Add Intern"
+        footer={
+          <>
+            <button onClick={() => setModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button onClick={addIntern} className="px-4 py-2 text-sm font-medium text-white rounded-lg" style={{ background: '#ff6d34' }}>Create Intern</button>
+          </>
+        }>
+        <div className="space-y-4">
+          <Input label="Full Name *" placeholder="e.g. Rahul Sharma" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <Input label="Email *" type="email" placeholder="intern@skillnova.com" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <Input label="Initial Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <Input label="Department" placeholder="e.g. AI / ML" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+        </div>
+      </Modal>
+
+      {/* Edit Rating Modal */}
+      <Modal isOpen={ratingModal} onClose={() => setRatingModal(false)} title={`Update Rating — ${editingIntern?.name || ''}`}
+        footer={
+          <>
+            <button onClick={() => setRatingModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+            <button onClick={updateRating} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg">Save Rating</button>
+          </>
+        }>
+        <div className="space-y-4">
+          <Input label="Intern Rating (0 to 10) *" type="number" min="0" max="10" step="0.1" value={ratingVal} onChange={(e) => setRatingVal(e.target.value)} />
+        </div>
+      </Modal>
     </div>
   );
 };

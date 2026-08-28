@@ -224,26 +224,47 @@ const Attendance = () => {
       </Card>
 
       <Card className="p-5">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3
               className="text-sm font-semibold"
               style={{ color: "var(--text)" }}
             >
-              Attendance is marked by your mentor
+              Daily Attendance & Leave Management
             </h3>
             <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
-              Based on today's meeting. If you're going to be out, submit a
-              leave request below.
+              Mark your check-in for today or submit a leave request for upcoming dates.
             </p>
           </div>
-          <button
-            onClick={() => setLeaveOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap"
-            style={{ color: "#ff6d34" }}
-          >
-            <CalendarPlus size={14} /> Request leave for a date range
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={async () => {
+                try {
+                  const { data } = await api.get('/auth/me');
+                  await api.post('/attendance/mark', {
+                    userId: data.user.id,
+                    status: 'PRESENT',
+                    checkIn: new Date().toISOString(),
+                  });
+                  notify.success('Marked Present for today!');
+                  fetch();
+                } catch (err) {
+                  notify.error(err.response?.data?.error || 'Could not mark attendance.');
+                }
+              }}
+              className="px-4 py-2 text-xs font-bold text-white rounded-xl shadow-sm"
+              style={{ background: '#00bea3' }}
+            >
+              ✓ Quick Check-In Today
+            </button>
+            <button
+              onClick={() => setLeaveOpen(true)}
+              className="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap"
+              style={{ color: "#ff6d34" }}
+            >
+              <CalendarPlus size={14} /> Request leave
+            </button>
+          </div>
         </div>
       </Card>
 

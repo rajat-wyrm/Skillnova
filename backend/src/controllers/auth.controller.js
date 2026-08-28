@@ -358,3 +358,53 @@ export const enableTotp = asyncHandler(async (req, res) => {
   await audit({ userId: req.user.id, action: 'auth.2fa.enabled', req });
   res.json({ ok: true });
 });
+
+// ── POST /auth/forgot-password ───────────────────────────
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+
+  // Always respond the same way, whether or not the email exists (avoids leaking which emails are registered)
+  if (!user) {
+    return res.json({ ok: true, message: 'If that email exists, a reset link has been sent.' });
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetToken,
+      resetTokenExpiry: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+    },
+  });
+
+  const { sendPasswordResetEmail } = await import('../services/email.service.js');
+  await sendPasswordResetEmail(user.email, resetToken);
+
+  await audit({ userId: user.id, action: 'auth.password.forgot', req });
+  res.json({ ok: true, message: 'If that email exists, a reset link has been sent.' });
+});
+
+// ── POST /auth/reset-password ────────────────────────────
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword) throw ApiError.badRequest('Token and new password required');
+
+  const user = await prisma.user.findFirst({
+    where: { resetToken: token, resetTokenExpiry: { gt: new Date() } },
+  });
+  if (!user) throw ApiError.badRequest('Invalid or expired reset link');
+
+  const { hashPassword } = await import('../utils/auth.js');
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash: hashPassword(newPassword),
+      resetToken: null,
+      resetTokenExpiry: null,
+    },
+  });
+
+  await audit({ userId: user.id, action: 'auth.password.reset', req });
+  res.json({ ok: true, message: 'Password reset successfully. You can now log in.' });
+});

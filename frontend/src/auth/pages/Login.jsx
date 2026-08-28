@@ -42,7 +42,7 @@ const Icon = {
 
 const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
-const Login = () => {
+const Login = ({ onForgotPassword }) => {
   const uid = useId();
   const emailId = `${uid}-email`;
   const passwordId = `${uid}-password`;
@@ -170,7 +170,13 @@ const Login = () => {
                 <Icon.Eye open={showPwd} />
               </button>
             </div>
-            {pwdState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
+                        {pwdState === 'error' && <p className="auth-msg auth-msg-error" role="alert"><Icon.Alert /> {fieldError.password}</p>}
+          </div>
+
+          <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 8 }}>
+            <button type="button" onClick={onForgotPassword} style={{ color: '#ff6d34', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}>
+              Forgot password?
+            </button>
           </div>
 
           {formError && (
