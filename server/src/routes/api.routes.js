@@ -1,20 +1,20 @@
 // ════════════════════════════════════════════════════════════
 //  Reports, Announcements, Q&A, Attendance, Projects, AI
 // ════════════════════════════════════════════════════════════
-import { Router } from 'express';
-import { z } from 'zod';
-import * as reports from '../controllers/reports.controller.js';
-import * as announcements from '../controllers/announcements.controller.js';
-import * as qa from '../controllers/qa.controller.js';
-import * as attendance from '../controllers/attendance.controller.js';
-import * as ratings from '../controllers/ratings.controller.js';
-import * as projects from '../controllers/projects.controller.js';
-import * as ai from '../controllers/ai.controller.js';
-import * as notif from '../controllers/notifications.controller.js';
-import * as settings from '../controllers/settings.controller.js';
-import { authenticate, requireAuth } from '../middleware/auth.js';
-import { requirePermission } from '../middleware/rbac.js';
-import { validate, schemas } from '../middleware/validate.js';
+import { Router } from "express";
+import { z } from "zod";
+import * as reports from "../controllers/reports.controller.js";
+import * as announcements from "../controllers/announcements.controller.js";
+import * as qa from "../controllers/qa.controller.js";
+import * as attendance from "../controllers/attendance.controller.js";
+import * as ratings from "../controllers/ratings.controller.js";
+import * as projects from "../controllers/projects.controller.js";
+import * as ai from "../controllers/ai.controller.js";
+import * as notif from "../controllers/notifications.controller.js";
+import * as settings from "../controllers/settings.controller.js";
+import { authenticate, requireAuth } from "../middleware/auth.js";
+import { requirePermission } from "../middleware/rbac.js";
+import { validate, schemas } from "../middleware/validate.js";
 
 const api = Router();
 api.use(authenticate, requireAuth);
@@ -25,25 +25,58 @@ const idParam = z.object({ id: z.string().cuid() });
 // ── Reports ───────────────────────────────────────────────
 api.get("/reports", requirePermission("reports:read"), validate(schemas.pagination, "query"), reports.list);
 api.get("/reports/stats", requirePermission("reports:read"), reports.stats);
-api.get("/reports/:id", requirePermission("reports:read"), validate(idParam, "params"), reports.getById);
-api.post("/reports", requirePermission("reports:create"), validate(z.object({
-  title: z.string().min(3).max(200),
-  content: z.string().min(1).optional(),
-  fileUrl: z.string().url().optional(),
-  weekNumber: z.number().int().min(1).max(104).optional(),
-})), reports.create);
-api.patch("/reports/:id", requirePermission("reports:update"), validate(idParam, "params"), validate(z.object({
-  title: z.string().min(3).max(200).optional(),
-  content: z.string().optional(),
-  fileUrl: z.string().url().optional().nullable(),
-  weekNumber: z.number().int().min(1).max(104).optional(),
-})), reports.update);
-api.patch("/reports/:id/review", requirePermission("reports:review"), validate(idParam, "params"), validate(z.object({
-  status: z.enum(["PENDING", "REVIEWED", "REJECTED"]).default("REVIEWED"),
-  score: z.number().min(0).max(10).optional(),
-  feedback: z.string().max(2000).optional(),
-})), reports.review);
-api.delete("/reports/:id", requirePermission("reports:delete"), validate(idParam, "params"), reports.remove);
+api.get(
+  "/reports/:id",
+  requirePermission("reports:read"),
+  validate(idParam, "params"),
+  reports.getById,
+);
+api.post(
+  "/reports",
+  requirePermission("reports:create"),
+  validate(
+    z.object({
+      title: z.string().min(3).max(200),
+      content: z.string().min(1).optional(),
+      fileUrl: z.string().url().optional(),
+      weekNumber: z.number().int().min(1).max(104).optional(),
+    }),
+  ),
+  reports.create,
+);
+api.patch(
+  "/reports/:id",
+  requirePermission("reports:update"),
+  validate(idParam, "params"),
+  validate(
+    z.object({
+      title: z.string().min(3).max(200).optional(),
+      content: z.string().optional(),
+      fileUrl: z.string().url().optional().nullable(),
+      weekNumber: z.number().int().min(1).max(104).optional(),
+    }),
+  ),
+  reports.update,
+);
+api.patch(
+  "/reports/:id/review",
+  requirePermission("reports:review"),
+  validate(idParam, "params"),
+  validate(
+    z.object({
+      status: z.enum(["PENDING", "REVIEWED", "REJECTED"]).default("REVIEWED"),
+      score: z.number().min(0).max(10).optional(),
+      feedback: z.string().max(2000).optional(),
+    }),
+  ),
+  reports.review,
+);
+api.delete(
+  "/reports/:id",
+  requirePermission("reports:delete"),
+  validate(idParam, "params"),
+  reports.remove,
+);
 
 // ── Announcements ─────────────────────────────────────────
 api.get('/announcements', requirePermission('announcements:read'), validate(schemas.pagination, 'query'), announcements.list);
@@ -149,11 +182,15 @@ api.get('/ai/sessions/:id', requirePermission('ai:use'), validate(idParam, 'para
 api.delete('/ai/sessions/:id', requirePermission('ai:use'), validate(idParam, 'params'), ai.deleteSession);
 
 // ── Notifications ─────────────────────────────────────────
-api.get('/notifications', validate(schemas.pagination, 'query'), notif.list);
-api.get('/notifications/unread-count', notif.unreadCount);
-api.post('/notifications/:id/read', validate(idParam, 'params'), notif.markRead);
-api.post('/notifications/read-all', notif.markAllRead);
-api.delete('/notifications/:id', validate(idParam, 'params'), notif.remove);
+api.get("/notifications", validate(schemas.pagination, "query"), notif.list);
+api.get("/notifications/unread-count", notif.unreadCount);
+api.post(
+  "/notifications/:id/read",
+  validate(idParam, "params"),
+  notif.markRead,
+);
+api.post("/notifications/read-all", notif.markAllRead);
+api.delete("/notifications/:id", validate(idParam, "params"), notif.remove);
 
 // ── Analytics ─────────────────────────────────────────────
 api.get(
@@ -180,15 +217,27 @@ api.get(
   ratings.listRatings,
 );
 // Analytics
-api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
-api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+api.get(
+  "/analytics/platform",
+  requirePermission("users:read"),
+  notif.platformStats,
+);
+api.get(
+  "/analytics/interns",
+  requirePermission("users:read"),
+  notif.internPerformance,
+);
 
 // ── Ratings ───────────────────────────────────────────────
 api.post('/interns/:internId/rating', requirePermission('ratings:manage'), validate(internIdParam, 'params'), validate(ratings.rateSchema), ratings.giveRating);
 api.get('/interns/:internId/ratings', validate(internIdParam, 'params'), ratings.listRatings);
 
 // ── Settings ───────────────────────────────────────────────
-api.get('/settings', requirePermission('settings:read'), settings.getSettings);
-api.patch('/settings', requirePermission('settings:update'), settings.updateSetting);
+api.get("/settings", requirePermission("settings:read"), settings.getSettings);
+api.patch(
+  "/settings",
+  requirePermission("settings:update"),
+  settings.updateSetting,
+);
 
 export default api;

@@ -1,12 +1,16 @@
 // ════════════════════════════════════════════════════════════
 //  AI Assistant Controller — chat, history, suggestions
 // ════════════════════════════════════════════════════════════
-import { z } from 'zod';
-import prisma from '../utils/prisma.js';
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { chatCompletion, chatCompletionStream, suggestFollowUps } from '../ai/assistant.service.js';
-import { audit } from '../services/audit.service.js';
+import { z } from "zod";
+import prisma from "../utils/prisma.js";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+  chatCompletion,
+  chatCompletionStream,
+  suggestFollowUps,
+} from "../ai/assistant.service.js";
+import { audit } from "../services/audit.service.js";
 
 const _chatSchema = z.object({
   message: z.string().trim().min(1).max(4000),
@@ -17,7 +21,8 @@ async function _prepareChatSession(req, message, sessionId) {
   let session;
   if (sessionId) {
     session = await prisma.chatSession.findUnique({ where: { id: sessionId } });
-    if (!session || session.userId !== req.user.id) throw ApiError.notFound('Session not found');
+    if (!session || session.userId !== req.user.id)
+      throw ApiError.notFound("Session not found");
   } else {
     session = await prisma.chatSession.create({
       data: {
@@ -29,13 +34,13 @@ async function _prepareChatSession(req, message, sessionId) {
 
   const history = await prisma.chatMessage.findMany({
     where: { sessionId: session.id },
-    orderBy: { createdAt: 'asc' },
+    orderBy: { createdAt: "asc" },
     take: 20,
     select: { role: true, content: true },
   });
 
   await prisma.chatMessage.create({
-    data: { sessionId: session.id, role: 'user', content: message },
+    data: { sessionId: session.id, role: "user", content: message },
   });
 
   return { session, history };
@@ -43,13 +48,21 @@ async function _prepareChatSession(req, message, sessionId) {
 
 export const chat = asyncHandler(async (req, res) => {
   const { message, sessionId } = req.body;
-  const { session, history } = await _prepareChatSession(req, message, sessionId);
+  const { session, history } = await _prepareChatSession(
+    req,
+    message,
+    sessionId,
+  );
 
-  const result = await chatCompletion({ user: req.user, history, userMessage: message });
+  const result = await chatCompletion({
+    user: req.user,
+    history,
+    userMessage: message,
+  });
   const assistantMsg = await prisma.chatMessage.create({
     data: {
       sessionId: session.id,
-      role: 'assistant',
+      role: "assistant",
       content: result.reply,
       tokens: result.tokens,
       meta: { model: result.model, actions: result.actions },
@@ -61,29 +74,50 @@ export const chat = asyncHandler(async (req, res) => {
     data: { updatedAt: new Date() },
   });
 
-  await audit({ userId: req.user.id, action: 'ai.chat', resource: 'chat', resourceId: session.id, req });
-  res.json({ sessionId: session.id, message: assistantMsg, reply: result.reply, actions: result.actions });
+  await audit({
+    userId: req.user.id,
+    action: "ai.chat",
+    resource: "chat",
+    resourceId: session.id,
+    req,
+  });
+  res.json({
+    sessionId: session.id,
+    message: assistantMsg,
+    reply: result.reply,
+    actions: result.actions,
+  });
 });
 
 export const streamChat = asyncHandler(async (req, res) => {
   const { message, sessionId } = req.body;
-  const { session, history } = await _prepareChatSession(req, message, sessionId);
+  const { session, history } = await _prepareChatSession(
+    req,
+    message,
+    sessionId,
+  );
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
   res.flushHeaders?.();
 
-  let full = '';
+  let full = "";
   try {
-    for await (const chunk of chatCompletionStream({ user: req.user, history, userMessage: message })) {
+    for await (const chunk of chatCompletionStream({
+      user: req.user,
+      history,
+      userMessage: message,
+    })) {
       full += chunk;
       res.write(`data: ${JSON.stringify({ delta: chunk })}\n\n`);
     }
     await prisma.chatMessage.create({
-      data: { sessionId: session.id, role: 'assistant', content: full },
+      data: { sessionId: session.id, role: "assistant", content: full },
     });
-    res.write(`data: ${JSON.stringify({ done: true, sessionId: session.id })}\n\n`);
+    res.write(
+      `data: ${JSON.stringify({ done: true, sessionId: session.id })}\n\n`,
+    );
   } catch (err) {
     res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
   } finally {
@@ -94,7 +128,7 @@ export const streamChat = asyncHandler(async (req, res) => {
 export const listSessions = asyncHandler(async (req, res) => {
   const items = await prisma.chatSession.findMany({
     where: { userId: req.user.id },
-    orderBy: { updatedAt: 'desc' },
+    orderBy: { updatedAt: "desc" },
     take: 50,
     include: { _count: { select: { messages: true } } },
   });
@@ -107,7 +141,7 @@ export const getSession = asyncHandler(async (req, res) => {
     where: { id },
     include: {
       messages: {
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
         select: { id: true, role: true, content: true, createdAt: true },
       },
     },
@@ -135,4 +169,11 @@ export const suggest = asyncHandler(async (req, res) => {
   }
 });
 
-export default { chat, streamChat, listSessions, getSession, deleteSession, suggest };
+export default {
+  chat,
+  streamChat,
+  listSessions,
+  getSession,
+  deleteSession,
+  suggest,
+};

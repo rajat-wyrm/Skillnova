@@ -64,7 +64,7 @@ export const useAuthStore = create((set, get) => ({
   login: async ({ email, password, rememberMe = true }) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.post('/auth/login', { email, password, rememberMe });
+      const { data } = await api.post('/auth/login', { email, password, internCode: password, rememberMe });
       if (data.step === 'otp_required') {
         set({
           step: 'otp',
@@ -139,47 +139,47 @@ export const useAuthStore = create((set, get) => ({
 // Role → permission list (mirrors backend PERMISSIONS map)
 const ROLE_PERMISSIONS = {
   SUPER_ADMIN: [
-    'users:read','users:create','users:update','users:delete','users:role:change',
-    'reports:read','reports:create','reports:update','reports:review','reports:delete',
-    'kb:read','kb:create','kb:update','kb:verify','kb:delete',
-    'announcements:read','announcements:create','announcements:update','announcements:delete',
-    'attendance:read','attendance:mark','attendance:self',
-    'projects:read','projects:create','projects:update','projects:delete',
-    'tasks:read','tasks:create','tasks:update','tasks:delete',
-    'qa:read','qa:create','qa:update','qa:delete',
+    'users:read', 'users:create', 'users:update', 'users:delete', 'users:role:change',
+    'reports:read', 'reports:create', 'reports:update', 'reports:review', 'reports:delete',
+    'kb:read', 'kb:create', 'kb:update', 'kb:verify', 'kb:delete',
+    'announcements:read', 'announcements:create', 'announcements:update', 'announcements:delete',
+    'attendance:read', 'attendance:mark', 'attendance:self',
+    'projects:read', 'projects:create', 'projects:update', 'projects:delete',
+    'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
+    'qa:read', 'qa:create', 'qa:update', 'qa:delete',
     'ai:use',
-    'settings:read','settings:update','audit:read',
+    'settings:read', 'settings:update', 'audit:read',
   ],
   ADMIN: [
-    'users:read','users:create','users:update',
-    'reports:read','reports:create','reports:update','reports:review','reports:delete',
-    'kb:read','kb:create','kb:update','kb:verify','kb:delete',
-    'announcements:read','announcements:create','announcements:update','announcements:delete',
-    'attendance:read','attendance:mark','attendance:self',
-    'projects:read','projects:create','projects:update','projects:delete',
-    'tasks:read','tasks:create','tasks:update','tasks:delete',
-    'qa:read','qa:create','qa:update','qa:delete',
-    'ai:use','settings:read',
+    'users:read', 'users:create', 'users:update',
+    'reports:read', 'reports:create', 'reports:update', 'reports:review', 'reports:delete',
+    'kb:read', 'kb:create', 'kb:update', 'kb:verify', 'kb:delete',
+    'announcements:read', 'announcements:create', 'announcements:update', 'announcements:delete',
+    'attendance:read', 'attendance:mark', 'attendance:self',
+    'projects:read', 'projects:create', 'projects:update', 'projects:delete',
+    'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
+    'qa:read', 'qa:create', 'qa:update', 'qa:delete',
+    'ai:use', 'settings:read',
   ],
   MENTOR: [
     'users:read',
-    'reports:read','reports:create','reports:update','reports:review',
-    'kb:read','kb:create','kb:update',
+    'reports:read', 'reports:create', 'reports:update', 'reports:review',
+    'kb:read', 'kb:create', 'kb:update',
     'announcements:read',
-    'attendance:read','attendance:mark','attendance:self',
-    'projects:read','projects:create','projects:update',
-    'tasks:read','tasks:create','tasks:update','tasks:delete',
-    'qa:read','qa:create','qa:update',
+    'attendance:read', 'attendance:mark', 'attendance:self',
+    'projects:read', 'projects:create', 'projects:update',
+    'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
+    'qa:read', 'qa:create', 'qa:update',
     'ai:use',
   ],
   INTERN: [
-    'reports:read','reports:create','reports:update',
+    'reports:read', 'reports:create', 'reports:update',
     'kb:read',
     'announcements:read',
     'attendance:self',
     'projects:read',
-    'tasks:read','tasks:update',
-    'qa:read','qa:create','qa:update',
+    'tasks:read', 'tasks:update',
+    'qa:read', 'qa:create', 'qa:update',
     'ai:use',
   ],
 };

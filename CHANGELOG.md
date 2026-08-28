@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0] - 2026-08-28
+
+### Added
+- Flexible dual authentication allowing users to dynamically sign in using either their Password or their assigned Intern Code within a unified input field.
+- Immediate UI rendering of clickable Demo Account blocks (Super Admin, Admin, Mentor, Intern) natively directly in the Login portal.
+- Complete rollback resiliency in the authentication controller (`auth.controller.js`) which immediately assesses fallback validity if the strict initial bcrypt password match rejects.
+
+### Fixed
+- "Too many login attempts" UI constraint when testing by elevating and reverting limits.
+- The `internCode` strict Zod regex validation mapping rule (on login initiation endpoints) which previously threw unhandled `400 Bad Request` server errors when credentials contained standard Special Characters (e.g. `#`).
+- Re-styled component artifacts and corrected the Login form closing structure mapping causing visual disruptions to the UI Submit buttons.
+
 ## [2.2.0] - 2026-07-02
 
 ### Added

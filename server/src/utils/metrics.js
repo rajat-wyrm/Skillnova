@@ -6,7 +6,7 @@ const bodySizeBuckets = new Map();
 
 export function bodySizeTracker() {
   return (req, _res, next) => {
-    const size = parseInt(req.headers['content-length'], 10) || 0;
+    const size = parseInt(req.headers["content-length"], 10) || 0;
     if (size > 0) {
       const route = req.route?.path || req.path;
       const bucket = bodySizeBuckets.get(route) || { count: 0, totalBytes: 0 };

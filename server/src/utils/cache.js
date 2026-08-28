@@ -5,8 +5,8 @@
 //  • Sliding-window rate limit
 //  • Wrap any async fetcher with stale-while-revalidate
 // ════════════════════════════════════════════════════════════
-import { redis } from './redis.js';
-import { lru } from './lru.js';
+import { redis } from "./redis.js";
+import { lru } from "./lru.js";
 
 // L2 (distributed) fallback for when LRU is cold — short TTL only,
 // used to backfill LRU without blocking on Redis on the hot path.
@@ -26,7 +26,9 @@ function l2Set(k, v, ttl) {
   l2Fallback.set(k, { v, exp: ttl ? Date.now() + ttl * 1000 : null });
 }
 
-function l2Del(k) { l2Fallback.delete(k); }
+function l2Del(k) {
+  l2Fallback.delete(k);
+}
 
 // ── Public API ───────────────────────────────────────────
 export const cache = {
@@ -39,10 +41,12 @@ export const cache = {
     try {
       const raw = await redis.get(key);
       if (raw == null) return l2Get(key);
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       lru.set(key, parsed, 60); // backfill L1
       return parsed;
-    } catch { return l2Get(key); }
+    } catch {
+      return l2Get(key);
+    }
   },
   async set(key, value, ttl = 60) {
     lru.set(key, value, ttl);
@@ -50,12 +54,18 @@ export const cache = {
     try {
       const v = JSON.stringify(value);
       return redis.set(key, v, { ex: ttl });
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   },
   async del(key) {
     lru.del(key);
     l2Del(key);
-    try { return redis.del(key); } catch { return null; }
+    try {
+      return redis.del(key);
+    } catch {
+      return null;
+    }
   },
   async incr(key, ttl) {
     // Mirror the get/set pattern: treat redis.incr returning null the same
@@ -74,7 +84,11 @@ export const cache = {
       return cur;
     }
     if (v === 1 && ttl) {
-      try { await redis.expire(key, ttl); } catch { /* ignore */ }
+      try {
+        await redis.expire(key, ttl);
+      } catch {
+        /* ignore */
+      }
     }
     return Number(v) || 0;
   },
@@ -100,72 +114,93 @@ export async function rateLimit({ key, windowSec, max, blockSec = 0 }) {
     await redis.zremrangebyscore?.(key, 0, now - windowMs).catch(() => null);
     const count = (await redis.zcard?.(key)) || 0;
     if (Number(count) > max) {
-      if (blockSec) await redis.set(`block:${key}`, '1', { ex: blockSec });
+      if (blockSec) await redis.set(`block:${key}`, "1", { ex: blockSec });
       return { allowed: false, remaining: 0, resetMs: windowMs };
     }
-    return { allowed: true, remaining: Math.max(0, max - Number(count)), resetMs: windowMs };
-} catch {
-      // In-memory fallback: simple counter with TTL
-      const cur = (l2Get(key) || 0) + 1;
-      l2Set(key, cur, windowSec);
-      if (cur > max) return { allowed: false, remaining: 0, resetMs: windowMs };
-      return { allowed: true, remaining: max - cur, resetMs: windowMs };
-    }
+    return {
+      allowed: true,
+      remaining: Math.max(0, max - Number(count)),
+      resetMs: windowMs,
+    };
+  } catch {
+    // In-memory fallback: simple counter with TTL
+    const cur = (l2Get(key) || 0) + 1;
+    l2Set(key, cur, windowSec);
+    if (cur > max) return { allowed: false, remaining: 0, resetMs: windowMs };
+    return { allowed: true, remaining: max - cur, resetMs: windowMs };
+  }
 }
 
 // ── Express middleware factories ────────────────────────
-export const cacheMiddleware = (ttl = 30, vary = []) => async (req, res, next) => {
-  if (req.method !== 'GET') return next();
-  const varyStr = vary.map((v) => req.headers[v] || req[v] || '').join('|');
-  const key = `http:${req.originalUrl}:${varyStr}`;
-  const { hit, value } = await cache.wrap(key, ttl, async () => null);
-  if (hit && value) {
-    res.setHeader('X-Cache', 'HIT');
-    res.setHeader('Cache-Control', `private, max-age=${ttl}`);
-    return res.json(value);
-  }
-  res.setHeader('X-Cache', 'MISS');
-  res.setHeader('Cache-Control', `private, max-age=${ttl}`);
-  const origJson = res.json.bind(res);
-  res.json = (body) => {
-    if (res.statusCode < 400) cache.set(key, body, ttl).catch(() => null);
-    return origJson(body);
+export const cacheMiddleware =
+  (ttl = 30, vary = []) =>
+  async (req, res, next) => {
+    if (req.method !== "GET") return next();
+    const varyStr = vary.map((v) => req.headers[v] || req[v] || "").join("|");
+    const key = `http:${req.originalUrl}:${varyStr}`;
+    const { hit, value } = await cache.wrap(key, ttl, async () => null);
+    if (hit && value) {
+      res.setHeader("X-Cache", "HIT");
+      res.setHeader("Cache-Control", `private, max-age=${ttl}`);
+      return res.json(value);
+    }
+    res.setHeader("X-Cache", "MISS");
+    res.setHeader("Cache-Control", `private, max-age=${ttl}`);
+    const origJson = res.json.bind(res);
+    res.json = (body) => {
+      if (res.statusCode < 400) cache.set(key, body, ttl).catch(() => null);
+      return origJson(body);
+    };
+    next();
   };
-  next();
-};
 
-export const rateLimitMiddleware = ({ windowSec, max, name }) => async (req, res, next) => {
-  const id = req.user?.id || req.ip || 'anon';
-  const key = `rl:${name}:${id}`;
-  const result = await rateLimit({ key, windowSec, max, blockSec: windowSec });
-  res.setHeader('X-RateLimit-Limit', max);
-  res.setHeader('X-RateLimit-Remaining', result.remaining);
-  if (!result.allowed) {
-    res.setHeader('Retry-After', Math.ceil(result.resetMs / 1000));
-    return res.status(429).json({ error: 'Too many requests', retryAfter: result.resetMs });
-  }
-  next();
-};
+export const rateLimitMiddleware =
+  ({ windowSec, max, name }) =>
+  async (req, res, next) => {
+    const id = req.user?.id || req.ip || "anon";
+    const key = `rl:${name}:${id}`;
+    const result = await rateLimit({
+      key,
+      windowSec,
+      max,
+      blockSec: windowSec,
+    });
+    res.setHeader("X-RateLimit-Limit", max);
+    res.setHeader("X-RateLimit-Remaining", result.remaining);
+    if (!result.allowed) {
+      res.setHeader("Retry-After", Math.ceil(result.resetMs / 1000));
+      return res
+        .status(429)
+        .json({ error: "Too many requests", retryAfter: result.resetMs });
+    }
+    next();
+  };
 
 // ── ETag support ─────────────────────────────────────────
-import crypto from 'node:crypto';
+import crypto from "node:crypto";
 
-export const etagMiddleware = (weak = true) => (req, res, next) => {
-  if (req.method !== 'GET') return next();
-  const origJson = res.json.bind(res);
-  res.json = (body) => {
-    const json = JSON.stringify(body);
-    const hash = crypto.createHash('sha1').update(json).digest('hex').slice(0, 16);
-    const etag = (weak ? 'W/' : '') + `"${hash}"`;
-    res.setHeader('ETag', etag);
-    if (req.headers['if-none-match'] === etag) {
-      res.status(304).end();
-      return;
-    }
-    res.setHeader('Cache-Control', 'private, must-revalidate');
-    return origJson(body);
+export const etagMiddleware =
+  (weak = true) =>
+  (req, res, next) => {
+    if (req.method !== "GET") return next();
+    const origJson = res.json.bind(res);
+    res.json = (body) => {
+      const json = JSON.stringify(body);
+      const hash = crypto
+        .createHash("sha1")
+        .update(json)
+        .digest("hex")
+        .slice(0, 16);
+      const etag = (weak ? "W/" : "") + `"${hash}"`;
+      res.setHeader("ETag", etag);
+      if (req.headers["if-none-match"] === etag) {
+        res.status(304).end();
+        return;
+      }
+      res.setHeader("Cache-Control", "private, must-revalidate");
+      return origJson(body);
+    };
+    next();
   };
-  next();
-};
 
 export default cache;

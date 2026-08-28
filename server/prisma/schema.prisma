@@ -29,6 +29,10 @@ enum UserStatus {
 model User {
   id              String        @id @default(cuid())
   email           String        @unique
+  // Used by intern registration and login. Database constraints in the
+  // accompanying migration require 6–32 alphanumeric characters containing
+  // at least one letter and one digit.
+  internCode      String?       @unique @db.VarChar(32)
   passwordHash    String
   name            String
   role            UserRole      @default(INTERN)
@@ -111,8 +115,6 @@ model InternProfile {
   updatedAt     DateTime @updatedAt
 
   @@index([isTL])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model MentorProfile {

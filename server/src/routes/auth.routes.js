@@ -25,7 +25,8 @@ const loginLimiter = rateLimit({
 
 const loginSchema = z.object({
   email: schemas.email,
-  password: z.string().min(1).max(128),
+  internCode: z.string().optional(),
+  password: z.string().optional(),
   rememberMe: z
     .union([z.boolean(), z.string(), z.number()])
     .optional()
@@ -36,18 +37,30 @@ const loginSchema = z.object({
       const normalized = value.trim().toLowerCase();
       return normalized === "true" || normalized === "1" || normalized === "on";
     }),
+}).refine(data => data.password || data.internCode, {
+  message: "Either password or internCode is required for login",
+  path: ["password"],
 });
 
 const otpSchema = z.object({
   challengeToken: z.string().min(10),
-  code: z.string().trim().min(4).max(10),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "OTP must be a 6-digit code"),
   useTotp: z.boolean().optional(),
 });
 
 router.post("/login", loginLimiter, validate(loginSchema), auth.login);
 router.post("/verify-otp", loginLimiter, validate(otpSchema), auth.verifyOtp);
-router.get('/me', authenticate, requireAuth, auth.me);
-router.post('/2fa/setup', authenticate, requireAuth, auth.setupTotp);
+router.post(
+  "/resend-otp",
+  loginLimiter,
+  validate(z.object({ challengeToken: z.string().min(10) })),
+  auth.resendOtp,
+);
+router.get("/me", authenticate, requireAuth, auth.me);
+router.post("/2fa/setup", authenticate, requireAuth, auth.setupTotp);
 const internDatesSchema = {
   internStartDate: z
     .string()
@@ -67,6 +80,10 @@ router.post(
       name: z.string().min(2).max(80),
       email: schemas.email,
       password: schemas.password,
+      internCode: z.preprocess(
+        (val) => (val === "" ? undefined : val),
+        schemas.internCode.optional(),
+      ),
       isIntern: z.boolean().default(true),
       ...internDatesSchema,
     }),
@@ -136,16 +153,36 @@ router.get("/google/status", googleAuth.status);
 router.get("/google", googleAuth.start);
 router.get("/google/callback", googleAuth.callback);
 // ── Password Reset ─────────────────────────────────────────
-router.post('/forgot-password', auth.forgotPassword);
-router.post('/reset-password', auth.resetPassword);
+router.post("/forgot-password", auth.forgotPassword);
+router.post("/reset-password", auth.resetPassword);
 // Demo accounts (development only)
-router.get('/demo-accounts', (req, res) => {
+router.get("/demo-accounts", (req, res) => {
   res.json({
     accounts: [
-      { label: 'Senior Team Leader', email: 'superadmin@skillnova.com', pwd: 'SuperAdmin#2026', color: '#7C3AED' },
-      { label: 'Team Leader', email: 'admin@skillnova.com', pwd: 'Admin#2026', color: '#ff6d34' },
-      { label: 'Captain', email: 'mentor@skillnova.com', pwd: 'Mentor#2026', color: '#7C3AED' },
-      { label: 'Intern', email: 'rahul@skillnova.com', pwd: 'User#2026', color: '#00bea3' },
+      {
+        label: "Senior Team Leader",
+        email: "superadmin@skillnova.com",
+        pwd: "SuperAdmin#2026",
+        color: "#7C3AED",
+      },
+      {
+        label: "Team Leader",
+        email: "admin@skillnova.com",
+        pwd: "Admin#2026",
+        color: "#ff6d34",
+      },
+      {
+        label: "Captain",
+        email: "mentor@skillnova.com",
+        pwd: "Mentor#2026",
+        color: "#7C3AED",
+      },
+      {
+        label: "Intern",
+        email: "rahul@skillnova.com",
+        pwd: "User#2026",
+        color: "#00bea3",
+      },
     ],
   });
 });

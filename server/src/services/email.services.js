@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-import { logger } from '../utils/logger.js';
+import { logger } from "../utils/logger.js";
 
 export const sendEmail = async (to, subject, html) => {
   try {

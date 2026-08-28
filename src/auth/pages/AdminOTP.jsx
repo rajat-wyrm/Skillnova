@@ -14,7 +14,8 @@ const AdminOTP = () => {
   const goBack = useAuthStore((s) => s.goBackToLogin);
   const loading = useAuthStore((s) => s.loading);
   const devCode = useAuthStore((s) => s.devCode);
-  const contactHint = useAuthStore((s) => s.user?.email) || '';
+  const contactHint = useAuthStore((s) => s.contactHint) || '';
+  const resendOtp = useAuthStore((s) => s.resendOtp);
 
   const [digits, setDigits] = useState(Array(LEN).fill(''));
   const [error, setError] = useState('');
@@ -75,11 +76,13 @@ const AdminOTP = () => {
     if (resendIn > 0) return;
     setError('');
     try {
-      // For dev: just refire login to get a fresh devCode via notify
-      notify.info('Code re-sent (dev: check server logs)');
+      await resendOtp();
+      setDigits(Array(LEN).fill(''));
+      inputs.current[0]?.focus();
+      notify.success('A new code was sent to your email.');
       setResendIn(30);
-    } catch {
-      notify.error('Failed to resend');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to resend code.');
     }
   };
 

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 // Create a flag (Mentor only)
@@ -30,7 +30,7 @@ const _fetchFlags = async (res, queryOptions) => {
   try {
     const flags = await prisma.flag.findMany({
       ...queryOptions,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
     res.json({ success: true, flags });
   } catch (error) {
@@ -44,7 +44,7 @@ export const getAllFlags = async (req, res) => {
     include: {
       intern: { select: { name: true, email: true, department: true } },
       mentor: { select: { name: true } },
-    }
+    },
   });
 };
 
@@ -54,7 +54,7 @@ export const getMyFlags = async (req, res) => {
     where: { mentorId: req.user.id },
     include: {
       intern: { select: { name: true, email: true, department: true } },
-    }
+    },
   });
 };
 
@@ -66,7 +66,7 @@ export const resolveFlag = async (req, res) => {
     const flag = await prisma.flag.update({
       where: { id },
       data: {
-        status: 'RESOLVED',
+        status: "RESOLVED",
         resolvedAt: new Date(),
       },
     });
@@ -84,7 +84,7 @@ export const deleteFlag = async (req, res) => {
 
     await prisma.flag.delete({ where: { id } });
 
-    res.json({ success: true, message: 'Flag deleted successfully' });
+    res.json({ success: true, message: "Flag deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -97,12 +97,12 @@ export const getMyFlagsAsIntern = async (req, res) => {
     const flags = await prisma.flag.findMany({
       where: {
         internId,
-        status: 'ACTIVE'
+        status: "ACTIVE",
       },
       include: {
         mentor: { select: { name: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json({ success: true, flags });

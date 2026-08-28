@@ -4,15 +4,15 @@
 //  Reuses the project's existing Groq client/config — does NOT
 //  create a second AI provider integration.
 // ════════════════════════════════════════════════════════════
-import Groq from 'groq-sdk';
-import { PDFParse } from 'pdf-parse';
-import { config } from '../config/index.js';
-import { logger } from '../utils/logger.js';
-import { ApiError } from '../utils/ApiError.js';
+import Groq from "groq-sdk";
+import { PDFParse } from "pdf-parse";
+import { config } from "../config/index.js";
+import { logger } from "../utils/logger.js";
+import { ApiError } from "../utils/ApiError.js";
 
 let client = null;
 function getClient() {
-  if (!config.groq.apiKey) throw new Error('GROQ_API_KEY not configured');
+  if (!config.groq.apiKey) throw new Error("GROQ_API_KEY not configured");
   if (!client) client = new Groq({ apiKey: config.groq.apiKey });
   return client;
 }
@@ -47,15 +47,19 @@ export async function extractPdfText(buffer) {
   try {
     const parser = new PDFParse({});
     await parser.load(buffer);
-    const text = (parser.getText() || '').trim();
+    const text = (parser.getText() || "").trim();
     if (!text) {
-      throw ApiError.badRequest('Could not read any text from this PDF. It may be a scanned image without a text layer.');
+      throw ApiError.badRequest(
+        "Could not read any text from this PDF. It may be a scanned image without a text layer.",
+      );
     }
     return text.slice(0, MAX_RESUME_CHARS);
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    logger.warn({ err }, 'resume-import: PDF parsing failed');
-    throw ApiError.badRequest('This file could not be read as a PDF. Please upload a valid, non-corrupted PDF resume.');
+    logger.warn({ err }, "resume-import: PDF parsing failed");
+    throw ApiError.badRequest(
+      "This file could not be read as a PDF. Please upload a valid, non-corrupted PDF resume.",
+    );
   }
 }
 
@@ -73,19 +77,23 @@ export async function extractStructuredProfile(resumeText) {
       temperature: 0.1,
       max_tokens: 2000,
       messages: [
-        { role: 'system', content: EXTRACTION_SYSTEM_PROMPT },
-        { role: 'user', content: resumeText },
+        { role: "system", content: EXTRACTION_SYSTEM_PROMPT },
+        { role: "user", content: resumeText },
       ],
     });
-    raw = completion.choices?.[0]?.message?.content?.trim() ?? '';
+    raw = completion.choices?.[0]?.message?.content?.trim() ?? "";
   } catch (err) {
-    logger.error({ err }, 'resume-import: AI extraction request failed');
-    throw ApiError.badRequest('The resume parser is temporarily unavailable. Please try again shortly, or fill in your profile manually.');
+    logger.error({ err }, "resume-import: AI extraction request failed");
+    throw ApiError.badRequest(
+      "The resume parser is temporarily unavailable. Please try again shortly, or fill in your profile manually.",
+    );
   }
 
   const parsed = safeParseJson(raw);
   if (!parsed) {
-    throw ApiError.badRequest("We couldn't understand this resume's content. Try a different PDF or fill in your profile manually.");
+    throw ApiError.badRequest(
+      "We couldn't understand this resume's content. Try a different PDF or fill in your profile manually.",
+    );
   }
   return normalizeExtraction(parsed);
 }
@@ -93,7 +101,7 @@ export async function extractStructuredProfile(resumeText) {
 function safeParseJson(raw) {
   if (!raw) return null;
   // Strip accidental code fences if the model adds them despite instructions.
-  const cleaned = raw.replace(/^```json\s*|^```\s*|```$/gim, '').trim();
+  const cleaned = raw.replace(/^```json\s*|^```\s*|```$/gim, "").trim();
   try {
     return JSON.parse(cleaned);
   } catch {
@@ -109,34 +117,42 @@ function safeParseJson(raw) {
 
 function normalizeExtraction(parsed) {
   const skills = Array.isArray(parsed.skills)
-    ? [...new Set(parsed.skills.map((s) => String(s).trim()).filter(Boolean))].slice(0, 60)
+    ? [
+        ...new Set(parsed.skills.map((s) => String(s).trim()).filter(Boolean)),
+      ].slice(0, 60)
     : [];
 
   const education = Array.isArray(parsed.education)
-    ? parsed.education.slice(0, 20).map((e) => ({
-        institution: str(e?.institution),
-        degree: str(e?.degree),
-        field: str(e?.field),
-        startYear: str(e?.startYear),
-        endYear: str(e?.endYear),
-      })).filter((e) => e.institution || e.degree || e.field)
+    ? parsed.education
+        .slice(0, 20)
+        .map((e) => ({
+          institution: str(e?.institution),
+          degree: str(e?.degree),
+          field: str(e?.field),
+          startYear: str(e?.startYear),
+          endYear: str(e?.endYear),
+        }))
+        .filter((e) => e.institution || e.degree || e.field)
     : [];
 
   const experience = Array.isArray(parsed.experience)
-    ? parsed.experience.slice(0, 20).map((e) => ({
-        company: str(e?.company),
-        title: str(e?.title),
-        startDate: str(e?.startDate),
-        endDate: str(e?.endDate),
-        description: str(e?.description).slice(0, 600),
-      })).filter((e) => e.company || e.title)
+    ? parsed.experience
+        .slice(0, 20)
+        .map((e) => ({
+          company: str(e?.company),
+          title: str(e?.title),
+          startDate: str(e?.startDate),
+          endDate: str(e?.endDate),
+          description: str(e?.description).slice(0, 600),
+        }))
+        .filter((e) => e.company || e.title)
     : [];
 
   return { skills, education, experience };
 }
 
 function str(v) {
-  return typeof v === 'string' ? v.trim() : '';
+  return typeof v === "string" ? v.trim() : "";
 }
 
 export default { extractPdfText, extractStructuredProfile };

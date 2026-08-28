@@ -2,15 +2,15 @@
 //  AI Assistant — Groq-powered chat with retrieval grounding
 //  + structured outputs (action chips) + tool-use
 // ════════════════════════════════════════════════════════════
-import Groq from 'groq-sdk';
-import { config } from '../config/index.js';
-import { UPTOSKILLS_KB } from './uptoskills.kb.js';
-import prisma from '../utils/prisma.js';
-import { logger } from '../utils/logger.js';
+import Groq from "groq-sdk";
+import { config } from "../config/index.js";
+import { UPTOSKILLS_KB } from "./uptoskills.kb.js";
+import prisma from "../utils/prisma.js";
+import { logger } from "../utils/logger.js";
 
 let client = null;
 function getClient() {
-  if (!config.groq.apiKey) throw new Error('GROQ_API_KEY not configured');
+  if (!config.groq.apiKey) throw new Error("GROQ_API_KEY not configured");
   if (!client) client = new Groq({ apiKey: config.groq.apiKey });
   return client;
 }
@@ -41,53 +41,55 @@ function kbToPrompt() {
   return `
 Company: ${kb.company.name} (founded ${kb.company.founded})
 Mission: ${kb.company.mission}
-Programs: ${kb.company.programs.join(', ')}
+Programs: ${kb.company.programs.join(", ")}
 Contact: ${JSON.stringify(kb.company.contact)}
 
 Platform: ${kb.platform.name} — ${kb.platform.tagline}
-Modules: ${kb.platform.modules.join(', ')}
+Modules: ${kb.platform.modules.join(", ")}
 
 Onboarding:
-${kb.onboarding.map((o) => `- ${o.title}: ${o.body}`).join('\n')}
+${kb.onboarding.map((o) => `- ${o.title}: ${o.body}`).join("\n")}
 
 Reports:
 - Cadence: ${kb.reports.cadence}, deadline ${kb.reports.deadline}
-- Sections: ${kb.reports.sections.join('; ')}
-- Tips: ${kb.reports.tips.join(' | ')}
+- Sections: ${kb.reports.sections.join("; ")}
+- Tips: ${kb.reports.tips.join(" | ")}
 
 Attendance policy: ${kb.attendance.policy}
 Grace minutes: ${kb.attendance.graceMinutes}
 
-Mentorship: ${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(' / ')}
+Mentorship: ${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(" / ")}
 
 Code of conduct:
-${kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+${kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
 FAQs:
-${kb.faqs.map((f) => `Q: ${f.q}\nA: ${f.a}`).join('\n\n')}
+${kb.faqs.map((f) => `Q: ${f.q}\nA: ${f.a}`).join("\n\n")}
 
 Glossary:
-${Object.entries(kb.glossary).map(([k, v]) => `${k}: ${v}`).join('\n')}
+${Object.entries(kb.glossary)
+  .map(([k, v]) => `${k}: ${v}`)
+  .join("\n")}
 `;
 }
 
 async function fetchLiveData(user) {
   const [recentArticles, recentAnnouncements, myReports] = await Promise.all([
     prisma.knowledgeArticle.findMany({
-      where: { status: 'PUBLISHED' },
-      orderBy: { publishedAt: 'desc' },
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
       take: 5,
       select: { title: true, excerpt: true, publishedAt: true },
     }),
     prisma.announcement.findMany({
-      orderBy: { publishedAt: 'desc' },
+      orderBy: { publishedAt: "desc" },
       take: 5,
       select: { title: true, body: true, priority: true, publishedAt: true },
     }),
     user
       ? prisma.report.findMany({
           where: { userId: user.id },
-          orderBy: { submittedAt: 'desc' },
+          orderBy: { submittedAt: "desc" },
           take: 5,
           select: { title: true, status: true, score: true, submittedAt: true },
         })
@@ -101,33 +103,39 @@ async function buildMessages({ user, history, userMessage }) {
   const livePrompt = `
 === LIVE PLATFORM DATA ===
 Recent Knowledge Base articles:
-${live.recentArticles.map((a) => `- "${a.title}" — ${a.excerpt ?? 'No excerpt'}`).join('\n')}
+${live.recentArticles.map((a) => `- "${a.title}" — ${a.excerpt ?? "No excerpt"}`).join("\n")}
 
 Recent announcements:
-${live.recentAnnouncements.map((a) => `- [${a.priority}] ${a.title}: ${a.body.slice(0, 240)}`).join('\n')}
+${live.recentAnnouncements.map((a) => `- [${a.priority}] ${a.title}: ${a.body.slice(0, 240)}`).join("\n")}
 
 User's recent reports:
-${live.myReports.map((r) => `- "${r.title}" — status=${r.status}, score=${r.score ?? 'n/a'}`).join('\n')}
+${live.myReports.map((r) => `- "${r.title}" — status=${r.status}, score=${r.score ?? "n/a"}`).join("\n")}
 `;
   return [
-    { role: 'system', content: BASE_SYSTEM_PROMPT + livePrompt },
+    { role: "system", content: BASE_SYSTEM_PROMPT + livePrompt },
     ...(history ?? []).map((m) => ({ role: m.role, content: m.content })),
-    { role: 'user', content: userMessage },
+    { role: "user", content: userMessage },
   ];
 }
 
 // ── Local KB fallback (when Groq unavailable) ─────────────
 function localFallback(question) {
   const kb = UPTOSKILLS_KB;
-  const q = (question || '').toLowerCase();
+  const q = (question || "").toLowerCase();
   const reply = (() => {
-    if (q.includes('report')) return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]}`;
-    if (q.includes('attend')) return kb.attendance.policy;
-    if (q.includes('mentor') || q.includes('meeting')) return `${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(', ')}.`;
-    if (q.includes('code of conduct') || q.includes('conduct')) return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join('\n');
-    if (q.includes('contact') || q.includes('email') || q.includes('phone')) return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
-    if (q.includes('project') || q.includes('task')) return 'Open the **Project Flow** page to see your roadmap and current sprint. Tasks are managed in the **Tasks** section of your dashboard.';
-    if (q.includes('task') || q.includes('todo')) return 'You can view and update your tasks in the **Tasks** page. Mark them as DONE once completed.';
+    if (q.includes("report"))
+      return `Weekly reports are due **every Friday 6:00 PM IST**. ${kb.reports.tips[0]}`;
+    if (q.includes("attend")) return kb.attendance.policy;
+    if (q.includes("mentor") || q.includes("meeting"))
+      return `${kb.mentorship.cadence}, agenda: ${kb.mentorship.agenda.join(", ")}.`;
+    if (q.includes("code of conduct") || q.includes("conduct"))
+      return kb.code_of_conduct.map((c, i) => `${i + 1}. ${c}`).join("\n");
+    if (q.includes("contact") || q.includes("email") || q.includes("phone"))
+      return `Reach UptoSkills at ${kb.company.contact.email} or ${kb.company.contact.phone}.`;
+    if (q.includes("project") || q.includes("task"))
+      return "Open the **Project Flow** page to see your roadmap and current sprint. Tasks are managed in the **Tasks** section of your dashboard.";
+    if (q.includes("task") || q.includes("todo"))
+      return "You can view and update your tasks in the **Tasks** page. Mark them as DONE once completed.";
     const faq = kb.faqs.find((f) => q.includes(f.q.toLowerCase().slice(0, 12)));
     if (faq) return faq.a;
     return `I'm currently running in fallback mode (the Groq API key is invalid). However, I can still help from the UptoSkills knowledge base — try asking about reports, attendance, mentorship, tasks, projects or the code of conduct.`;
@@ -137,12 +145,15 @@ function localFallback(question) {
 
 function extractActions(text) {
   const m = text?.match(/<actions>(.*?)<\/actions>/s);
-  if (!m) return { reply: text || '', actions: [] };
+  if (!m) return { reply: text || "", actions: [] };
   try {
     const actions = JSON.parse(m[1]);
-    return { reply: text.replace(m[0], '').trim(), actions: Array.isArray(actions) ? actions : [] };
+    return {
+      reply: text.replace(m[0], "").trim(),
+      actions: Array.isArray(actions) ? actions : [],
+    };
   } catch {
-    return { reply: text.replace(m[0], '').trim(), actions: [] };
+    return { reply: text.replace(m[0], "").trim(), actions: [] };
   }
 }
 
@@ -158,14 +169,21 @@ export async function chatCompletion({ user, history, userMessage }) {
       max_tokens: 800,
       top_p: 0.95,
     });
-    const text = completion.choices?.[0]?.message?.content?.trim() ?? "I'm sorry, I couldn't generate a response.";
+    const text =
+      completion.choices?.[0]?.message?.content?.trim() ??
+      "I'm sorry, I couldn't generate a response.";
     const { reply, actions } = extractActions(text);
-    return { reply, actions, model: completion.model, tokens: completion.usage?.total_tokens };
+    return {
+      reply,
+      actions,
+      model: completion.model,
+      tokens: completion.usage?.total_tokens,
+    };
   } catch (err) {
-    logger.warn({ err: err?.message }, 'ai:groq-failed — using local fallback');
+    logger.warn({ err: err?.message }, "ai:groq-failed — using local fallback");
     const text = localFallback(userMessage);
     const { reply, actions } = extractActions(text);
-    return { reply, actions, model: 'fallback', tokens: null };
+    return { reply, actions, model: "fallback", tokens: null };
   }
 }
 
@@ -186,7 +204,10 @@ export async function* chatCompletionStream({ user, history, userMessage }) {
       if (delta) yield delta;
     }
   } catch (err) {
-    logger.warn({ err: err?.message }, 'ai:groq-stream-failed — yielding fallback');
+    logger.warn(
+      { err: err?.message },
+      "ai:groq-stream-failed — yielding fallback",
+    );
     const text = localFallback(userMessage);
     for (const word of text.split(/(\s+)/)) {
       yield word;
@@ -202,20 +223,31 @@ export async function suggestFollowUps(lastUserMessage) {
       model: config.groq.model,
       messages: [
         {
-          role: 'system',
-          content: 'Suggest 3 concise follow-up questions (max 8 words each). Return JSON: {"suggestions":["...","...","..."]}',
+          role: "system",
+          content:
+            'Suggest 3 concise follow-up questions (max 8 words each). Return JSON: {"suggestions":["...","...","..."]}',
         },
-        { role: 'user', content: lastUserMessage },
+        { role: "user", content: lastUserMessage },
       ],
       temperature: 0.6,
       max_tokens: 120,
-      response_format: { type: 'json_object' },
+      response_format: { type: "json_object" },
     });
     const parsed = JSON.parse(completion.choices[0].message.content);
     return parsed.suggestions ?? [];
   } catch {
-    return ['How do I submit a report?', 'What is the attendance policy?', 'Tell me about mentorship'];
+    return [
+      "How do I submit a report?",
+      "What is the attendance policy?",
+      "Tell me about mentorship",
+    ];
   }
 }
 
-export default { chatCompletion, chatCompletionStream, suggestFollowUps, UPTOSKILLS_KB, extractActions };
+export default {
+  chatCompletion,
+  chatCompletionStream,
+  suggestFollowUps,
+  UPTOSKILLS_KB,
+  extractActions,
+};

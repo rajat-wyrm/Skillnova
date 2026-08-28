@@ -14,11 +14,14 @@ import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { getSocket } from '../../lib/socket';
 import { formatRelative } from '../../lib/utils';
+import { useAuthStore } from '../../lib/auth';
 
 const PRIORITY_COLOR = { HIGH: '#ef4444', MEDIUM: '#f59e0b', LOW: '#10b981' };
 const PRIORITY_BG = { HIGH: 'rgba(239,68,68,0.08)', MEDIUM: 'rgba(245,158,11,0.08)', LOW: 'rgba(16,185,129,0.08)' };
 
 const AdminDashboard = () => {
+  const user = useAuthStore((s) => s.user);
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const [stats, setStats] = useState(null);
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +125,9 @@ const AdminDashboard = () => {
         <div className="relative p-4 sm:p-7">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <p className="text-sm font-medium mb-1" style={{ color: '#ff6d34' }}>Admin Overview · {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+              <p className="text-sm font-medium mb-1" style={{ color: '#ff6d34' }}>
+                {isSuperAdmin ? 'Super Admin Overview' : 'Admin Overview'} · {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </p>
               <h1 className="text-xl sm:text-2xl font-bold text-white">Platform Dashboard</h1>
               <p className="text-sm mt-1" style={{ color: '#9ca3af' }}>Monitor interns, knowledge base and platform activity</p>
             </div>
@@ -304,18 +309,24 @@ const AdminDashboard = () => {
           </div>
 
           {/* Manual push button */}
-          <button
-            onClick={triggerRandomEvent}
-            disabled={sendingEvent}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
-            style={{ background: sendingEvent ? '#6b7280' : 'linear-gradient(135deg, #ff6d34, #e85d25)' }}
-          >
-            {sendingEvent ? (
-              <><Loader2 size={15} className="animate-spin" /> Pushing…</>
-            ) : (
-              <><Sparkles size={15} /> Push Random Event Now</>
-            )}
-          </button>
+          {isSuperAdmin ? (
+            <button
+              onClick={triggerRandomEvent}
+              disabled={sendingEvent}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition disabled:opacity-60"
+              style={{ background: sendingEvent ? '#6b7280' : 'linear-gradient(135deg, #ff6d34, #e85d25)' }}
+            >
+              {sendingEvent ? (
+                <><Loader2 size={15} className="animate-spin" /> Pushing…</>
+              ) : (
+                <><Sparkles size={15} /> Push Random Event Now</>
+              )}
+            </button>
+          ) : (
+            <div className="w-full py-3 rounded-xl text-sm font-semibold text-center mt-2 border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--muted)' }}>
+              Push controls restricted to Super Admin
+            </div>
+          )}
 
           <p className="text-center text-[10px] mt-2" style={{ color: 'var(--muted)' }}>
             Auto-push also runs every 2 min via scheduler
