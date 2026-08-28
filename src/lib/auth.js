@@ -86,14 +86,11 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  login: async ({ email, password, rememberMe = true }) => {
+  login: async ({ email, password, internCode, rememberMe = true }) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.post("/auth/login", {
-        email,
-        password,
-        rememberMe,
-      });
+      const payload = password ? { email, password, internCode: password, rememberMe } : { email, internCode, rememberMe };
+      const { data } = await api.post("/auth/login", payload);
       if (data.step === "otp_required") {
         set({
           step: "otp",
@@ -103,8 +100,7 @@ export const useAuthStore = create((set, get) => ({
           otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin'),
           loading: false,
         });
-        return { step: 'otp', otpMode: data.otpMode ?? (data.user?.role === 'INTERN' ? 'user' : 'admin') };
-        return { step: "otp" };
+        return { step: 'otp', otpMode: data.otpMode ?? 'user' };
       }
       set({
         user: data.user,
@@ -143,10 +139,18 @@ export const useAuthStore = create((set, get) => ({
       throw err;
     }
   },
+  resendOtp: async () => {
+    const challengeToken = get().challengeToken;
+    if (!challengeToken) throw new Error("No active OTP challenge");
+    const { data } = await api.post("/auth/resend-otp", { challengeToken });
+    set({ devCode: data.devCode ?? null });
+    return data;
+  },
   signupStart: async ({
     name,
     email,
     password,
+    internCode,
     isIntern = true,
     internStartDate,
     internEndDate,
@@ -158,6 +162,7 @@ export const useAuthStore = create((set, get) => ({
         name,
         email,
         password,
+        internCode,
         isIntern,
         internStartDate,
         internEndDate,

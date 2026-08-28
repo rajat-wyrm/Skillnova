@@ -1,10 +1,10 @@
 // ════════════════════════════════════════════════════════════
 //  Collaborative Tasks Controller
 // ════════════════════════════════════════════════════════════
-import prisma from '../utils/prisma.js';
-import { ApiError } from '../utils/ApiError.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { audit } from '../services/audit.service.js';
+import prisma from "../utils/prisma.js";
+import { ApiError } from "../utils/ApiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { audit } from "../services/audit.service.js";
 
 // 1. Create a Collaborative Task
 export const createTask = asyncHandler(async (req, res) => {
@@ -13,14 +13,14 @@ export const createTask = asyncHandler(async (req, res) => {
 
   // Verify team exists
   const teamExists = await prisma.team.findUnique({ where: { id: teamId } });
-  if (!teamExists) throw ApiError.notFound('Team not found');
+  if (!teamExists) throw ApiError.notFound("Team not found");
 
   const task = await prisma.collaborativeTask.create({
     data: {
       teamId,
       title,
       description,
-      status: status || 'TODO',
+      status: status || "TODO",
       creatorId,
       assignees: {
         connect: assigneeIds.map((id) => ({ id })),
@@ -32,7 +32,13 @@ export const createTask = asyncHandler(async (req, res) => {
     },
   });
 
-  await audit({ userId: creatorId, action: 'collab_task.create', resource: 'task', resourceId: task.id, req });
+  await audit({
+    userId: creatorId,
+    action: "collab_task.create",
+    resource: "task",
+    resourceId: task.id,
+    req,
+  });
   res.status(201).json({ task });
 });
 
@@ -41,7 +47,7 @@ export const getTeamTasks = asyncHandler(async (req, res) => {
   const { teamId } = req.params;
 
   const teamExists = await prisma.team.findUnique({ where: { id: teamId } });
-  if (!teamExists) throw ApiError.notFound('Team not found');
+  if (!teamExists) throw ApiError.notFound("Team not found");
 
   const tasks = await prisma.collaborativeTask.findMany({
     where: { teamId },
@@ -49,7 +55,7 @@ export const getTeamTasks = asyncHandler(async (req, res) => {
       assignees: { select: { id: true, name: true, avatarUrl: true } },
       creator: { select: { id: true, name: true } },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
   });
 
   res.json({ tasks });
@@ -61,7 +67,7 @@ export const updateTaskStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
 
   const task = await prisma.collaborativeTask.findUnique({ where: { id } });
-  if (!task) throw ApiError.notFound('Task not found');
+  if (!task) throw ApiError.notFound("Task not found");
 
   const updatedTask = await prisma.collaborativeTask.update({
     where: { id },
@@ -71,7 +77,14 @@ export const updateTaskStatus = asyncHandler(async (req, res) => {
     },
   });
 
-  await audit({ userId: req.user.id, action: 'collab_task.update_status', resource: 'task', resourceId: id, meta: { status }, req });
+  await audit({
+    userId: req.user.id,
+    action: "collab_task.update_status",
+    resource: "task",
+    resourceId: id,
+    meta: { status },
+    req,
+  });
   res.json({ task: updatedTask });
 });
 
@@ -81,7 +94,7 @@ export const assignUsersToTask = asyncHandler(async (req, res) => {
   const { assigneeIds } = req.body;
 
   const task = await prisma.collaborativeTask.findUnique({ where: { id } });
-  if (!task) throw ApiError.notFound('Task not found');
+  if (!task) throw ApiError.notFound("Task not found");
 
   const updatedTask = await prisma.collaborativeTask.update({
     where: { id },
@@ -96,7 +109,14 @@ export const assignUsersToTask = asyncHandler(async (req, res) => {
     },
   });
 
-  await audit({ userId: req.user.id, action: 'collab_task.assign_users', resource: 'task', resourceId: id, meta: { assigneeIds }, req });
+  await audit({
+    userId: req.user.id,
+    action: "collab_task.assign_users",
+    resource: "task",
+    resourceId: id,
+    meta: { assigneeIds },
+    req,
+  });
   res.json({ task: updatedTask });
 });
 
@@ -106,12 +126,14 @@ export const getTeams = asyncHandler(async (req, res) => {
   const userRole = req.user.role;
 
   let teams;
-  if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+  if (userRole === "SUPER_ADMIN" || userRole === "ADMIN") {
     teams = await prisma.team.findMany({
       include: {
-        members: { select: { id: true, name: true, avatarUrl: true, role: true } },
+        members: {
+          select: { id: true, name: true, avatarUrl: true, role: true },
+        },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   } else {
     teams = await prisma.team.findMany({
@@ -119,9 +141,11 @@ export const getTeams = asyncHandler(async (req, res) => {
         members: { some: { id: userId } },
       },
       include: {
-        members: { select: { id: true, name: true, avatarUrl: true, role: true } },
+        members: {
+          select: { id: true, name: true, avatarUrl: true, role: true },
+        },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 

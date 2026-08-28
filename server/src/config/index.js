@@ -1,10 +1,10 @@
-import crypto from 'node:crypto';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import dotenv from 'dotenv';
+import crypto from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(configDir, '../../.env') });
+dotenv.config({ path: path.resolve(configDir, "../../.env") });
 
 // const requiredSecrets = ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
 // import "dotenv/config";
@@ -19,16 +19,23 @@ dotenv.config({ path: path.resolve(configDir, '../../.env') });
 //   "CSRF_SECRET",
 //   ...(isProd ? ["FILE_SIGN_SECRET"] : []),
 // ];
-const requiredSecrets = ['DATABASE_URL', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'JWT_SECRET', 'CSRF_SECRET'];
-const isProd = process.env.NODE_ENV === 'production';
+const requiredSecrets = [
+  "DATABASE_URL",
+  "JWT_ACCESS_SECRET",
+  "JWT_REFRESH_SECRET",
+  "JWT_SECRET",
+  "CSRF_SECRET",
+];
+const isProd = process.env.NODE_ENV === "production";
 const missingSecrets = requiredSecrets.filter((k) => !process.env[k]);
 const missingDatabaseUrl = !process.env.DATABASE_URL;
 const invalidDatabaseUrl =
-  process.env.DATABASE_URL && !/^postgres(?:ql)?:\/\//.test(process.env.DATABASE_URL);
+  process.env.DATABASE_URL &&
+  !/^postgres(?:ql)?:\/\//.test(process.env.DATABASE_URL);
 
 if (missingDatabaseUrl) {
   const message =
-    '[config] Missing DATABASE_URL. Set it in server/.env to a PostgreSQL URL, e.g. postgresql://user:password@host:5432/skillnova';
+    "[config] Missing DATABASE_URL. Set it in server/.env to a PostgreSQL URL, e.g. postgresql://user:password@host:5432/skillnova";
   if (isProd) {
     console.error(message);
     process.exit(1);
@@ -37,7 +44,8 @@ if (missingDatabaseUrl) {
 }
 
 if (invalidDatabaseUrl) {
-  const message = '[config] DATABASE_URL must start with postgresql:// or postgres://';
+  const message =
+    "[config] DATABASE_URL must start with postgresql:// or postgres://";
   if (isProd) {
     console.error(message);
     process.exit(1);
@@ -47,12 +55,18 @@ if (invalidDatabaseUrl) {
 
 if (missingSecrets.length) {
   if (isProd) {
-    console.error(`[config] Missing required env var(s): ${missingSecrets.join(', ')}`);
-    console.error("\n[config] FATAL: Missing required environment variable(s):");
-    missingSecrets.forEach((k) => console.error(`  - ${k}`));
-    console.error("\nCopy server/.env.example to server/.env and fill in real values.");
     console.error(
-      "Generate secrets with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\"\n"
+      `[config] Missing required env var(s): ${missingSecrets.join(", ")}`,
+    );
+    console.error(
+      "\n[config] FATAL: Missing required environment variable(s):",
+    );
+    missingSecrets.forEach((k) => console.error(`  - ${k}`));
+    console.error(
+      "\nCopy server/.env.example to server/.env and fill in real values.",
+    );
+    console.error(
+      "Generate secrets with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\"\n",
     );
     process.exit(1);
   }
@@ -60,11 +74,12 @@ if (missingSecrets.length) {
   // Dev / test: warn loudly and substitute placeholders so unit tests can
   // run without a populated .env file. Production servers always set these.
   console.warn(
-    `[config] Missing env var(s) substituted with random placeholders: ${missingSecrets.join(', ')}`
+    `[config] Missing env var(s) substituted with random placeholders: ${missingSecrets.join(", ")}`,
   );
 
   for (const k of missingSecrets) {
-    process.env[k] = `dev-${k.toLowerCase()}-${crypto.randomBytes(12).toString('hex')}`;
+    process.env[k] =
+      `dev-${k.toLowerCase()}-${crypto.randomBytes(12).toString("hex")}`;
   }
 }
 
@@ -105,13 +120,13 @@ function parseTtl(value, fallback) {
 
 function isPrivateHost(hostname) {
   return (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '::1' ||
-    hostname === '0.0.0.0' ||
-    hostname.startsWith('127.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname === "0.0.0.0" ||
+    hostname.startsWith("127.") ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
     /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)
   );
 }
@@ -144,10 +159,10 @@ export const config = {
     accessSecret: process.env.JWT_ACCESS_SECRET,
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     secret: process.env.JWT_SECRET,
-    accessTtl: parseTtl(process.env.ACCESS_TOKEN_TTL, '15m'),
-    refreshTtl: parseTtl(process.env.REFRESH_TOKEN_TTL, '7d'),
-    otpTtl: parseTtl(process.env.OTP_TTL, '10m'),
-    twoFaTtl: parseTtl(process.env.TWOFA_TTL, '10m'),
+    accessTtl: parseTtl(process.env.ACCESS_TOKEN_TTL, "15m"),
+    refreshTtl: parseTtl(process.env.REFRESH_TOKEN_TTL, "7d"),
+    otpTtl: parseTtl(process.env.OTP_TTL, "10m"),
+    twoFaTtl: parseTtl(process.env.TWOFA_TTL, "10m"),
   },
 
   csrf: {
@@ -207,7 +222,7 @@ export const config = {
     },
   },
 
-  logLevel: process.env.LOG_LEVEL || 'info',
+  logLevel: process.env.LOG_LEVEL || "info",
   isProd: isProd,
 };
 
@@ -218,7 +233,7 @@ export function isCorsOriginAllowed(origin) {
 
   try {
     const { protocol, hostname } = new URL(origin);
-    return ['http:', 'https:'].includes(protocol) && isPrivateHost(hostname);
+    return ["http:", "https:"].includes(protocol) && isPrivateHost(hostname);
   } catch {
     return false;
   }

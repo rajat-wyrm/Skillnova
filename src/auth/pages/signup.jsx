@@ -21,6 +21,7 @@ const Signup = () => {
     name: "",
     email: "",
     password: "",
+    internCode: "",
     isIntern: true,
     internStartDate: "",
     internEndDate: "",
@@ -34,8 +35,12 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError("");
-    if (!form.name || !form.email || !form.password) {
+    if (!form.name || !form.email || !form.password || !form.internCode) {
       setFormError("Fill in required fields.");
+      return;
+    }
+    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,32}$/.test(form.internCode)) {
+      setFormError("Intern code must be 6–32 letters and numbers, with at least one of each.");
       return;
     }
 
@@ -92,7 +97,8 @@ const Signup = () => {
     setForm({
       name: "",
       email: "",
-      password: "",
+    password: "",
+    internCode: "",
       isIntern: true,
       internStartDate: "",
       internEndDate: "",
@@ -165,6 +171,23 @@ const Signup = () => {
                     value={form.password}
                     onChange={update("password")}
                     autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              <div className="auth-form-group">
+                <label className="auth-label">
+                  Intern code <span className="auth-required">*</span>
+                </label>
+                <div className="auth-input-wrap">
+                  <input
+                    className="auth-input"
+                    type="text"
+                    placeholder="e.g. INTERN2026"
+                    value={form.internCode}
+                    onChange={update("internCode")}
+                    autoComplete="off"
+                    maxLength={32}
                   />
                 </div>
               </div>

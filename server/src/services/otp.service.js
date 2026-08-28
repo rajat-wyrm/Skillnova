@@ -1,22 +1,12 @@
 // ════════════════════════════════════════════════════════════
 //  OTP Service — Generate, store, verify, and send OTP
 // ════════════════════════════════════════════════════════════
-import crypto from "node:crypto";
 import prisma from "../utils/prisma.js";
-import { hashPassword } from "../utils/auth.js";
+import { generateOtp, hashPassword, verifyPassword } from "../utils/auth.js";
 import { sendEmail } from "./email.service.js";
 import { logger } from "../utils/logger.js";
 
-const OTP_LENGTH = 6;
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
-
-/**
- * Generate a random 6-digit OTP
- */
-export function generateOtp(length = OTP_LENGTH) {
-  const max = 10 ** length;
-  return String(Math.floor(Math.random() * max)).padStart(length, "0");
-}
 
 /**
  * Create & send OTP for signup/login
@@ -31,13 +21,14 @@ export async function createAndSendOtp(email, purpose = "signup") {
     const codeHash = hashPassword(code);
     const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
 
-    // Clean old OTPs for this email/purpose
-    await prisma.otpChallenge.deleteMany({
+    // A new code supersedes any previous unconsumed code for this flow.
+    await prisma.otpChallenge.updateMany({
       where: {
         email,
         purpose,
-        expiresAt: { lt: new Date() },
+        consumedAt: null,
       },
+      data: { consumedAt: new Date() },
     });
 
     // Store OTP hash in DB
@@ -108,7 +99,7 @@ export async function verifyOtp(email, code, purpose = "signup") {
     }
 
     // Compare OTP codes
-    const isValid = await compareOtp(code, otpRecord.codeHash);
+    const isValid = verifyPassword(code, otpRecord.codeHash);
 
     if (!isValid) {
       // Increment attempts
@@ -138,21 +129,6 @@ export async function verifyOtp(email, code, purpose = "signup") {
     });
     return false;
   }
-}
-
-/**
- * Compare plain OTP with hash
- * (Using crypto for timing-safe comparison)
- */
-async function compareOtp(plain, hash) {
-  const crypto_module = await import("crypto");
-  const plainHash = crypto_module.default
-    .createHash("sha256")
-    .update(plain)
-    .digest("hex");
-  return crypto
-    .timingSafeEqual(Buffer.from(plainHash), Buffer.from(hash))
-    .valueOf();
 }
 
 /**

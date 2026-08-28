@@ -2,7 +2,7 @@
 //  AUTH — User2FA.jsx (Intern 2FA / TOTP)
 // ════════════════════════════════════════════════════════════
 import { useState, useRef, useEffect } from 'react';
-import { KeyRound, ArrowLeft } from 'lucide-react';
+import { KeyRound, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 import notify from '../../lib/toast';
 import '../auth.css';
@@ -14,10 +14,13 @@ const User2FA = () => {
   const goBack = useAuthStore((s) => s.goBackToLogin);
   const loading = useAuthStore((s) => s.loading);
   const devCode = useAuthStore((s) => s.devCode);
+  const contactHint = useAuthStore((s) => s.contactHint);
+  const resendOtp = useAuthStore((s) => s.resendOtp);
 
   const [digits, setDigits] = useState(Array(LEN).fill(''));
   const [useTotp, setUseTotp] = useState(false);
   const [error, setError] = useState('');
+  const [resendIn, setResendIn] = useState(0);
   const inputs = useRef([]);
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -29,6 +32,12 @@ const User2FA = () => {
     }
   }, [devCode]);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const timer = setTimeout(() => setResendIn((value) => value - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
 
   const setDigit = (i, v) => {
     if (!/^\d?$/.test(v)) return;
@@ -65,6 +74,17 @@ const User2FA = () => {
 
   const code = digits.join('');
   const ready = code.length === LEN;
+  const resend = async () => {
+    if (resendIn > 0) return;
+    try {
+      await resendOtp();
+      setDigits(Array(LEN).fill(''));
+      setResendIn(30);
+      notify.success('A new code was sent to your email.');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Unable to resend the code.');
+    }
+  };
 
   return (
     <div className="auth-container">
@@ -80,7 +100,7 @@ const User2FA = () => {
         <p className="auth-subtitle">
           {useTotp
             ? 'Open your authenticator app and enter the 6-digit code.'
-            : 'Enter the 6-digit code we just sent to your registered email.'}
+            : `Enter the 6-digit code we just sent to ${contactHint || 'your registered email'}.`}
         </p>
 
         {devCode && !useTotp && (
@@ -119,6 +139,12 @@ const User2FA = () => {
         <button onClick={() => setUseTotp((v) => !v)} type="button" className="auth-link">
           {useTotp ? 'Use email code instead' : 'Use authenticator app instead'}
         </button>
+        {!useTotp && (
+          <button onClick={resend} type="button" className="auth-link" disabled={resendIn > 0} style={{ marginLeft: 16, opacity: resendIn > 0 ? 0.5 : 1 }}>
+            <RefreshCw size={12} style={{ display: 'inline', marginRight: 4 }} />
+            {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
+          </button>
+        )}
       </div>
     </div>
   );

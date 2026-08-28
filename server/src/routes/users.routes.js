@@ -33,6 +33,7 @@ router.post(
     z.object({
       email: schemas.email,
       password: schemas.password,
+      internCode: schemas.internCode,
       name: z.string().min(2).max(80),
       role: z
         .enum(["SUPER_ADMIN", "ADMIN", "MENTOR", "INTERN"])

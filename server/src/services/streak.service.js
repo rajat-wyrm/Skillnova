@@ -1,5 +1,5 @@
-import prisma from '../utils/prisma.js';
-import lru from '../utils/lru.js';
+import prisma from "../utils/prisma.js";
+import lru from "../utils/lru.js";
 
 /**
  * Get normalized UTC midnight date
@@ -22,7 +22,7 @@ async function isIntern(userId) {
     where: { id: userId },
     select: { role: true },
   });
-  return user?.role === 'INTERN';
+  return user?.role === "INTERN";
 }
 
 /**
@@ -48,7 +48,9 @@ export async function recordActivity(userId) {
 
   if (!user) return;
 
-  const lastActivity = user.lastActivityAt ? getUtcMidnight(user.lastActivityAt) : null;
+  const lastActivity = user.lastActivityAt
+    ? getUtcMidnight(user.lastActivityAt)
+    : null;
 
   let newCurrentStreak = user.currentStreak;
   let newLongestStreak = user.longestStreak;
@@ -97,7 +99,10 @@ export function getEffectiveStreak(user) {
   const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
   const lastActivity = getUtcMidnight(user.lastActivityAt);
 
-  if (lastActivity.getTime() === today.getTime() || lastActivity.getTime() === yesterday.getTime()) {
+  if (
+    lastActivity.getTime() === today.getTime() ||
+    lastActivity.getTime() === yesterday.getTime()
+  ) {
     return user.currentStreak;
   }
   return 0;

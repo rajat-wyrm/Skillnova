@@ -10,13 +10,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { lru } from "../utils/lru.js";
 import {
   hashPassword,
-  verifyPassword,
   signAccessToken,
   signRefreshToken,
   verifyAccessToken,
   verifyRefreshToken,
   hashToken,
-  generateOtp,
   verifyTotp,
   signCsrf,
   COOKIE_NAMES,
@@ -29,15 +27,6 @@ import { logger } from "../utils/logger.js";
 import { notify } from "../services/notification.service.js";
 import { PERMISSIONS } from "../middleware/rbac.js";
 
-function parseDurationToMs(val) {
-  if (typeof val === "number") return val;
-  const match = String(val).match(/^(\d+)(s|m|h|d)$/);
-  if (!match) return 600000;
-  const n = Number(match[1]);
-  const unit = match[2];
-  const multipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000 };
-  return n * multipliers[unit];
-}
 function generateInviteCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I
   let code = "";
@@ -48,34 +37,38 @@ function generateInviteCode() {
   return code; // e.g. "K3F9-7GQX"
 }
 
-import { sendEmail } from '../services/email.service.js';
-import { resolveOtpMode } from '../utils/authFlow.js';
+import { sendEmail } from "../services/email.service.js";
+import { resolveOtpMode } from "../utils/authFlow.js";
+import {
+  createAndSendOtp,
+  verifyOtp as verifyEmailOtp,
+} from "../services/otp.service.js";
 
 // ── Cookie options ───────────────────────────────────────
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
+  sameSite: "lax",
   secure: config.isProd,
-  path: '/api/v1/auth',
-  domain: config.isProd ? undefined : 'localhost',
+  path: "/api/v1/auth",
+  domain: config.isProd ? undefined : "localhost",
   maxAge: config.security.refreshCookieMaxAge || 7 * 24 * 60 * 60 * 1000,
 };
 
 const ACCESS_COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax',
+  sameSite: "lax",
   secure: config.isProd,
-  path: '/',
-  domain: config.isProd ? undefined : 'localhost',
+  path: "/",
+  domain: config.isProd ? undefined : "localhost",
   maxAge: config.security.accessCookieMaxAge || 15 * 60 * 1000,
 };
 
 const CSRF_COOKIE_OPTS = {
   httpOnly: false,
-  sameSite: 'lax',
+  sameSite: "lax",
   secure: config.isProd,
-  path: '/',
-  domain: config.isProd ? undefined : 'localhost',
+  path: "/",
+  domain: config.isProd ? undefined : "localhost",
   maxAge: config.security.csrfCookieMaxAge || 24 * 60 * 60 * 1000,
 };
 
@@ -119,7 +112,9 @@ export function issueTokens(res, user, req, { rememberMe = true } = {}) {
   memoryStore.set(
     `session:${sessionId}`,
     { uid: user.id, role: user.role },
-    Math.floor((config.security.refreshCookieMaxAge || 7 * 24 * 60 * 60 * 1000) / 1000),
+    Math.floor(
+      (config.security.refreshCookieMaxAge || 7 * 24 * 60 * 60 * 1000) / 1000,
+    ),
   );
   return { accessToken, refreshToken, sessionId };
 }
@@ -135,30 +130,84 @@ function issuePendingSession(res, user) {
   memoryStore.set(
     `session:${sessionId}`,
     { uid: user.id, role: user.role, pending: true },
-    config.security.pendingSessionTtlSeconds,
+    Math.floor(config.security.pendingSessionTtlSeconds || 15 * 60),
   );
-  memoryStore.set(`session:${sessionId}`, { uid: user.id, role: user.role, pending: true }, Math.floor((config.security.pendingSessionTtlSeconds || 15 * 60)));
   return sessionId;
+}
+
+function maskedEmail(email) {
+  return email.replace(/(.{2}).+(@.+)/, "$1***$2");
+}
+
+function hasMatchingInternCode(value, storedCode) {
+  if (!storedCode) return false;
+  const submitted = Buffer.from(value, "utf8");
+  const stored = Buffer.from(storedCode, "utf8");
+  return (
+    submitted.length === stored.length &&
+    crypto.timingSafeEqual(submitted, stored)
+  );
+}
+
+function createOtpChallengeToken(user, sessionId, purpose, rememberMe = true) {
+  return signAccessToken(
+    {
+      sub: user.id,
+      purpose,
+      role: user.role,
+      sid: sessionId,
+      rememberMe,
+    },
+    config.jwt.otpTtl,
+  );
 }
 
 // ── POST /auth/login ─────────────────────────────────────
 export const login = asyncHandler(async (req, res) => {
-  const { email, password, rememberMe } = req.body;
+  const { email, internCode, password, rememberMe } = req.body;
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
   });
-  if (!user) throw ApiError.unauthorized("Invalid credentials");
-
-  if (user.lockedUntil && user.lockedUntil > new Date()) {
-    throw ApiError.forbidden(
-      `Account locked until ${user.lockedUntil.toISOString()}`,
-    );
+  if (!user) {
+    await audit({
+      action: "auth.login.failed",
+      meta: { reason: "invalid_credentials" },
+      req,
+    });
+    throw ApiError.unauthorized("Invalid credentials");
   }
 
-  if (user.status === 'SUSPENDED') throw ApiError.forbidden('Account suspended');
-  if (user.status === 'INACTIVE') throw ApiError.forbidden('Account inactive');
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    await audit({
+      userId: user.id,
+      action: "auth.login.blocked",
+      meta: { reason: "locked" },
+      req,
+    });
+    throw ApiError.unauthorized("Invalid credentials");
+  }
 
-  const ok = verifyPassword(password, user.passwordHash);
+  if (
+    user.status === "SUSPENDED" ||
+    user.status === "INACTIVE" ||
+    !user.emailVerified
+  ) {
+    await audit({
+      userId: user.id,
+      action: "auth.login.blocked",
+      meta: { reason: "unavailable" },
+      req,
+    });
+    throw ApiError.unauthorized("Invalid credentials");
+  }
+
+  let ok = false;
+  if (password && user.passwordHash) {
+    ok = await bcrypt.compare(password, user.passwordHash);
+  }
+  if (!ok && internCode && user.internCode) {
+    ok = hasMatchingInternCode(internCode, user.internCode);
+  }
   if (!ok) {
     const failed = user.failedAttempts + 1;
     const lockedUntil =
@@ -184,66 +233,27 @@ export const login = asyncHandler(async (req, res) => {
     data: {
       failedAttempts: 0,
       lockedUntil: null,
-      lastLoginAt: new Date(),
-      lastLoginIp: getClientIp(req),
     },
   });
 
-  const requireSecondFactor =
-    user.role === "SUPER_ADMIN" ||
-    user.role === "ADMIN" ||
-    user.twoFactorEnabled;
-
-  if (requireSecondFactor) {
-    // Issue a pending session (cookies + CSRF) so the next request is authenticated for the OTP step
-    const sessionId = issuePendingSession(res, user);
-
-    const code = generateOtp(6);
-    await prisma.otpChallenge.create({
-      data: {
-        email: user.email,
-        purpose: user.role === 'SUPER_ADMIN' || user.role === 'ADMIN' ? 'login_admin' : 'login_2fa',
-        codeHash: await bcrypt.hash(code, config.security.otpHashRounds),
-        expiresAt: new Date(Date.now() + parseDurationToMs(config.jwt.otpTtl)),
-      },
-    });
-
-    // Sign a SHORT-LIVED challenge token (used only to identify the OTP step)
-    const challengeToken = signAccessToken({
-      sub: user.id,
-      purpose: "otp",
-      role: user.role,
-      sid: sessionId,
-    });
-
-    const responsePayload = {
-      step: 'otp_required',
-      challengeToken,
+  // All logins require a second, email-delivered factor.
+  const otpResult = await createAndSendOtp(user.email, "login");
+  const sessionId = issuePendingSession(res, user);
+  const responsePayload = {
+    step: "otp_required",
+    challengeToken: createOtpChallengeToken(
+      user,
       sessionId,
-      otpMode: resolveOtpMode(user.role),
-      contactHint: user.email.replace(/(.{2}).+(@.+)/, '$1***$2'),
-    };
-    if (!config.isProd) responsePayload.devCode = code;
+      "login_otp",
+      rememberMe,
+    ),
+    otpMode: resolveOtpMode(user.role),
+    contactHint: maskedEmail(user.email),
+  };
+  if (!config.isProd) responsePayload.devCode = otpResult.code;
 
-    await audit({ userId: user.id, action: "auth.otp.sent", req });
-    return res.json(responsePayload);
-  }
-
-  const { accessToken, refreshToken } = issueTokens(res, user, req, {
-    rememberMe,
-  });
-  await audit({ userId: user.id, action: "auth.login.success", req });
-  await notify(user.id, {
-    type: "security",
-    title: "New login",
-    body: `From ${getClientIp(req)}`,
-  });
-
-  res.json({
-    user: sanitize(user),
-    accessToken,
-    refreshToken,
-  });
+  await audit({ userId: user.id, action: "auth.otp.sent", req });
+  return res.json(responsePayload);
 });
 
 // ── POST /auth/verify-otp ────────────────────────────────
@@ -253,9 +263,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   let payload;
   try {
-    // BUG FIX: the challenge token is signed with the ACCESS secret
     payload = verifyAccessToken(challengeToken);
-    if (payload.purpose !== "otp") throw new Error("bad purpose");
+    if (payload.purpose !== "login_otp") throw new Error("bad purpose");
   } catch {
     throw ApiError.unauthorized("Invalid or expired challenge");
   }
@@ -263,38 +272,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) throw ApiError.unauthorized("Invalid user");
 
-  let ok = false;
-  const challenges = await prisma.otpChallenge.findMany({
-    where: {
-      email: user.email,
-      consumedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 3,
-  });
-
+  let ok;
   if (useTotp && user.twoFactorSecret) {
     ok = verifyTotp(code, user.twoFactorSecret);
   } else {
-    for (const c of challenges) {
-      if (await bcrypt.compare(code, c.codeHash)) {
-        ok = true;
-        await prisma.otpChallenge.update({
-          where: { id: c.id },
-          data: { consumedAt: new Date() },
-        });
-        break;
-      } else {
-        await prisma.otpChallenge.update({
-          where: { id: c.id },
-          data: { attempts: { increment: 1 } },
-        });
-      }
-    }
+    ok = await verifyEmailOtp(user.email, code, "login");
   }
 
-  if (!ok) throw ApiError.unauthorized("Incorrect or expired code");
+  if (!ok) {
+    await audit({ userId: user.id, action: "auth.otp.failed", req });
+    throw ApiError.unauthorized("Incorrect or expired code");
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -305,7 +293,9 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   if (payload.sid && payload.sid !== "pending") {
     memoryStore.del(`session:${payload.sid}`);
   }
-  const { accessToken, refreshToken } = issueTokens(res, user, req);
+  const { accessToken, refreshToken } = issueTokens(res, user, req, {
+    rememberMe: payload.rememberMe !== false,
+  });
   await audit({ userId: user.id, action: "auth.otp.verified", req });
 
   res.json({
@@ -313,6 +303,29 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     accessToken,
     refreshToken,
   });
+});
+
+// ── POST /auth/resend-otp ───────────────────────────────
+export const resendOtp = asyncHandler(async (req, res) => {
+  const { challengeToken } = req.body;
+  let payload;
+  try {
+    payload = verifyAccessToken(challengeToken);
+    if (!["login_otp", "signup_otp"].includes(payload.purpose))
+      throw new Error("bad purpose");
+  } catch {
+    throw ApiError.unauthorized("Invalid or expired challenge");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  if (!user) throw ApiError.unauthorized("Invalid or expired challenge");
+
+  const purpose = payload.purpose === "signup_otp" ? "signup" : "login";
+  const otpResult = await createAndSendOtp(user.email, purpose);
+  const responsePayload = { message: "A new code has been sent." };
+  if (!config.isProd) responsePayload.devCode = otpResult.code;
+  await audit({ userId: user.id, action: "auth.otp.resent", req });
+  res.json(responsePayload);
 });
 
 // ── POST /auth/invite-codes — admin/mentor generates a code ──
@@ -354,18 +367,21 @@ export const listInviteCodes = asyncHandler(async (req, res) => {
 
 // ── POST /auth/signup/start — public: OTP-based signup ──
 export const signupStart = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, internCode } = req.body;
 
-  const existing = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email: email.toLowerCase() }, { internCode }] },
   });
   if (existing)
-    throw ApiError.conflict("An account with this email already exists.");
+    throw ApiError.conflict(
+      "An account with this email or intern code already exists.",
+    );
 
   // Create user with PENDING status
   const user = await prisma.user.create({
     data: {
       email: email.toLowerCase(),
+      internCode,
       name,
       passwordHash: hashPassword(password),
       role: "INTERN",
@@ -376,21 +392,15 @@ export const signupStart = asyncHandler(async (req, res) => {
   });
 
   // Create OTP and send via email
-  const { createAndSendOtp } = await import("../services/otp.service.js");
   const otpResult = await createAndSendOtp(user.email, "signup");
 
   const sessionId = issuePendingSession(res, user);
-  const challengeToken = signAccessToken({
-    sub: user.id,
-    purpose: "signup_otp",
-    role: user.role,
-    sid: sessionId,
-  });
+  const challengeToken = createOtpChallengeToken(user, sessionId, "signup_otp");
 
   const responsePayload = {
     step: "otp_required",
     challengeToken,
-    contactHint: user.email.replace(/(.{2}).+(@.+)/, "$1***$2"),
+    contactHint: maskedEmail(user.email),
   };
   if (!config.isProd) responsePayload.devCode = otpResult.code;
 
@@ -414,9 +424,7 @@ export const signupVerify = asyncHandler(async (req, res) => {
   const user = await prisma.user.findUnique({ where: { id: payload.sub } });
   if (!user) throw ApiError.unauthorized("Invalid user");
 
-  // Verify OTP using the new OTP service
-  const { verifyOtp } = await import("../services/otp.service.js");
-  const isValid = await verifyOtp(user.email, code, "signup");
+  const isValid = await verifyEmailOtp(user.email, code, "signup");
   if (!isValid) throw ApiError.unauthorized("Incorrect or expired code.");
 
   // Create InternProfile with start/end dates
@@ -450,8 +458,11 @@ export const signupVerify = asyncHandler(async (req, res) => {
 
   // Send welcome email
   const { sendWelcomeEmail } = await import("../services/email.service.js");
-  await sendWelcomeEmail(verifiedUser.email, verifiedUser.name).catch(err => {
-    logger.warn('Failed to send welcome email', { userId: verifiedUser.id, error: err.message });
+  await sendWelcomeEmail(verifiedUser.email, verifiedUser.name).catch((err) => {
+    logger.warn("Failed to send welcome email", {
+      userId: verifiedUser.id,
+      error: err.message,
+    });
   });
 
   await audit({
@@ -564,7 +575,12 @@ export const me = asyncHandler(async (req, res) => {
 // ── Helpers ──────────────────────────────────────────────
 function sanitize(u) {
   if (!u) return null;
-  const { passwordHash: _ph, twoFactorSecret: _tfs, ...rest } = u;
+  const {
+    passwordHash: _ph,
+    twoFactorSecret: _tfs,
+    internCode: _internCode,
+    ...rest
+  } = u;
   return rest;
 }
 
@@ -650,7 +666,9 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
   const updated = await prisma.internProfile.update({
     where: { userId },
     data: { isTL },
-    include: { user: { select: { id: true, name: true, email: true, role: true } } },
+    include: {
+      user: { select: { id: true, name: true, email: true, role: true } },
+    },
   });
 
   await audit({
@@ -681,22 +699,25 @@ export const setInternAsTeamLead = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/forgot-password
 export const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  if (!email) throw ApiError.badRequest('Email is required');
+  if (!email) throw ApiError.badRequest("Email is required");
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw ApiError.notFound('User not found');
+  if (!user) throw ApiError.notFound("User not found");
 
   // 1. Generate token
-  const resetToken = crypto.randomBytes(32).toString('hex');
-  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
 
   // 2. Save to DB with 15 min expiry
   await prisma.user.update({
     where: { id: user.id },
     data: {
       resetPasswordToken: hashedToken,
-      resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000)
-    }
+      resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000),
+    },
   });
 
   // 3. Send email
@@ -707,9 +728,13 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     <a href="${resetLink}">Click here to reset</a>
     <p>This link expires in 15 minutes</p>
   `;
-  await sendEmail({ to: user.email, subject: "Reset Your SkillNova Password", html });
+  await sendEmail({
+    to: user.email,
+    subject: "Reset Your SkillNova Password",
+    html,
+  });
 
-  res.json({ message: 'Password reset email sent' });
+  res.json({ message: "Password reset email sent" });
 });
 
 // @desc    Reset Password with token
@@ -718,27 +743,30 @@ export const resetPassword = asyncHandler(async (req, res) => {
   const token = req.params.token || req.body.token;
   const { password } = req.body;
 
-  if (!token) throw ApiError.badRequest('Token is required');
+  if (!token) throw ApiError.badRequest("Token is required");
 
-  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   const user = await prisma.user.findFirst({
     where: {
       resetPasswordToken: hashedToken,
-      resetPasswordExpire: { gt: new Date() }
-    }
+      resetPasswordExpire: { gt: new Date() },
+    },
   });
 
-  if (!user) throw ApiError.badRequest('Invalid or expired token');
+  if (!user) throw ApiError.badRequest("Invalid or expired token");
 
-  const hashedPassword = await bcrypt.hash(password, config.security.bcryptRounds || 10);
+  const hashedPassword = await bcrypt.hash(
+    password,
+    config.security.bcryptRounds || 10,
+  );
   await prisma.user.update({
     where: { id: user.id },
     data: {
       passwordHash: hashedPassword,
       resetPasswordToken: null,
-      resetPasswordExpire: null
-    }
+      resetPasswordExpire: null,
+    },
   });
 
-  res.json({ message: 'Password reset successful' });
+  res.json({ message: "Password reset successful" });
 });

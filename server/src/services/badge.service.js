@@ -5,9 +5,9 @@
 //  the user newly qualifies for. Safe to call repeatedly —
 //  awarding is idempotent via the (userId, badgeId) unique index.
 // ════════════════════════════════════════════════════════════
-import prisma from '../utils/prisma.js';
-import { notify } from './notification.service.js';
-import { audit } from './audit.service.js';
+import prisma from "../utils/prisma.js";
+import { notify } from "./notification.service.js";
+import { audit } from "./audit.service.js";
 
 /**
  * criteria shape (all optional, ANDed together):
@@ -20,9 +20,9 @@ import { audit } from './audit.service.js';
  */
 function meetsMetricCriteria(progress, criteria) {
   if (!criteria) return false;
-  if (criteria.metric && typeof criteria.gte === 'number') {
+  if (criteria.metric && typeof criteria.gte === "number") {
     const value = progress[criteria.metric];
-    if (typeof value !== 'number' || value < criteria.gte) return false;
+    if (typeof value !== "number" || value < criteria.gte) return false;
   }
   return true;
 }
@@ -30,7 +30,7 @@ function meetsMetricCriteria(progress, criteria) {
 async function meetsProjectsCriteria(userId, criteria) {
   if (!criteria?.projectsCompleted?.gte) return true;
   const count = await prisma.projectTask.count({
-    where: { assigneeId: userId, status: 'DONE' },
+    where: { assigneeId: userId, status: "DONE" },
   });
   return count >= criteria.projectsCompleted.gte;
 }
@@ -44,7 +44,10 @@ export async function evaluateBadgesForUser(userId) {
   const [progress, badges, existingAwards] = await Promise.all([
     prisma.internshipProgress.findUnique({ where: { userId } }),
     prisma.badge.findMany({ where: { active: true } }),
-    prisma.badgeAward.findMany({ where: { userId }, select: { badgeId: true } }),
+    prisma.badgeAward.findMany({
+      where: { userId },
+      select: { badgeId: true },
+    }),
   ]);
   if (!progress) return [];
 
@@ -66,15 +69,15 @@ export async function evaluateBadgesForUser(userId) {
     newlyAwarded.push(award);
 
     await notify(userId, {
-      type: 'badge',
+      type: "badge",
       title: `New badge earned: ${badge.name}`,
-      body: badge.description || 'Check your profile to see it.',
-      link: '/badges',
+      body: badge.description || "Check your profile to see it.",
+      link: "/badges",
     });
     await audit({
       userId,
-      action: 'badge.auto_award',
-      resource: 'badgeAward',
+      action: "badge.auto_award",
+      resource: "badgeAward",
       resourceId: award.id,
       meta: { badgeId: badge.id, badgeName: badge.name },
     });
@@ -90,12 +93,12 @@ export async function evaluateBadgesForUser(userId) {
  */
 export async function evaluateTopPerformers(topN = 3) {
   const badge = await prisma.badge.findFirst({
-    where: { type: 'TOP_PERFORMER', active: true },
+    where: { type: "TOP_PERFORMER", active: true },
   });
   if (!badge) return [];
 
   const top = await prisma.internshipProgress.findMany({
-    orderBy: { overallPct: 'desc' },
+    orderBy: { overallPct: "desc" },
     take: topN,
     where: { overallPct: { gt: 0 } },
   });
@@ -111,10 +114,10 @@ export async function evaluateTopPerformers(topN = 3) {
     });
     awarded.push(award);
     await notify(p.userId, {
-      type: 'badge',
+      type: "badge",
       title: `New badge earned: ${badge.name}`,
-      body: 'You ranked among the top performers this cycle.',
-      link: '/badges',
+      body: "You ranked among the top performers this cycle.",
+      link: "/badges",
     });
   }
   return awarded;

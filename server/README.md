@@ -1,4 +1,5 @@
 # Server
+
 SkillNova API
 
 ## Quick start
@@ -15,12 +16,12 @@ npm run dev              # http://localhost:4000
 
 ## Demo accounts
 
-| Role        | Email                          | Password         |
-|-------------|--------------------------------|------------------|
-| Super Admin | superadmin@skillnova.com       | SuperAdmin#2026  |
-| Admin       | admin@skillnova.com            | Admin#2026       |
-| Mentor      | mentor@skillnova.com           | Mentor#2026      |
-| Intern      | rahul@skillnova.com            | User#2026        |
+| Role        | Email                    | Password        |
+| ----------- | ------------------------ | --------------- |
+| Super Admin | superadmin@skillnova.com | SuperAdmin#2026 |
+| Admin       | admin@skillnova.com      | Admin#2026      |
+| Mentor      | mentor@skillnova.com     | Mentor#2026     |
+| Intern      | rahul@skillnova.com      | User#2026       |
 
 ## Architecture
 
@@ -56,6 +57,7 @@ server/
 ## RBAC permissions
 
 See `src/middleware/rbac.js` for the full matrix. Highlights:
+
 - Only `SUPER_ADMIN` can delete users or change roles.
 - `SUPER_ADMIN`, `ADMIN`, `MENTOR` can review reports.
 - `INTERN` can read KB, create reports, ask the AI Assistant.
@@ -93,10 +95,12 @@ GET  /analytics/interns
 ## Socket.io
 
 Connect with the access token (header or auth.token). Rooms:
+
 - `user:<id>` — personal notifications
 - `role:<role>` — role broadcasts
 
 Events:
+
 - `notification` — new notification payload
 - `broadcast` — platform-wide announcements
 

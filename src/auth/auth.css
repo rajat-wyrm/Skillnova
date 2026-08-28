@@ -242,6 +242,21 @@
   margin-top: 12px;
 }
 
+.auth-otp-note {
+  margin: 18px 0 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.06);
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+}
+.dark .auth-otp-note {
+  color: var(--muted);
+  background: rgba(96, 165, 250, 0.1);
+}
+
 .auth-button {
   width: 100%;
   padding: 13px 16px;

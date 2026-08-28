@@ -8,7 +8,10 @@ const inflight = new Map();
 function memGet(k) {
   const e = store.get(k);
   if (!e) return null;
-  if (e.exp && Date.now() > e.exp) { store.delete(k); return null; }
+  if (e.exp && Date.now() > e.exp) {
+    store.delete(k);
+    return null;
+  }
   return e.v;
 }
 

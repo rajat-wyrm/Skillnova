@@ -11,7 +11,7 @@ import * as ratings from "../controllers/ratings.controller.js";
 import * as projects from "../controllers/projects.controller.js";
 import * as ai from "../controllers/ai.controller.js";
 import * as notif from "../controllers/notifications.controller.js";
-import * as settings from '../controllers/settings.controller.js';
+import * as settings from "../controllers/settings.controller.js";
 import { authenticate, requireAuth } from "../middleware/auth.js";
 import { requirePermission } from "../middleware/rbac.js";
 import { validate, schemas } from "../middleware/validate.js";
@@ -45,7 +45,7 @@ api.post(
       content: z.string().min(1).optional(),
       fileUrl: z.string().url().optional(),
       weekNumber: z.number().int().min(1).max(104).optional(),
-    })
+    }),
   ),
   reports.create,
 );
@@ -72,7 +72,7 @@ api.patch(
       status: z.enum(["PENDING", "REVIEWED", "REJECTED"]).default("REVIEWED"),
       score: z.number().min(0).max(10).optional(),
       feedback: z.string().max(2000).optional(),
-    })
+    }),
   ),
   reports.review,
 );
@@ -378,11 +378,15 @@ api.delete(
 );
 
 // ── Notifications ─────────────────────────────────────────
-api.get('/notifications', validate(schemas.pagination, 'query'), notif.list);
-api.get('/notifications/unread-count', notif.unreadCount);
-api.post('/notifications/:id/read', validate(idParam, 'params'), notif.markRead);
-api.post('/notifications/read-all', notif.markAllRead);
-api.delete('/notifications/:id', validate(idParam, 'params'), notif.remove);
+api.get("/notifications", validate(schemas.pagination, "query"), notif.list);
+api.get("/notifications/unread-count", notif.unreadCount);
+api.post(
+  "/notifications/:id/read",
+  validate(idParam, "params"),
+  notif.markRead,
+);
+api.post("/notifications/read-all", notif.markAllRead);
+api.delete("/notifications/:id", validate(idParam, "params"), notif.remove);
 
 // ── Analytics ─────────────────────────────────────────────
 api.get(
@@ -409,11 +413,23 @@ api.get(
   ratings.listRatings,
 );
 // Analytics
-api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
-api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+api.get(
+  "/analytics/platform",
+  requirePermission("users:read"),
+  notif.platformStats,
+);
+api.get(
+  "/analytics/interns",
+  requirePermission("users:read"),
+  notif.internPerformance,
+);
 
 // ── Settings ───────────────────────────────────────────────
-api.get('/settings', requirePermission('settings:read'), settings.getSettings);
-api.patch('/settings', requirePermission('settings:update'), settings.updateSetting);
+api.get("/settings", requirePermission("settings:read"), settings.getSettings);
+api.patch(
+  "/settings",
+  requirePermission("settings:update"),
+  settings.updateSetting,
+);
 
 export default api;

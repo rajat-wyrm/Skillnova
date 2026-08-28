@@ -1,11 +1,11 @@
 // ════════════════════════════════════════════════════════════
 //  Auth Middleware — JWT verification + CSRF (double submit)
 // ════════════════════════════════════════════════════════════
-import { verifyAccessToken, verifyCsrf, COOKIE_NAMES } from '../utils/auth.js';
-import { memoryStore } from '../utils/redis.js';
-import { ApiError } from '../utils/ApiError.js';
-import { lru } from '../utils/lru.js';
-import prisma from '../utils/prisma.js';
+import { verifyAccessToken, verifyCsrf, COOKIE_NAMES } from "../utils/auth.js";
+import { memoryStore } from "../utils/redis.js";
+import { ApiError } from "../utils/ApiError.js";
+import { lru } from "../utils/lru.js";
+import prisma from "../utils/prisma.js";
 
 const SESSION_TTL = 60 * 60 * 24 * 7; // 7 days
 
@@ -14,7 +14,7 @@ export async function authenticate(req, _res, next) {
   try {
     const header = req.headers.authorization;
     let token;
-    if (header && header.startsWith('Bearer ')) {
+    if (header && header.startsWith("Bearer ")) {
       token = header.slice(7);
     } else if (req.cookies && req.cookies[COOKIE_NAMES.session]) {
       token = req.cookies[COOKIE_NAMES.session];
@@ -26,7 +26,7 @@ export async function authenticate(req, _res, next) {
     if (!payload?.sub) return next();
 
     // Check session is still active (defense against revoked tokens)
-    const sid = req.cookies?.[COOKIE_NAMES.session + '_sid'];
+    const sid = req.cookies?.[COOKIE_NAMES.session + "_sid"];
     if (sid && memoryStore.has(`session:${sid}`) === false) {
       return next();
     }
@@ -47,10 +47,10 @@ export async function authenticate(req, _res, next) {
           twoFactorEnabled: true,
           emailVerified: true,
         },
-      })
+      }),
     );
 
-    if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
+    if (!user || user.status === "SUSPENDED" || user.status === "INACTIVE") {
       return next();
     }
 
@@ -63,27 +63,27 @@ export async function authenticate(req, _res, next) {
 }
 
 export function requireAuth(req, _res, next) {
-  if (!req.user) return next(ApiError.unauthorized('Authentication required'));
+  if (!req.user) return next(ApiError.unauthorized("Authentication required"));
   next();
 }
 
 // ── CSRF protection (state-changing requests) ─────────────
-const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export function csrfProtection(req, res, next) {
   if (SAFE_METHODS.has(req.method)) return next();
   if (!req.sessionId) return next();
 
   const headerToken =
-    req.headers['x-csrf-token'] ||
-    req.headers['x-xsrf-token'] ||
+    req.headers["x-csrf-token"] ||
+    req.headers["x-xsrf-token"] ||
     req.body?._csrf;
   const cookieToken = req.cookies?.[COOKIE_NAMES.csrf];
 
   if (!headerToken || !cookieToken || headerToken !== cookieToken) {
-    return next(ApiError.forbidden('Invalid or missing CSRF token'));
+    return next(ApiError.forbidden("Invalid or missing CSRF token"));
   }
   if (!verifyCsrf(headerToken, req.sessionId)) {
-    return next(ApiError.forbidden('CSRF token mismatch'));
+    return next(ApiError.forbidden("CSRF token mismatch"));
   }
   return next();
 }
@@ -97,20 +97,24 @@ export function csrfOptional(req, res, next) {
 
 // ── IP / device extraction helpers ────────────────────────
 export function getClientIp(req) {
-  const xf = req.headers['x-forwarded-for'];
-  if (typeof xf === 'string') return xf.split(',')[0].trim();
-  return req.ip || req.socket?.remoteAddress || 'unknown';
+  const xf = req.headers["x-forwarded-for"];
+  if (typeof xf === "string") return xf.split(",")[0].trim();
+  return req.ip || req.socket?.remoteAddress || "unknown";
 }
 
 export function getUserAgent(req) {
-  return req.headers['user-agent'] || 'unknown';
+  return req.headers["user-agent"] || "unknown";
 }
 
 // ── Touch session activity (lightweight rate-limit per user) ──
 export function trackActivity() {
   return async (req, _res, next) => {
     if (req.sessionId && req.user) {
-      memoryStore.set(`session:${req.sessionId}`, { uid: req.user.id, ua: req.user.role }, SESSION_TTL);
+      memoryStore.set(
+        `session:${req.sessionId}`,
+        { uid: req.user.id, ua: req.user.role },
+        SESSION_TTL,
+      );
     }
     next();
   };

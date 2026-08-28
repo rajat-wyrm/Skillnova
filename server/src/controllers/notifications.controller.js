@@ -2,18 +2,18 @@
 //  Notifications Controller + Analytics
 //  Hot endpoints cached in-memory for sub-ms response
 // ════════════════════════════════════════════════════════════
-import prisma from '../utils/prisma.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { lru } from '../utils/lru.js';
+import prisma from "../utils/prisma.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { lru } from "../utils/lru.js";
 
 export const list = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20 } = req.validatedQuery ?? { page: 1, limit: 20 };
   const where = { userId: req.user.id };
-  if (req.query.unread === 'true') where.read = false;
+  if (req.query.unread === "true") where.read = false;
   const [items, total, unreadCount] = await Promise.all([
     prisma.notification.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -56,18 +56,27 @@ export const remove = asyncHandler(async (req, res) => {
 
 // ── Platform Analytics (hot path — cached 60s) ─────────────
 export const platformStats = asyncHandler(async (req, res) => {
-  const stats = await lru.wrap('analytics:platform', 60, async () => {
+  const stats = await lru.wrap("analytics:platform", 60, async () => {
     const [
-      totalUsers, activeUsers, totalInterns, totalArticles,
-      verifiedArticles, totalReports, pendingReports, totalQuestions, totalAnnouncements,
+      totalUsers,
+      activeUsers,
+      totalInterns,
+      totalArticles,
+      verifiedArticles,
+      totalReports,
+      pendingReports,
+      totalQuestions,
+      totalAnnouncements,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { status: 'ACTIVE' } }),
-      prisma.user.count({ where: { role: 'INTERN' } }),
-      prisma.knowledgeArticle.count({ where: { status: 'PUBLISHED' } }),
-      prisma.knowledgeArticle.count({ where: { status: 'PUBLISHED', verified: true } }),
+      prisma.user.count({ where: { status: "ACTIVE" } }),
+      prisma.user.count({ where: { role: "INTERN" } }),
+      prisma.knowledgeArticle.count({ where: { status: "PUBLISHED" } }),
+      prisma.knowledgeArticle.count({
+        where: { status: "PUBLISHED", verified: true },
+      }),
       prisma.report.count(),
-      prisma.report.count({ where: { status: 'PENDING' } }),
+      prisma.report.count({ where: { status: "PENDING" } }),
       prisma.question.count(),
       prisma.announcement.count(),
     ]);
@@ -75,7 +84,7 @@ export const platformStats = asyncHandler(async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const logins = await prisma.auditLog.findMany({
-      where: { action: 'auth.login.success', createdAt: { gte: sevenDaysAgo } },
+      where: { action: "auth.login.success", createdAt: { gte: sevenDaysAgo } },
       select: { createdAt: true },
     });
     const byDay = {};
@@ -91,21 +100,35 @@ export const platformStats = asyncHandler(async (req, res) => {
     });
 
     return {
-      totalUsers, activeUsers, totalInterns, totalArticles,
-      verifiedArticles, totalReports, pendingReports, totalQuestions, totalAnnouncements,
-      loginsByDay: Object.entries(byDay).map(([day, count]) => ({ day, count })),
+      totalUsers,
+      activeUsers,
+      totalInterns,
+      totalArticles,
+      verifiedArticles,
+      totalReports,
+      pendingReports,
+      totalQuestions,
+      totalAnnouncements,
+      loginsByDay: Object.entries(byDay).map(([day, count]) => ({
+        day,
+        count,
+      })),
     };
   });
   res.json(stats);
 });
 
 export const internPerformance = asyncHandler(async (req, res) => {
-  const cacheKey = `analytics:interns:${req.query.userId || 'all'}`;
+  const cacheKey = `analytics:interns:${req.query.userId || "all"}`;
   const items = await lru.wrap(cacheKey, 30, async () => {
     const interns = await prisma.user.findMany({
-      where: { role: 'INTERN' },
+      where: { role: "INTERN" },
       select: {
-        id: true, name: true, department: true, rating: true, avatarUrl: true,
+        id: true,
+        name: true,
+        department: true,
+        rating: true,
+        avatarUrl: true,
         reports: { select: { status: true, score: true } },
         projectTasks: { select: { status: true } },
         attendances: {
@@ -115,19 +138,39 @@ export const internPerformance = asyncHandler(async (req, res) => {
       },
     });
     return interns.map((i) => {
-      const reviewed = i.reports.filter((r) => r.status === 'REVIEWED');
-      const avgScore = reviewed.length ? reviewed.reduce((s, r) => s + (r.score ?? 0), 0) / reviewed.length : 0;
-      const completed = i.projectTasks.filter((t) => t.status === 'DONE').length;
-      const present = i.attendances.filter((a) => a.status === 'PRESENT').length;
+      const reviewed = i.reports.filter((r) => r.status === "REVIEWED");
+      const avgScore = reviewed.length
+        ? reviewed.reduce((s, r) => s + (r.score ?? 0), 0) / reviewed.length
+        : 0;
+      const completed = i.projectTasks.filter(
+        (t) => t.status === "DONE",
+      ).length;
+      const present = i.attendances.filter(
+        (a) => a.status === "PRESENT",
+      ).length;
       return {
-        id: i.id, name: i.name, department: i.department, avatarUrl: i.avatarUrl, rating: i.rating,
-        avgScore: Math.round(avgScore * 10) / 10, completedTasks: completed,
-        attendanceRate: i.attendances.length ? Math.round((present / i.attendances.length) * 100) : 0,
+        id: i.id,
+        name: i.name,
+        department: i.department,
+        avatarUrl: i.avatarUrl,
+        rating: i.rating,
+        avgScore: Math.round(avgScore * 10) / 10,
+        completedTasks: completed,
+        attendanceRate: i.attendances.length
+          ? Math.round((present / i.attendances.length) * 100)
+          : 0,
       };
     });
   });
   res.json({ items });
 });
 
-export default { list, unreadCount, markRead, markAllRead, remove, platformStats, internPerformance };
-
+export default {
+  list,
+  unreadCount,
+  markRead,
+  markAllRead,
+  remove,
+  platformStats,
+  internPerformance,
+};
