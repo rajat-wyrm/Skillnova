@@ -20,6 +20,7 @@ const TYPE_ICON = {
 const Notifications = () => {
   const { items, unreadCount, markRead, markAllRead, fetchAll } = useNotifications();
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
@@ -30,6 +31,19 @@ const Notifications = () => {
       await api.delete(`/notifications/${n.id}/read`);
       fetchAll();
     } catch { /* ignore */ }
+  };
+
+  // FIXED: Added handler with loading state
+  const handleMarkAllRead = async () => {
+    setLoading(true);
+    try {
+      await markAllRead();
+      await fetchAll();
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,8 +59,8 @@ const Notifications = () => {
           <button onClick={() => setFilter('unread')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium ${filter === 'unread' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'}`}>Unread</button>
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
-              <CheckCheck size={13} /> Mark all read
+            <button onClick={handleMarkAllRead} disabled={loading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium" style={{ background: 'var(--bg)', color: 'var(--text)', opacity: loading ? 0.6 : 1 }}>
+              {loading ? <Loader2 size={13} className="animate-spin" /> : <CheckCheck size={13} />} Mark all read
             </button>
           )}
         </div>

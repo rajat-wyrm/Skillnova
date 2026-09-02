@@ -4,21 +4,23 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Activity, BookOpen, MessageSquare,
-  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut,
+  Megaphone, Bot, User, Settings, ChevronLeft, ChevronRight, LogOut, CalendarCheck
 } from 'lucide-react';
 import { useAuthStore } from '../../lib/auth';
 
 const MENU = [
-  { id: 'dashboard',     label: 'Dashboard',      icon: LayoutDashboard },
-  { id: 'interns',       label: 'My Interns',     icon: Users           },
-  { id: 'reports',       label: 'Report Reviews', icon: FileText        },
-  { id: 'projects',      label: 'Projects',       icon: Activity        },
-  { id: 'knowledge',     label: 'Knowledge Base', icon: BookOpen        },
-  { id: 'qa',            label: 'Q&A Forum',      icon: MessageSquare   },
-  { id: 'announcements', label: 'Announcements',  icon: Megaphone       },
-  { id: 'ai',            label: 'AI Assistant',   icon: Bot             },
-  { id: 'profile',       label: 'Profile',        icon: User            },
-  { id: 'settings',      label: 'Settings',       icon: Settings        },
+  { id: 'dashboard',         label: 'Dashboard',        icon: LayoutDashboard },
+  { id: 'interns',           label: 'My Interns',       icon: Users          },
+  { id: 'reports',           label: 'Report Reviews',   icon: FileText       },
+  { id: 'projects',          label: 'Projects',         icon: Activity       },
+  { id: 'knowledge',         label: 'Knowledge Base',   icon: BookOpen       },
+  { id: 'attendance',        label: 'Attendance',       icon: CalendarCheck  }, // <-- Personal tracking
+  { id: 'attendance-verify', label: 'Verify Attendance', icon: CalendarCheck }, // <-- Mentor verification
+  { id: 'qa',                label: 'Q&A Forum',        icon: MessageSquare  },
+  { id: 'announcements',     label: 'Announcements',    icon: Megaphone      },
+  { id: 'ai',                label: 'AI Assistant',     icon: Bot            },
+  { id: 'profile',           label: 'Profile',          icon: User           },
+  { id: 'settings',          label: 'Settings',         icon: Settings       },
 ];
 
 const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {

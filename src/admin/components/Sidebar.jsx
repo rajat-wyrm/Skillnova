@@ -7,18 +7,17 @@ import {
   LayoutDashboard, Users, BookOpen, FileText,
   BarChart2, Megaphone, Settings, Shield,
   ChevronRight, ChevronLeft, LogOut, ScrollText,
-  LayoutGrid, Calendar, Folder, Bell, Webhook, Trophy,
+  LayoutGrid, Calendar, Folder, Bell, Webhook, Award,
 } from "lucide-react";
 import { useAuthStore } from '../../lib/auth';
-import { APP_CONSTANTS } from '../../shared/config/constants';
 
 const ADMIN_MENU = [
   { id: "admin-dashboard",     label: "Overview",          icon: LayoutDashboard },
-  { id: "admin-leaderboard",   label: "Leaderboard",       icon: Trophy          },
   { id: "admin-users",         label: "User Management",   icon: Users           },
   { id: "admin-management",    label: "Intern Management", icon: Shield          },
   { id: "admin-knowledge",     label: "Knowledge Base",    icon: BookOpen        },
   { id: "admin-kanban",        label: "Task Board",        icon: LayoutGrid      },
+  { id: "admin-learning",      label: "Badges & Learning", icon: Award           },
   { id: "admin-reports",       label: "Reports",           icon: FileText        },
   { id: "admin-analytics",     label: "Analytics",         icon: BarChart2       },
   { id: "admin-calendar",      label: "Calendar",          icon: Calendar        },
@@ -48,9 +47,8 @@ const Sidebar = ({ active, onNavigate, forceMobileExpanded }) => {
         {!isCollapsed && (
           <div className="flex items-center flex-1 min-w-0">
             <img
-              src={APP_CONSTANTS.LOGO_PATH}
+              src="/logo.png"
               alt="UptoSkills"
-              loading="lazy"
               style={{
                 height: "48px",
                 width: "auto",

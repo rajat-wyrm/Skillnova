@@ -8,16 +8,16 @@ export default defineConfig({
     strictPort: true,
     host: true,
     proxy: {
-      '/api/v1': { target: 'http://localhost:4000', changeOrigin: true },
-      '/api/aiassistant': { target: 'http://localhost:8000', changeOrigin: true },
-      '/socket.io': { target: 'http://localhost:4000', ws: true, changeOrigin: true },
+      '/api/v1': { target: 'http://127.0.0.1:4000', changeOrigin: true }, // <-- Fixed
+      '/api/aiassistant': { target: 'http://127.0.0.1:8000', changeOrigin: true }, // <-- Fixed
+      '/socket.io': { target: 'http://127.0.0.1:4000', ws: true, changeOrigin: true }, // <-- Fixed
     },
   },
   build: {
     sourcemap: false,
     cssCodeSplit: true,
     chunkSizeWarningLimit: 800,
-    target: 'es2020',
+    target: 'es2020,',
     cssMinify: true,
     reportCompressedSize: false,
     rollupOptions: {

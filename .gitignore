@@ -14,14 +14,4 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-<<<<<<< HEAD
 pnpm-debug.log*
-uploads/
-*.pyc
-__pycache__/
-.env.local
-*.log
-coverage/
-=======
-pnpm-debug.log*
->>>>>>> pradeep/main

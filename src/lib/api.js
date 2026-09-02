@@ -6,72 +6,59 @@ import { APP_CONSTANTS } from '../shared/config/constants';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
-const AUTH_STORAGE_KEY = 'skillnova.auth';
 
 export const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
-  timeout: APP_CONSTANTS.API_TIMEOUT,
+  timeout: APP_CONSTANTS.API_TIMEOUT || 30_000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 // ── Helpers ──────────────────────────────────────────────
 const getCookie = (name) => {
   if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
+  const match = document.cookie.match(
+    new RegExp('(^|;)\\s*' + name + '=([^;]+)'),
+  );
   return match ? decodeURIComponent(match[2]) : null;
 };
 
+// Fallback or specific token lookup if defined
 const getStoredAccessToken = () => {
-  if (typeof localStorage === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? JSON.parse(raw)?.accessToken ?? null : null;
-  } catch {
-    return null;
-  }
-};
-
-const persistRefreshedAuth = ({ user, accessToken }) => {
-  if (typeof localStorage === 'undefined' || !accessToken) return;
-  try {
-    const current = JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY) || '{}');
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        ...current,
-        user: user ?? current.user,
-        accessToken,
-      })
-    );
+    const raw = localStorage.getItem('skillnova.auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed?.accessToken || parsed?.token || null;
+    }
   } catch {
     /* ignore */
   }
+  return null;
 };
 
-// ── Request interceptor — CSRF + auth header echo ────────
+// ── Request interceptor — CSRF + Authorization header ────
 api.interceptors.request.use((config) => {
+  // Attach access token from persisted auth store / fallback
   const token = getStoredAccessToken();
   if (token && !config.headers.Authorization) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const csrf = getCookie('sn_csrf');
-  const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE);
-  if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method)) {
-    config.headers[APP_CONSTANTS.CSRF_HEADER] = csrf;
+  // Attach CSRF token for state-changing requests
+  const csrf = getCookie(APP_CONSTANTS.CSRF_COOKIE) || getCookie('sn_csrf') || getCookie('XSRF-TOKEN');
+  const csrfHeaderName = APP_CONSTANTS.CSRF_HEADER || 'X-CSRF-Token';
+  
+  if (csrf && ['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
+    config.headers[csrfHeaderName] = csrf;
   }
+
   return config;
 });
 
 // ── Response interceptor — auto refresh on 401 ───────────
 let refreshing = null;
-const AUTH_REFRESH_EXCLUDED = new Set([
-  '/auth/login',
-  '/auth/register',
-  '/auth/forgot-password',
-  '/auth/reset-password',
-]);
+const REFRESH_EXCLUDED_URLS = new Set(['/auth/refresh', '/auth/login', '/auth/verify-otp']);
 
 api.interceptors.response.use(
   (r) => r,
@@ -79,13 +66,36 @@ api.interceptors.response.use(
     const original = error.config;
     const status = error.response?.status;
 
-    if (status === 401 && !original._retry && original.url !== '/auth/refresh' && !AUTH_REFRESH_EXCLUDED.has(original.url)) {
+    if (
+      status === 401 &&
+      !original._retry &&
+      original.url &&
+      !REFRESH_EXCLUDED_URLS.has(original.url)
+    ) {
       original._retry = true;
       try {
-        refreshing = refreshing || axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
-        const { data } = await refreshing;
-        persistRefreshedAuth(data);
+        refreshing =
+          refreshing ||
+          axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+        
+        const refreshRes = await refreshing;
         refreshing = null;
+
+        // Persist the new access token so the interceptor picks it up on the retry
+        try {
+          const newToken = refreshRes.data?.accessToken || refreshRes.data?.token;
+          if (newToken) {
+            const raw = localStorage.getItem('skillnova.auth');
+            const stored = raw ? JSON.parse(raw) : {};
+            localStorage.setItem(
+              'skillnova.auth',
+              JSON.stringify({ ...stored, accessToken: newToken })
+            );
+          }
+        } catch {
+          /* ignore */
+        }
+
         return api(original);
       } catch (refreshErr) {
         refreshing = null;
@@ -97,12 +107,20 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // ── Error normalisation ──────────────────────────────────
 export function getErrorMessage(err) {
   if (!err) return 'Something went wrong';
+  const validationErrors = err.response?.data?.errors;
+  if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+    return (
+      validationErrors[0]?.message ||
+      err.response?.data?.error ||
+      'Validation failed'
+    );
+  }
   if (err.response?.data?.error) return err.response.data.error;
   if (err.response?.data?.message) return err.response.data.message;
   if (err.message) return err.message;

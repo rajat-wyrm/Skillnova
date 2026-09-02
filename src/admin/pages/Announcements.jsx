@@ -3,12 +3,44 @@
 // ════════════════════════════════════════════════════════════
 import { useEffect, useState } from 'react';
 import { Plus, Pin, Trash2, Megaphone, X, Loader2 } from 'lucide-react';
-import { Card, Badge, SectionHeader } from '../../shared/components/UI';
 import api from '../../lib/api';
 import notify from '../../lib/toast';
 import { formatDate } from '../../lib/utils';
 
 const VARIANT = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'success' };
+
+const Card = ({ children, className = '', style }) => (
+  <div className={`rounded-2xl ${className}`} style={{ background: 'var(--card)', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)', ...style }}>
+    {children}
+  </div>
+);
+
+const Badge = ({ children, variant = 'default' }) => {
+  const variants = {
+    default: { background: 'var(--badge-default-bg)', color: 'var(--badge-default-fg)', border: '1px solid var(--badge-default-border)' },
+    success: { background: 'var(--badge-success-bg)', color: 'var(--badge-success-fg)', border: '1px solid var(--badge-success-border)' },
+    warning: { background: 'var(--badge-warning-bg)', color: 'var(--badge-warning-fg)', border: '1px solid var(--badge-warning-border)' },
+    danger: { background: 'var(--badge-danger-bg)', color: 'var(--badge-danger-fg)', border: '1px solid var(--badge-danger-border)' },
+  };
+  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" style={variants[variant] || variants.default}>{children}</span>;
+};
+
+const SectionHeader = ({ title, subtitle, action }) => (
+  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
+    <div className="min-w-0">
+      <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {subtitle && <p className="text-sm mt-0.5" style={{ color: 'var(--muted)' }}>{subtitle}</p>}
+    </div>
+    {action && <div className="flex-shrink-0 w-full sm:w-auto">{action}</div>}
+  </div>
+);
+
+const Input = ({ label, ...props }) => (
+  <div>
+    {label && <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{label}</label>}
+    <input {...props} className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white" />
+  </div>
+);
 
 const Announcements = () => {
   const [items, setItems] = useState([]);

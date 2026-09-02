@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════
-//  Reports, Announcements, Q&A, Attendance, Projects, AI
+//  Reports, Announcements, Q&A, Attendance, Projects, AI, Admin
 // ════════════════════════════════════════════════════════════
 import { Router } from 'express';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import * as attendance from '../controllers/attendance.controller.js';
 import * as projects from '../controllers/projects.controller.js';
 import * as ai from '../controllers/ai.controller.js';
 import * as notif from '../controllers/notifications.controller.js';
+import prisma from '../utils/prisma.js';
 import { authenticate, requireAuth } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/rbac.js';
 import { validate, schemas } from '../middleware/validate.js';
@@ -20,12 +21,7 @@ api.use(authenticate, requireAuth);
 const idParam = z.object({ id: z.string().cuid() });
 
 // ── Reports ───────────────────────────────────────────────
-api.get(
-  '/reports',
-  requirePermission('reports:read'),
-  validate(schemas.pagination, 'query'),
-  reports.list
-);
+api.get('/reports', requirePermission('reports:read'), validate(schemas.pagination, 'query'), reports.list);
 api.get('/reports/stats', requirePermission('reports:read'), reports.stats);
 api.get('/reports/:id', requirePermission('reports:read'), validate(idParam, 'params'), reports.getById);
 api.post(
@@ -71,12 +67,7 @@ api.patch(
 api.delete('/reports/:id', requirePermission('reports:delete'), validate(idParam, 'params'), reports.remove);
 
 // ── Announcements ─────────────────────────────────────────
-api.get(
-  '/announcements',
-  requirePermission('announcements:read'),
-  validate(schemas.pagination, 'query'),
-  announcements.list
-);
+api.get('/announcements', requirePermission('announcements:read'), validate(schemas.pagination, 'query'), announcements.list);
 api.get('/announcements/:id', requirePermission('announcements:read'), validate(idParam, 'params'), announcements.getById);
 api.post(
   '/announcements',
@@ -270,5 +261,109 @@ api.post('/notifications/read-all', notif.markAllRead);
 // ── Analytics ─────────────────────────────────────────────
 api.get('/analytics/platform', requirePermission('users:read'), notif.platformStats);
 api.get('/analytics/interns', requirePermission('users:read'), notif.internPerformance);
+
+// ── Performance Reviews ───────────────────────────────────
+api.get('/performance', async (req, res, next) => {
+  try {
+    const reviews = await prisma.performanceReview.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(reviews);
+  } catch (error) {
+    next(error);
+  }
+});
+
+api.post(
+  '/performance',
+  validate(
+    z.object({
+      internId: z.string(),
+      month: z.number().int().min(1).max(12),
+      year: z.number().int().min(2020),
+      rating: z.number().int().min(1).max(5),
+      technical: z.number().int().min(1).max(5),
+      communication: z.number().int().min(1).max(5),
+      teamwork: z.number().int().min(1).max(5),
+      attendance: z.number().int().min(1).max(5),
+      feedback: z.string().max(2000).optional(),
+    })
+  ),
+  async (req, res, next) => {
+    try {
+      const review = await prisma.performanceReview.create({
+        data: {
+          ...req.body,
+          mentorId: req.user.id,
+        },
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ── Skills Tracker ────────────────────────────────────────
+api.get('/skills', async (req, res, next) => {
+  try {
+    const skills = await prisma.skillTracker.findMany();
+    res.json(skills);
+  } catch (error) {
+    next(error);
+  }
+});
+
+api.post(
+  '/skills',
+  validate(
+    z.object({
+      skillName: z.string().min(1).max(100),
+      level: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
+      progress: z.number().int().min(0).max(100),
+    })
+  ),
+  async (req, res, next) => {
+    try {
+      const skill = await prisma.skillTracker.upsert({
+        where: {
+          internId_skillName: {
+            internId: req.user.id,
+            skillName: req.body.skillName,
+          },
+        },
+        update: {
+          level: req.body.level,
+          progress: req.body.progress,
+        },
+        create: {
+          internId: req.user.id,
+          ...req.body,
+        },
+      });
+      res.json(skill);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ── Audit Logs ────────────────────────────────────────────
+api.get(
+  '/audit-logs',
+  validate(schemas.pagination, 'query'),
+  async (req, res, next) => {
+    try {
+      const logs = await prisma.auditLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          user: { select: { name: true, email: true, role: true } },
+        },
+      });
+      res.json(logs);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default api;

@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════
-//  SkillNova — Prisma Schema (PostgreSQL)
+//  SkillNova — Prisma Schema (PostgreSQL/SQLite)
 //  Strong RBAC, audit logs, AI chat history, KB versioning
 // ════════════════════════════════════════════════════════════
 generator client {
@@ -12,9 +12,6 @@ datasource db {
 }
 
 // ── Users & RBAC ────────────────────────────────────────────
-
-
-
 
 model User {
   id              String        @id @default(cuid())
@@ -60,7 +57,7 @@ model User {
   internProfile     InternProfile?
   mentorProfile     MentorProfile?
   mentorOf          InternProfile[] @relation("MentorRelation")
-  organizedMeetings Meeting[]      @relation("OrganizedMeetings")
+  organizedMeetings Meeting[]       @relation("OrganizedMeetings")
   meetingAttendees  MeetingAttendee[]
 
   @@index([role])
@@ -69,20 +66,20 @@ model User {
 }
 
 model InternProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mentorId      String?
-  mentor        User?    @relation("MentorRelation", fields: [mentorId], references: [id])
-  startDate     DateTime
-  endDate       DateTime?
-  stipend       Float?
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  totalTasks    Int      @default(0)
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorId       String?
+  mentor         User?    @relation("MentorRelation", fields: [mentorId], references: [id])
+  startDate      DateTime
+  endDate        DateTime?
+  stipend        Float?
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id])
+  totalTasks     Int      @default(0)
   completedTasks Int    @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model MentorProfile {
@@ -143,44 +140,46 @@ model OtpChallenge {
 
 // ── Reports ─────────────────────────────────────────────────
 
-
 model Report {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  content     String?      // rich text/markdown
-  fileUrl     String?
-  weekNumber  Int?
-  status      String @default("PENDING")
-  score       Float?
-  feedback    String?
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  content      String?      // rich text/markdown
+  fileUrl      String?
+  weekNumber   Int?
+  status       String @default("PENDING")
+  score        Float?
+  feedback     String?
   reviewedById String?
-  reviewedAt  DateTime?
-  submittedAt DateTime     @default(now())
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  reviewedAt   DateTime?
+  submittedAt  DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([submittedAt])
 }
 
-// ── Attendance ──────────────────────────────────────────────
-
+// ── Attendance (MERGED) ────────────────────────────────────
 
 model Attendance {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      DateTime        
-  status    String @default("PRESENT")
-  checkIn   DateTime?
-  checkOut  DateTime?
-  notes     String?
-  markedById String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime   
+  status       String     @default("PRESENT")
+  checkIn      DateTime?  // Original fields
+  checkOut     DateTime?
+  checkInTime  DateTime?  // New fields
+  checkOutTime DateTime?
+  notes        String?
+  remarks      String?
+  markedById   String?
+  approvedBy   String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@unique([userId, date])
   @@index([date])
@@ -188,7 +187,6 @@ model Attendance {
 }
 
 // ── Projects & Tasks ───────────────────────────────────────
-
 
 model Project {
   id          String        @id @default(cuid())
@@ -206,10 +204,6 @@ model Project {
 
   @@index([status])
 }
-
-
-
-
 
 model ProjectTask {
   id          String       @id @default(cuid())
@@ -232,7 +226,6 @@ model ProjectTask {
 }
 
 // ── Knowledge Base ──────────────────────────────────────────
-
 
 model KnowledgeCategory {
   id          String   @id @default(cuid())
@@ -305,7 +298,6 @@ model ArticleFeedback {
 }
 
 // ── Announcements ───────────────────────────────────────────
-
 
 model Announcement {
   id          String              @id @default(cuid())
@@ -437,16 +429,16 @@ model Notification {
 
 // ── Audit Log ───────────────────────────────────────────────
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String   // e.g. 'user.create', 'role.change'
-  resource  String?  // 'user', 'article', ...
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String   // e.g. 'user.create', 'role.change'
+  resource   String?  // 'user', 'article', ...
   resourceId String?
-  meta      String?
-  ip        String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  meta       String?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([action])
@@ -456,11 +448,11 @@ model AuditLog {
 
 // ── System Settings ─────────────────────────────────────────
 model SystemSetting {
-  key       String   @id
-  value     String
+  key         String   @id
+  value       String
   updatedById String?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 }
 
 // ── Files / attachments ─────────────────────────────────────
@@ -484,16 +476,16 @@ model FileAsset {
 
 // ── Webhooks ─────────────────────────────────────────────────
 model Webhook {
-  id          String   @id @default(cuid())
-  ownerId     String
-  url         String
-  events      String // e.g. ['report.reviewed', 'announcement.created']
-  secret      String   // HMAC secret for signing
-  enabled     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  lastFiredAt DateTime?
-  lastStatus  Int?
-  failureCount Int     @default(0)
+  id           String   @id @default(cuid())
+  ownerId      String
+  url          String
+  events       String // e.g. ['report.reviewed', 'announcement.created']
+  secret       String   // HMAC secret for signing
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  lastFiredAt  DateTime?
+  lastStatus   Int?
+  failureCount Int      @default(0)
 
   deliveries  WebhookDelivery[]
 
@@ -502,16 +494,16 @@ model Webhook {
 }
 
 model WebhookDelivery {
-  id          String   @id @default(cuid())
-  webhookId   String
-  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-  event       String
-  payload     String
-  status      Int
-  response    String?
-  durationMs  Int?
-  attempts    Int      @default(0)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event      String
+  payload    String
+  status     Int
+  response   String?
+  durationMs Int?
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
 
   @@index([webhookId])
   @@index([event])
@@ -535,7 +527,6 @@ model NotificationPref {
 }
 
 // ── Meetings ────────────────────────────────────────────────
-
 
 model Meeting {
   id           String      @id @default(cuid())
@@ -566,4 +557,117 @@ model MeetingAttendee {
 
   @@unique([meetingId, userId])
   @@index([userId])
+}
+
+// ── New Models added from Claude ───────────────────────────
+
+model AttendanceRequest {
+  id              String    @id @default(cuid())
+  internId        String    
+  type            String    // "LEAVE", "HALF_DAY", "LATE", "EARLY_CHECKOUT"
+  reason          String
+  status          String    @default("PENDING") // "APPROVED", "REJECTED", "PENDING"
+  startDate       DateTime
+  endDate         DateTime?
+  approvedBy      String?
+  rejectionReason String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("attendance_requests")
+  @@index([internId])
+  @@index([status])
+}
+
+model AttendanceSummary {
+  id            String    @id @default(cuid())
+  internId      String    @unique
+  month         Int
+  year          Int
+  totalDays     Int
+  presentDays   Int
+  absentDays    Int
+  halfDays      Int
+  leaveDays     Int
+  percentage    Float
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([internId, month, year])
+  @@map("attendance_summary")
+}
+
+// Performance/Review Database
+model PerformanceReview {
+  id            String    @id @default(cuid())
+  internId      String
+  mentorId      String
+  month         Int
+  year          Int
+  rating        Int       // 1-5
+  technical     Int
+  communication Int
+  teamwork      Int
+  attendance    Int
+  feedback      String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([internId, mentorId, month, year])
+  @@map("performance_reviews")
+}
+
+// Skills Tracker
+model SkillTracker {
+  id            String    @id @default(cuid())
+  internId      String
+  skillName     String
+  level         String    // "BEGINNER", "INTERMEDIATE", "ADVANCED"
+  progress      Int       // 0-100
+  acquiredDate  DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@unique([internId, skillName])
+  @@map("skill_trackers")
+}
+
+// Project Contributions
+model ProjectContribution {
+  id            String    @id @default(cuid())
+  projectId     String
+  internId      String
+  role          String
+  hoursWorked   Float
+  status        String    // "IN_PROGRESS", "COMPLETED"
+  contribution  String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@map("project_contributions")
+  @@index([projectId])
+  @@index([internId])
+}
+
+// Certifications
+model Certification {
+  id               String    @id @default(cuid())
+  internId         String
+  name             String
+  issuer           String
+  issueDate        DateTime
+  expiryDate       DateTime?
+  certificationUrl String?
+  verified         Boolean   @default(false)
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  @@map("certifications")
+  @@index([internId])
 }

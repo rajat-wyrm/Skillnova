@@ -4,18 +4,21 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import api from '../../lib/api';
 
 const PAGE_TITLES = {
-  dashboard:      'Mentor Dashboard',
-  interns:        'My Interns',
-  reports:        'Reports to Review',
-  projects:       'Projects & Tasks',
-  knowledge:      'Knowledge Base',
-  qa:             'Q&A Forum',
-  announcements:  'Announcements',
-  ai:             'AI Assistant',
-  profile:        'My Profile',
-  settings:       'Settings',
+  dashboard:           'Mentor Dashboard',
+  interns:             'My Interns',
+  reports:             'Reports to Review',
+  projects:            'Projects & Tasks',
+  knowledge:           'Knowledge Base',
+  attendance:          'Attendance',
+  'attendance-verify': 'Verify Attendance',
+  qa:                  'Q&A Forum',
+  announcements:       'Announcements',
+  ai:                  'AI Assistant',
+  profile:             'My Profile',
+  settings:            'Settings',
 };
 
 const MainLayout = ({ page, onNavigate, children }) => {
@@ -24,16 +27,22 @@ const MainLayout = ({ page, onNavigate, children }) => {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { setMobileOpen(false); }, [page]);
+  
   useEffect(() => {
     const onResize = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
+
+  // === BACKGROUND TELEMETRY HEARTBEAT ===
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const sendHeartbeat = () => {
+      api.get('/attendance/summary').catch(() => {});
+    };
+    
+    const intervalId = setInterval(sendHeartbeat, 60000);
+    return () => clearInterval(intervalId);
   }, []);
 
   return (

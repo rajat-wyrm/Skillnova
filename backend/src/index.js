@@ -11,6 +11,16 @@ import { logger } from './utils/logger.js';
 import { startReminderScheduler } from './services/reminderScheduler.js';
 import { startRandomEventScheduler } from './services/randomEventScheduler.js';
 
+// ── New Route Imports ───────────────────────────────────────
+import attendanceRouter from './routes/attendance.js';
+import performanceRouter from './routes/performance.js';
+import skillsRouter from './routes/skills.js';
+
+// ── Mount New Routes ────────────────────────────────────────
+app.use('/api/attendance', attendanceRouter);
+app.use('/api/performance', performanceRouter);
+app.use('/api/skills', skillsRouter);
+
 async function bootstrap() {
   await connectDB();
   await connectRedis();
@@ -36,12 +46,14 @@ async function bootstrap() {
     });
     setTimeout(() => process.exit(1), 10_000).unref();
   };
+  
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 
   process.on('unhandledRejection', (err) => {
     logger.fatal({ err }, 'unhandledRejection');
   });
+  
   process.on('uncaughtException', (err) => {
     logger.fatal({ err }, 'uncaughtException');
   });

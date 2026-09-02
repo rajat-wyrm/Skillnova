@@ -95,7 +95,7 @@ async function main() {
 
   const internData = [
     { email: 'rahul@skillnova.com', name: 'Rahul Sharma',  dept: 'AI/ML',        skills: 'Python, TensorFlow, Data Analysis',         rating: 8.5 },
-    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',         rating: 8.8 },
+    { email: 'sneha@skillnova.com', name: 'Sneha Reddy',   dept: 'Backend',      skills: 'Node.js, PostgreSQL, Redis, Docker',        rating: 8.8 },
     { email: 'kavya@skillnova.com',  name: 'Kavya Sree',    dept: 'Frontend',     skills: 'React, Tailwind, TypeScript',               rating: 9.0 },
     { email: 'arjun@skillnova.com',  name: 'Arjun Mehta',   dept: 'Data Science', skills: 'Pandas, scikit-learn, SQL, Tableau',         rating: 8.2 },
     { email: 'user@skillnova.com',   name: 'Demo Intern',   dept: 'Web Dev',      skills: 'JavaScript, React, Node.js',                rating: 7.8 },
@@ -306,7 +306,7 @@ async function main() {
     { title: 'Implement RBAC middleware',        status: 'DONE',       priority: 'HIGH', assignee: interns[2] },
     { title: 'Build AI assistant chat UI',       status: 'IN_PROGRESS', priority: 'MEDIUM', assignee: interns[0] },
     { title: 'Wire up realtime notifications',   status: 'IN_PROGRESS', priority: 'HIGH', assignee: interns[1] },
-    { title: 'Train ML model on attendance data', status: 'TODO',     priority: 'MEDIUM', assignee: interns[0] },
+    { title: 'Train ML model on attendance data', status: 'TODO',      priority: 'MEDIUM', assignee: interns[0] },
     { title: 'Write API documentation',          status: 'TODO',       priority: 'MEDIUM', assignee: interns[0] },
     { title: 'Set up CI/CD pipeline',            status: 'REVIEW',     priority: 'MEDIUM', assignee: interns[1] },
     { title: 'Build user analytics dashboard',   status: 'TODO',       priority: 'LOW',    assignee: interns[0] },
@@ -377,13 +377,13 @@ async function main() {
   });
   await prisma.systemSetting.upsert({
     where: { key: 'platform.maintenance' },
-    update: { value: false },
-    create: { key: 'platform.maintenance', value: false },
+    update: { value: 'false' }, // FIXED
+    create: { key: 'platform.maintenance', value: 'false' }, // FIXED
   });
   await prisma.systemSetting.upsert({
     where: { key: 'platform.registrationOpen' },
-    update: { value: true },
-    create: { key: 'platform.registrationOpen', value: true },
+    update: { value: 'true' }, // FIXED
+    create: { key: 'platform.registrationOpen', value: 'true' }, // FIXED
   });
 
   console.log('\n✅  Seed complete!\n');

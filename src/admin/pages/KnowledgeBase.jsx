@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════
 //  ADMIN — pages/KnowledgeBase.jsx (API-driven, full editor)
 // ════════════════════════════════════════════════════════════
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Search, BookOpen, Eye, ThumbsUp, Loader2, Plus, Trash2, ShieldCheck, X } from 'lucide-react';
 import { Card, Badge, SectionHeader, Modal, Input } from '../../shared/components/UI';
 import api from '../../lib/api';
@@ -23,9 +23,9 @@ const KnowledgeBase = () => {
       const [a, c] = await Promise.all([api.get('/kb/articles', { params: { limit: 100 } }), api.get('/kb/categories')]);
       setArticles(a.data.items);
       setCategories(c.data.items);
-      c.data.items.length && setForm((f) => f.categoryId ? f : { ...f, categoryId: c.data.items[0].id });
+      if (c.data.items.length && !form.categoryId) setForm((f) => ({ ...f, categoryId: c.data.items[0].id }));
     } finally { setLoading(false); }
-  }, []);
+  }, [form.categoryId]);
   useEffect(() => { fetch(); }, [fetch]);
 
   const filtered = articles.filter((a) =>

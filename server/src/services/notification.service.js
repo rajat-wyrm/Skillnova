@@ -3,20 +3,13 @@
 // ════════════════════════════════════════════════════════════
 import prisma from '../utils/prisma.js';
 import { getIO } from '../sockets/index.js';
-import { logger } from '../utils/logger.js';
 
 export async function notify(userId, payload) {
   const { type, title, body, link } = payload;
 
-  let saved;
-  try {
-    saved = await prisma.notification.create({
-      data: { userId, type, title, body, link },
-    });
-  } catch (err) {
-    logger.warn({ err, userId }, 'notification:create-failed');
-    return null;
-  }
+  const saved = await prisma.notification.create({
+    data: { userId, type, title, body, link },
+  });
 
   try {
     const io = getIO();
@@ -32,15 +25,6 @@ export async function notifyMany(userIds, payload) {
   return Promise.all(userIds.map((id) => notify(id, payload)));
 }
 
-export async function notifyRole(role, payload) {
-  try {
-    const io = getIO();
-    if (io) io.to(`role:${role}`).emit('notification', payload);
-  } catch {
-    /* socket layer might not be ready yet */
-  }
-}
-
 export async function broadcast(payload) {
   try {
     const io = getIO();
@@ -50,4 +34,4 @@ export async function broadcast(payload) {
   }
 }
 
-export default { notify, notifyMany, notifyRole, broadcast };
+export default { notify, notifyMany, broadcast };
