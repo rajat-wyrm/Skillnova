@@ -240,6 +240,7 @@ async def chat(req: ChatRequest):
         "question": message,
         "language": language,
         "role": user_role,
+        "user_name": req.user_name,
         "session_id": session_id,
         "chat_history": get_chat_history(session_id),
         "documents": [],

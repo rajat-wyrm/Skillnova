@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -158,12 +159,25 @@ def rewrite_query(state: AgentState) -> dict:
 # Response nodes
 # ─────────────────────────────────────────────────────────────────────
 def direct_response(state: AgentState) -> dict:
+    q = state.get("question", "").strip().lower()
+    user_name = state.get("user_name") or ""
+    name_str = f" {user_name}" if user_name else ""
+
+    greetings = {"hi", "hii", "hiii", "hello", "hey", "heyy", "namaste", "good morning", "good afternoon", "good evening", "howdy", "hola"}
+    is_greeting = q in greetings or any(q.startswith(g + " ") for g in greetings)
+
     prompt = DIRECT_PROMPT.format(
         question=state.get("question", ""),
         language=state.get("language", "en"),
     )
     reply = _call_llm(prompt)
-    reply, _ = _filter_output(reply)
+    if not reply or "AI service unavailable" in reply:
+        if is_greeting:
+            reply = f"Hi{name_str}! I'm AIAssistant, your SkillNova assistant. Ask me anything about the internship, policies, or platform features."
+        else:
+            reply = f"Hello{name_str}! I'm here to help. To enable full generative AI answers, you can add a GROQ_API_KEY or GEMINI_API_KEY to aiassistant-backend/.env. What can I help you find in the SkillNova knowledge base?"
+    else:
+        reply, _ = _filter_output(reply)
     return {"generation": reply, "confidence": 1.0, "is_escalated": False}
 
 
@@ -197,8 +211,23 @@ def retrieve(state: AgentState) -> dict:
     logger.info("[RETRIEVE] Question: %s", question)
 
     if not _vectorstore:
-        logger.warning("[RETRIEVE] Vectorstore not initialised")
-        return {"documents": []}
+        logger.warning("[RETRIEVE] Vectorstore not initialised — falling back to keyword search")
+        from retriever.vectorstore import load_documents, split_documents
+        try:
+            docs = load_documents()
+            chunks = split_documents(docs)
+            q_words = set(re.findall(r'\w+', question.lower()))
+            scored = []
+            for c in chunks:
+                c_words = set(re.findall(r'\w+', c.page_content.lower()))
+                overlap = len(q_words & c_words)
+                if overlap > 0:
+                    scored.append((overlap, c))
+            scored.sort(key=lambda x: x[0], reverse=True)
+            return {"documents": [c for _, c in scored[:5]]}
+        except Exception as exc:
+            logger.error("[KEYWORD RETRIEVE ERROR] %s", exc)
+            return {"documents": []}
 
     docs, latency = _timed_call(
         "faiss", _vectorstore.similarity_search, question, k=5
@@ -290,11 +319,21 @@ def generate(state: AgentState) -> dict:
             language=state.get("language", "en"),
         )
         answer = _call_llm(prompt)
-        if not answer:
+        if not answer or "AI service unavailable" in answer:
+            if context:
+                answer = (
+                    "Here is what I found in the SkillNova knowledge base:\n\n"
+                    + context[:800].strip()
+                )
+                return {
+                    "generation": answer,
+                    "confidence": 0.7,
+                    "is_escalated": False,
+                }
             return {
-                "generation": "Unable to generate response.",
-                "confidence": 0.0,
-                "is_escalated": True,
+                "generation": "I'm currently operating in offline mode. To enable full generative AI answers, please add a free GROQ_API_KEY or GEMINI_API_KEY to aiassistant-backend/.env.",
+                "confidence": 0.5,
+                "is_escalated": False,
             }
 
         if "ESCALATE_TO_ADMIN" in answer:
