@@ -9,6 +9,8 @@ import { connectRedis } from './utils/redis.js';
 import { createSocketServer } from './sockets/index.js';
 import { logger } from './utils/logger.js';
 import { findAvailablePort } from './utils/port.js';
+import { startReminderScheduler } from './services/reminderScheduler.js';
+import { startRandomEventScheduler } from './services/randomEventScheduler.js';
 
 async function bootstrap() {
   await connectDB();
@@ -16,6 +18,8 @@ async function bootstrap() {
 
   const httpServer = http.createServer(app);
   createSocketServer(httpServer);
+  startReminderScheduler();
+  startRandomEventScheduler(2 * 60 * 1000);
 
   const port = Number(config.port) || 4000;
   const resolvedPort = await findAvailablePort(port);

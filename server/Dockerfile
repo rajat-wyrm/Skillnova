@@ -7,14 +7,14 @@ WORKDIR /app
 
 # ── Install deps ──────────────────────────────────────────
 FROM base AS deps
-COPY server/package*.json ./
+COPY package*.json ./
 RUN npm ci --omit=dev
 
 # ── Build ─────────────────────────────────────────────────
 FROM base AS build
-COPY server/package*.json ./
+COPY package*.json ./
 RUN npm ci
-COPY server/ ./
+COPY . ./
 RUN npx prisma generate
 
 # ── Runtime ───────────────────────────────────────────────

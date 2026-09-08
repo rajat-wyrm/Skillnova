@@ -27,66 +27,65 @@ enum UserStatus {
 }
 
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
-  passwordHash    String
-  name            String
-  role            UserRole      @default(INTERN)
-  status          UserStatus    @default(PENDING)
-  department      String?
-  college         String?
-  yearOfStudy     String?
-  dateOfBirth     DateTime?
-  linkedinUrl     String?
-  skills          String?       // comma-separated for simplicity, can migrate to table later
-  educationJson   String?       // JSON array of {institution, degree, field, startYear, endYear}, populated manually or via Resume Import
-  experienceJson  String?       // JSON array of {company, title, startDate, endDate, description}, populated manually or via Resume Import
-  avatarUrl       String?
-  rating          Float         @default(0)
-  twoFactorSecret String?
-  twoFactorEnabled Boolean      @default(false)
-  emailVerified   Boolean       @default(false)
-  emailVerifiedAt DateTime?
-  resetPasswordToken String?
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  passwordHash        String
+  name                String
+  role                UserRole   @default(INTERN)
+  status              UserStatus @default(PENDING)
+  department          String?
+  college             String?
+  yearOfStudy         String?
+  dateOfBirth         DateTime?
+  linkedinUrl         String?
+  skills              String?
+  educationJson       String?
+  experienceJson      String?
+  avatarUrl           String?
+  rating              Float      @default(0)
+  twoFactorSecret     String?
+  twoFactorEnabled    Boolean    @default(false)
+  emailVerified       Boolean    @default(false)
+  emailVerifiedAt     DateTime?
+  resetPasswordToken  String?
   resetPasswordExpire DateTime?
-  lastLoginAt     DateTime?
-  lastLoginIp     String?
-  failedAttempts  Int           @default(0)
-  lockedUntil     DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  failedAttempts      Int        @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 
-  refreshTokens     RefreshToken[]
-  reports           Report[]
-  attendances       Attendance[]
-  inviteCodesCreated InviteCode[] @relation("InviteCodeCreator")
-  inviteCodeUsed     InviteCode?  @relation("InviteCodeUser")
-  projectTasks      ProjectTask[]
-  announcements     Announcement[]    @relation("AnnouncementAuthor")
-  announcementsReads AnnouncementRead[]
-  kbArticles        KnowledgeArticle[] @relation("ArticleAuthor")
-  kbVersions        KnowledgeArticleVersion[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  questions         Question[]
-  answers           Answer[]
-  chatSessions      ChatSession[]
-  qaUpvotes         Upvote[]
-  sessions          UserSession[]
-  internProfile     InternProfile?
-  mentorProfile     MentorProfile?
-  mentorOf          InternProfile[] @relation("MentorRelation")
-  organizedMeetings Meeting[]      @relation("OrganizedMeetings")
-  meetingAttendees  MeetingAttendee[]
-  internRatingsReceived InternRating[] @relation("InternRatings")
-  internRatingsGiven    InternRating[] @relation("MentorRatingsGiven")
+  refreshTokens         RefreshToken[]
+  reports               Report[]
+  attendances           Attendance[]
+  inviteCodesCreated    InviteCode[]              @relation("InviteCodeCreator")
+  inviteCodeUsed        InviteCode?               @relation("InviteCodeUser")
+  projectTasks          ProjectTask[]
+  announcements         Announcement[]            @relation("AnnouncementAuthor")
+  announcementsReads    AnnouncementRead[]
+  kbArticles            KnowledgeArticle[]        @relation("ArticleAuthor")
+  kbVersions            KnowledgeArticleVersion[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  questions             Question[]
+  answers               Answer[]
+  chatSessions          ChatSession[]
+  qaUpvotes             Upvote[]
+  sessions              UserSession[]
+  internProfile         InternProfile?
+  mentorProfile         MentorProfile?
+  mentorOf              InternProfile[]           @relation("MentorRelation")
+  organizedMeetings     Meeting[]                 @relation("OrganizedMeetings")
+  meetingAttendees      MeetingAttendee[]
+  internRatingsReceived InternRating[]            @relation("InternRatings")
+  internRatingsGiven    InternRating[]            @relation("MentorRatingsGiven")
 
   // Phase 1: Learning / Badges / Completion
   roadmapAssignments RoadmapAssignment[]
   milestoneProgress  MilestoneProgress[]
   badgeAwards        BadgeAward[]
-  internshipProgress InternshipProgress?
+  internshipProgress InternProgress?
 
   @@index([role])
   @@index([status])
@@ -94,82 +93,81 @@ model User {
 }
 
 model InternProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mentorId      String?
-  mentor        User?    @relation("MentorRelation", fields: [mentorId], references: [id])
-  startDate     DateTime
-  endDate       DateTime?
-  stipend       Float?
-  projectId     String?
-  project       Project? @relation(fields: [projectId], references: [id])
-  totalTasks    Int      @default(0)
-  completedTasks Int    @default(0)
-  isTL          Boolean  @default(false) // Team Lead flag for managing interns
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorId       String?
+  mentor         User?     @relation("MentorRelation", fields: [mentorId], references: [id])
+  startDate      DateTime
+  endDate        DateTime?
+  stipend        Float?
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id])
+  totalTasks     Int       @default(0)
+  completedTasks Int       @default(0)
+  isTL           Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([isTL])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
 
 model MentorProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?
-  expertise   String?
-  maxInterns  Int      @default(10)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio        String?
+  expertise  String?
+  maxInterns Int      @default(10)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // ── Auth & Sessions ────────────────────────────────────────
 model RefreshToken {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash   String   @unique
-  device      String?
-  ip          String?
-  userAgent   String?
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  createdAt   DateTime @default(now())
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  device    String?
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
 }
 
 model UserSession {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  socketId    String?
-  ip          String?
-  userAgent   String?
-  lastActive  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socketId   String?
+  ip         String?
+  userAgent  String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([userId])
 }
 
 // ── OTP & 2FA ───────────────────────────────────────────────
 model OtpChallenge {
-  id          String   @id @default(cuid())
-  email       String
-  purpose     String   // 'login_admin', 'login_intern', 'reset'
-  codeHash    String
-  attempts    Int      @default(0)
-  expiresAt   DateTime
-  consumedAt  DateTime?
-  createdAt   DateTime @default(now())
+  id         String    @id @default(cuid())
+  email      String
+  purpose    String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
 
   @@index([email, purpose])
   @@index([expiresAt])
 }
+
 model InviteCode {
   id          String    @id @default(cuid())
   code        String    @unique
@@ -193,21 +191,21 @@ enum ReportStatus {
 }
 
 model Report {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  content     String?      // rich text/markdown
-  fileUrl     String?
-  weekNumber  Int?
-  status      ReportStatus @default(PENDING)
-  score       Float?
-  feedback    String?
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  content      String?
+  fileUrl      String?
+  weekNumber   Int?
+  status       ReportStatus @default(PENDING)
+  score        Float?
+  feedback     String?
   reviewedById String?
-  reviewedAt  DateTime?
-  submittedAt DateTime     @default(now())
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  reviewedAt   DateTime?
+  submittedAt  DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -224,17 +222,17 @@ enum AttendanceStatus {
 }
 
 model Attendance {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      DateTime        @db.Date
-  status    AttendanceStatus @default(PRESENT)
-  checkIn   DateTime?
-  checkOut  DateTime?
-  notes     String?
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date       DateTime         @db.Date
+  status     AttendanceStatus @default(PRESENT)
+  checkIn    DateTime?
+  checkOut   DateTime?
+  notes      String?
   markedById String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@unique([userId, date])
   @@index([date])
@@ -256,7 +254,7 @@ model InternRating {
   intern    User     @relation("InternRatings", fields: [internId], references: [id], onDelete: Cascade)
   mentorId  String
   mentor    User     @relation("MentorRatingsGiven", fields: [mentorId], references: [id])
-  weekStart DateTime @db.Date // Monday of the week this rating covers
+  weekStart DateTime @db.Date
   score     Float
   comment   String?
   createdAt DateTime @default(now())
@@ -277,8 +275,8 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  tasks       ProjectTask[]
-  interns     InternProfile[]
+  tasks   ProjectTask[]
+  interns InternProfile[]
 
   @@index([status])
 }
@@ -335,33 +333,33 @@ model KnowledgeCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  articles    KnowledgeArticle[]
+  articles KnowledgeArticle[]
 }
 
 model KnowledgeArticle {
-  id          String      @id @default(cuid())
-  title       String
-  slug        String      @unique
-  content     String      // markdown / rich text json
-  excerpt     String?
-  categoryId  String
-  category    KnowledgeCategory @relation(fields: [categoryId], references: [id])
-  authorId    String
-  author      User        @relation("ArticleAuthor", fields: [authorId], references: [id])
-  status      ArticleStatus @default(DRAFT)
-  verified    Boolean     @default(false)
+  id           String            @id @default(cuid())
+  title        String
+  slug         String            @unique
+  content      String
+  excerpt      String?
+  categoryId   String
+  category     KnowledgeCategory @relation(fields: [categoryId], references: [id])
+  authorId     String
+  author       User              @relation("ArticleAuthor", fields: [authorId], references: [id])
+  status       ArticleStatus     @default(DRAFT)
+  verified     Boolean           @default(false)
   verifiedById String?
-  verifiedAt  DateTime?
-  views       Int         @default(0)
-  helpful     Int         @default(0)
-  tags        String[]
-  embedding   Json?       // for future vector search
-  publishedAt DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  verifiedAt   DateTime?
+  views        Int               @default(0)
+  helpful      Int               @default(0)
+  tags         String[]
+  embedding    Json?
+  publishedAt  DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
-  versions    KnowledgeArticleVersion[]
-  feedbacks   ArticleFeedback[]
+  versions  KnowledgeArticleVersion[]
+  feedbacks ArticleFeedback[]
 
   @@index([categoryId])
   @@index([status])
@@ -370,27 +368,27 @@ model KnowledgeArticle {
 }
 
 model KnowledgeArticleVersion {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   articleId String
   article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   version   Int
   title     String
   content   String
   editorId  String
-  editor    User     @relation(fields: [editorId], references: [id])
-  createdAt DateTime @default(now())
+  editor    User             @relation(fields: [editorId], references: [id])
+  createdAt DateTime         @default(now())
 
   @@unique([articleId, version])
 }
 
 model ArticleFeedback {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   articleId String
   article   KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   userId    String?
   helpful   Boolean
   comment   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
 
   @@index([articleId])
 }
@@ -403,19 +401,19 @@ enum AnnouncementPriority {
 }
 
 model Announcement {
-  id          String              @id @default(cuid())
+  id          String               @id @default(cuid())
   title       String
   body        String
   priority    AnnouncementPriority @default(MEDIUM)
-  pinned      Boolean             @default(false)
+  pinned      Boolean              @default(false)
   authorId    String
-  author      User                @relation("AnnouncementAuthor", fields: [authorId], references: [id])
-  publishedAt DateTime            @default(now())
+  author      User                 @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  publishedAt DateTime             @default(now())
   expiresAt   DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 
-  reads       AnnouncementRead[]
+  reads AnnouncementRead[]
 
   @@index([pinned])
   @@index([publishedAt])
@@ -434,19 +432,19 @@ model AnnouncementRead {
 
 // ── Q&A ─────────────────────────────────────────────────────
 model Question {
-  id        String   @id @default(cuid())
-  title     String
-  body      String
-  category  String?
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  views     Int      @default(0)
+  id               String   @id @default(cuid())
+  title            String
+  body             String
+  category         String?
+  authorId         String
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views            Int      @default(0)
   acceptedAnswerId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  answers   Answer[]
-  upvotes   Upvote[]
+  answers Answer[]
+  upvotes Upvote[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -463,21 +461,21 @@ model Answer {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  upvotes    Upvote[]
+  upvotes Upvote[]
 
   @@index([questionId])
   @@index([authorId])
 }
 
 model Upvote {
-  id         String  @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   questionId String?
   question   Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
   answerId   String?
-  answer     Answer? @relation(fields: [answerId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  answer     Answer?   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
 
   @@unique([userId, questionId])
   @@unique([userId, answerId])
@@ -493,21 +491,21 @@ model ChatSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  messages  ChatMessage[]
+  messages ChatMessage[]
 
   @@index([userId])
   @@index([updatedAt])
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   sessionId String
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  role      String   // 'system' | 'user' | 'assistant'
+  role      String
   content   String
   tokens    Int?
   meta      Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([sessionId])
   @@index([createdAt])
@@ -515,16 +513,16 @@ model ChatMessage {
 
 // ── Notifications ───────────────────────────────────────────
 model Notification {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   // 'announcement' | 'report' | 'task' | 'mention' | ...
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
   title     String
   body      String?
   link      String?
-  read      Boolean  @default(false)
+  read      Boolean   @default(false)
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId, read])
   @@index([createdAt])
@@ -532,16 +530,16 @@ model Notification {
 
 // ── Audit Log ───────────────────────────────────────────────
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action    String   // e.g. 'user.create', 'role.change'
-  resource  String?  // 'user', 'article', ...
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String?
   resourceId String?
-  meta      Json?
-  ip        String?
-  userAgent String?
-  createdAt DateTime @default(now())
+  meta       Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([action])
@@ -551,27 +549,27 @@ model AuditLog {
 
 // ── System Settings ─────────────────────────────────────────
 model SystemSetting {
-  key       String   @id
-  value     Json
+  key         String   @id
+  value       Json
   updatedById String?
-  updatedAt DateTime @updatedAt
-  createdAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
 }
 
 // ── Files / attachments ─────────────────────────────────────
 model FileAsset {
-  id            String   @id @default(cuid())
-  filename      String
-  originalName  String
-  mimeType      String
-  size          Int
-  storage       String   // 'local' | 's3'
-  path          String   // relative path or s3 key
-  bucket        String?
-  uploaderId    String
-  visibility    String   @default("private")
-  checksum      String
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  storage      String
+  path         String
+  bucket       String?
+  uploaderId   String
+  visibility   String   @default("private")
+  checksum     String
+  createdAt    DateTime @default(now())
 
   @@index([uploaderId])
   @@index([mimeType])
@@ -579,34 +577,34 @@ model FileAsset {
 
 // ── Webhooks ─────────────────────────────────────────────────
 model Webhook {
-  id          String   @id @default(cuid())
-  ownerId     String
-  url         String
-  events      String[] // e.g. ['report.reviewed', 'announcement.created']
-  secret      String   // HMAC secret for signing
-  enabled     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  lastFiredAt DateTime?
-  lastStatus  Int?
-  failureCount Int     @default(0)
+  id           String    @id @default(cuid())
+  ownerId      String
+  url          String
+  events       String[]
+  secret       String
+  enabled      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  lastFiredAt  DateTime?
+  lastStatus   Int?
+  failureCount Int       @default(0)
 
-  deliveries  WebhookDelivery[]
+  deliveries WebhookDelivery[]
 
   @@index([ownerId])
   @@index([enabled])
 }
 
 model WebhookDelivery {
-  id          String   @id @default(cuid())
-  webhookId   String
-  webhook     Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-  event       String
-  payload     Json
-  status      Int
-  response    String?
-  durationMs  Int?
-  attempts    Int      @default(0)
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  webhookId  String
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event      String
+  payload    Json
+  status     Int
+  response   String?
+  durationMs Int?
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
 
   @@index([webhookId])
   @@index([event])
@@ -614,19 +612,16 @@ model WebhookDelivery {
 
 // ── Notification preferences ────────────────────────────────
 model NotificationPref {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  // Channels
-  emailEnabled    Boolean  @default(true)
-  pushEnabled     Boolean  @default(true)
-  inAppEnabled    Boolean  @default(true)
-  // Per-type
-  typePrefs       Json     @default("{}")
-  // Quiet hours (24h)
-  quietFrom       String?  // "22:00"
-  quietTo         String?  // "08:00"
-  updatedAt       DateTime @updatedAt
-  createdAt       DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  emailEnabled Boolean  @default(true)
+  pushEnabled  Boolean  @default(true)
+  inAppEnabled Boolean  @default(true)
+  typePrefs    Json     @default("{}")
+  quietFrom    String?
+  quietTo      String?
+  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now())
 }
 
 // ── Meetings ────────────────────────────────────────────────
@@ -639,18 +634,18 @@ enum MeetingType {
 }
 
 model Meeting {
-  id           String      @id @default(cuid())
-  title        String
-  description  String?
-  type         MeetingType @default(ONE_ON_ONE)
-  startsAt     DateTime
-  endsAt       DateTime?
-  location     String?
-  organizerId  String
-  organizer    User        @relation("OrganizedMeetings", fields: [organizerId], references: [id])
-  attendees    MeetingAttendee[]
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  type        MeetingType       @default(ONE_ON_ONE)
+  startsAt    DateTime
+  endsAt      DateTime?
+  location    String?
+  organizerId String
+  organizer   User              @relation("OrganizedMeetings", fields: [organizerId], references: [id])
+  attendees   MeetingAttendee[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([organizerId])
   @@index([startsAt])
@@ -662,7 +657,7 @@ model MeetingAttendee {
   meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  response  String   @default("PENDING") // PENDING/ACCEPTED/DECLINED
+  response  String   @default("PENDING")
   createdAt DateTime @default(now())
 
   @@unique([meetingId, userId])
@@ -696,17 +691,17 @@ model LearningPath {
 }
 
 model LearningMilestone {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   pathId      String
   path        LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
   title       String
   description String?
   resourceUrl String?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  progress    MilestoneProgress[]
+  progress MilestoneProgress[]
 
   @@index([pathId])
 }
@@ -729,15 +724,15 @@ model RoadmapAssignment {
 }
 
 model MilestoneProgress {
-  id          String    @id @default(cuid())
+  id          String            @id @default(cuid())
   milestoneId String
   milestone   LearningMilestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  completed   Boolean   @default(false)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completed   Boolean           @default(false)
   completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@unique([milestoneId, userId])
   @@index([userId])
@@ -755,14 +750,14 @@ model Badge {
   id          String    @id @default(cuid())
   name        String
   description String?
-  icon        String?   // icon key from public/icons.svg, or emoji fallback
+  icon        String?
   type        BadgeType
-  criteria    Json?     // rule definition evaluated by badge.service.js, e.g. {"metric":"attendancePct","gte":95}
+  criteria    Json?
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  awards      BadgeAward[]
+  awards BadgeAward[]
 
   @@index([type])
 }
@@ -781,17 +776,17 @@ model BadgeAward {
   @@index([userId])
 }
 
-model InternshipProgress {
-  id            String    @id @default(cuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskPct       Float     @default(0)
-  attendancePct Float     @default(0)
-  learningPct   Float     @default(0)
-  mentorEvalPct Float     @default(0)
-  overallPct    Float     @default(0)
-  finalStatus   String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | COMPLETED | TERMINATED
-  computedAt    DateTime  @updatedAt
+model InternProgress {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskPct       Float    @default(0)
+  attendancePct Float    @default(0)
+  learningPct   Float    @default(0)
+  mentorEvalPct Float    @default(0)
+  overallPct    Float    @default(0)
+  finalStatus   String   @default("NOT_STARTED")
+  computedAt    DateTime @updatedAt
 
   @@index([finalStatus])
 }
